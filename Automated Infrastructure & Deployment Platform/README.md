@@ -2,8 +2,8 @@
 
 Automated Infrastructure & Deployment Platform is an internal developer platform for platform engineers and product teams to self-service infrastructure and CI/CD in minutes. Think "Platform Engineering in a box": the portal renders Terraform and Jenkins/GitHub Actions templates on demand (e.g., provision a full CI/CD stack with one click).
 
-[![CI](https://github.com/MirceaStefanescu/Portofolio/actions/workflows/ci.yml/badge.svg)](https://github.com/MirceaStefanescu/Portofolio/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/MirceaStefanescu/Portofolio/actions/workflows/codeql.yml/badge.svg)](https://github.com/MirceaStefanescu/Portofolio/actions/workflows/codeql.yml)
+[![CI](https://github.com/MirceaStefanescu/Portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/MirceaStefanescu/Portfolio/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/MirceaStefanescu/Portfolio/actions/workflows/codeql.yml/badge.svg)](https://github.com/MirceaStefanescu/Portfolio/actions/workflows/codeql.yml)
 
 ## Demo
 - Live: TBD

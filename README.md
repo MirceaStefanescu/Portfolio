@@ -1,4 +1,4 @@
-# Portofolio
+# Portfolio
 
 This repository contains multiple projects. Each project lives at the repository
 root in its own folder.

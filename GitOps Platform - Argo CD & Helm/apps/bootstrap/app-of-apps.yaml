@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/MirceaStefanescu/Portofolio.git
+    repoURL: https://github.com/MirceaStefanescu/Portfolio.git
     targetRevision: main
     path: "GitOps Platform - Argo CD & Helm/apps/environments"
     directory:
