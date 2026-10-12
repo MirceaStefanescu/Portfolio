@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
 
@@ -12,9 +12,9 @@ class HttpModel(BaseModel):
     def __init__(
         self,
         endpoint: str,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         mode: str = "simple",
-        model_name: Optional[str] = None,
+        model_name: str | None = None,
         timeout: int = 30,
     ) -> None:
         self.endpoint = endpoint
@@ -39,7 +39,7 @@ class HttpModel(BaseModel):
         data = response.json()
         return self._extract_text(data)
 
-    def _build_payload(self, prompt: str) -> Dict[str, Any]:
+    def _build_payload(self, prompt: str) -> dict[str, Any]:
         if self.mode == "openai":
             return {
                 "model": self.model_name or "local-model",
@@ -49,12 +49,12 @@ class HttpModel(BaseModel):
         return {"prompt": prompt}
 
     @staticmethod
-    def _extract_text(payload: Dict[str, Any]) -> str:
+    def _extract_text(payload: dict[str, Any]) -> str:
         if "output" in payload:
             return str(payload["output"])
         if "text" in payload:
             return str(payload["text"])
-        if "choices" in payload and payload["choices"]:
+        if payload.get("choices"):
             choice = payload["choices"][0]
             if isinstance(choice, dict):
                 if "message" in choice and "content" in choice["message"]:

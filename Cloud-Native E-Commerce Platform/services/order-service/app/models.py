@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import BaseModel, Field
 
 
@@ -10,7 +8,7 @@ class OrderItemCreate(BaseModel):
 
 class OrderCreate(BaseModel):
     customer_id: str = Field(..., min_length=1)
-    items: List[OrderItemCreate]
+    items: list[OrderItemCreate]
 
 
 class OrderItem(BaseModel):
@@ -26,6 +24,6 @@ class Order(BaseModel):
     status: str
     total_cents: int
     currency: str
-    items: List[OrderItem]
+    items: list[OrderItem]
     created_at: str
     updated_at: str

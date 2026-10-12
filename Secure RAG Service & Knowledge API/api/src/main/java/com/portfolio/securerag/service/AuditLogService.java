@@ -21,6 +21,7 @@ public class AuditLogService {
 
     public AuditLogService(AuditProperties auditProperties) {
         this.maxEvents = auditProperties.getMaxEvents();
+        if (maxEvents < 1) throw new IllegalArgumentException("Audit max-events must be positive");
     }
 
     public void record(String actor, String action, String resource, String status, String details) {
@@ -35,6 +36,7 @@ public class AuditLogService {
     }
 
     public List<AuditEvent> list(int limit) {
+        if (limit < 0) throw new IllegalArgumentException("Limit cannot be negative");
         List<AuditEvent> snapshot;
         synchronized (events) {
             snapshot = new ArrayList<>(events);

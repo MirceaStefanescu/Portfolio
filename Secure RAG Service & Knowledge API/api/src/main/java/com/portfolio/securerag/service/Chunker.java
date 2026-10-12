@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 public class Chunker {
 
     public List<String> chunk(String text, int chunkSize, int overlap) {
+        if (chunkSize <= 0 || overlap < 0 || overlap >= chunkSize) {
+            throw new IllegalArgumentException("Chunk size must be positive and overlap between zero and chunk size minus one.");
+        }
         List<String> chunks = new ArrayList<>();
         if (text == null || text.isBlank()) {
             return chunks;
@@ -26,6 +29,9 @@ public class Chunker {
             String chunk = cleaned.substring(start, end).trim();
             if (!chunk.isBlank()) {
                 chunks.add(chunk);
+            }
+            if (end == cleaned.length()) {
+                break;
             }
             int nextStart = end - overlap;
             if (nextStart <= start) {

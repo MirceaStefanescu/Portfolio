@@ -1,8 +1,7 @@
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from eval_harness.metrics import score_metric
 from eval_harness.storage import RunLogger
@@ -18,11 +17,11 @@ DEFAULT_PROMPT_TEMPLATE = (
 class TaskConfig:
     name: str
     dataset_path: Path
-    metrics: List[str]
+    metrics: list[str]
     prompt_template: str = DEFAULT_PROMPT_TEMPLATE
 
     @staticmethod
-    def from_dict(payload: Dict, base_dir: Path) -> "TaskConfig":
+    def from_dict(payload: dict, base_dir: Path) -> "TaskConfig":
         dataset_value = payload["dataset"]
         dataset_path = Path(dataset_value)
         if not dataset_path.is_absolute():
@@ -38,13 +37,13 @@ class TaskConfig:
         )
 
 
-def load_task_config(path: Path) -> Dict:
+def load_task_config(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
-def load_dataset(path: Path) -> List[EvalRecord]:
-    records: List[EvalRecord] = []
+def load_dataset(path: Path) -> list[EvalRecord]:
+    records: list[EvalRecord] = []
     with path.open("r", encoding="utf-8") as handle:
         for idx, line in enumerate(handle):
             if not line.strip():
@@ -78,15 +77,17 @@ def run_evaluation(
     task: TaskConfig,
     model,
     output_dir: Path,
-    run_name: Optional[str] = None,
-) -> Dict:
+    run_name: str | None = None,
+) -> dict:
     records = load_dataset(task.dataset_path)
-    run_id = run_name or f"{task.name}-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
+    run_id = run_name or f"{task.name}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-%f')}"
+    if run_id in {".", ".."} or "/" in run_id or "\\" in run_id or ":" in run_id:
+        raise ValueError("Run name must be a single directory name.")
     run_dir = output_dir / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
+    run_dir.mkdir(parents=True, exist_ok=False)
 
-    metric_totals: Dict[str, float] = {metric: 0.0 for metric in task.metrics}
-    metric_counts: Dict[str, int] = {metric: 0 for metric in task.metrics}
+    metric_totals: dict[str, float] = {metric: 0.0 for metric in task.metrics}
+    metric_counts: dict[str, int] = {metric: 0 for metric in task.metrics}
 
     with RunLogger(run_dir) as logger:
         for record in records:
@@ -96,7 +97,7 @@ def run_evaluation(
             response = model.generate(record, prompt)
             logger.log_response({"id": record.record_id, "response": response})
 
-            scores: Dict[str, Optional[float]] = {}
+            scores: dict[str, float | None] = {}
             for metric in task.metrics:
                 score = score_metric(metric, response, record.expected, record.context)
                 scores[metric] = score
@@ -118,9 +119,9 @@ def run_evaluation(
 
 
 def _aggregate_metrics(
-    metric_totals: Dict[str, float], metric_counts: Dict[str, int]
-) -> Dict[str, Optional[float]]:
-    aggregated: Dict[str, Optional[float]] = {}
+    metric_totals: dict[str, float], metric_counts: dict[str, int]
+) -> dict[str, float | None]:
+    aggregated: dict[str, float | None] = {}
     for metric, total in metric_totals.items():
         count = metric_counts.get(metric, 0)
         aggregated[metric] = round(total / count, 4) if count else None

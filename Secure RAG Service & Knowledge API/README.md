@@ -107,3 +107,11 @@ Tools and software: ai, security, docker, knowledge base, spring boot, jwt, kube
 
 ## Project details
 Industry: ai, security, docker, knowledge base, spring boot, rag.
+
+## Security configuration and test scope
+
+Set distinct randomly generated `JWT_SECRET` (at least 32 bytes) and `DEV_API_KEY` (at least 32 characters) in the existing environment configuration before startup. No shared default credentials are accepted. The development token endpoint grants requested roles to holders of this administrative key; keep it private and replace this development issuer before a production deployment. Compose binds the API and unauthenticated Qdrant port to loopback by default.
+
+Requests accept `topK` between 1 and 100. Chunk size must be positive, with overlap smaller than chunk size. Unit tests do not establish live Qdrant or production identity-provider integration.
+
+The Helm chart reads JWT_SECRET and DEV_API_KEY from an existing Kubernetes Secret named `secure-rag-secrets` by default (override `existingSecret`). Prepare that Secret through your existing secret-management process before installing; keys are not chart values. Default CPU requests support the enabled HPA. `serviceAccount.name` selects an existing account when `serviceAccount.create=false`.

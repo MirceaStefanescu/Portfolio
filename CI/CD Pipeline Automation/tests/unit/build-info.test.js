@@ -1,3 +1,5 @@
+const { describe, it, beforeEach, after } = require("node:test");
+const assert = require("node:assert/strict");
 const { getBuildInfo } = require("../../src/lib/build-info");
 
 describe("getBuildInfo", () => {
@@ -7,7 +9,7 @@ describe("getBuildInfo", () => {
     process.env = { ...originalEnv };
   });
 
-  afterAll(() => {
+  after(() => {
     process.env = originalEnv;
   });
 
@@ -19,11 +21,11 @@ describe("getBuildInfo", () => {
 
     const info = getBuildInfo();
 
-    expect(info.environment).toBe("dev");
-    expect(info.releaseColor).toBe("blue");
-    expect(info.buildId).toBe("local");
-    expect(info.gitSha).toBe("dev");
-    expect(info.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    assert.equal(info.environment, "dev");
+    assert.equal(info.releaseColor, "blue");
+    assert.equal(info.buildId, "local");
+    assert.equal(info.gitSha, "dev");
+    assert.match(info.startedAt, /^\d{4}-\d{2}-\d{2}T/);
   });
 
   it("reads values from environment", () => {
@@ -34,9 +36,9 @@ describe("getBuildInfo", () => {
 
     const info = getBuildInfo();
 
-    expect(info.environment).toBe("staging");
-    expect(info.releaseColor).toBe("green");
-    expect(info.buildId).toBe("42");
-    expect(info.gitSha).toBe("abc123");
+    assert.equal(info.environment, "staging");
+    assert.equal(info.releaseColor, "green");
+    assert.equal(info.buildId, "42");
+    assert.equal(info.gitSha, "abc123");
   });
 });

@@ -76,7 +76,7 @@ public class OrderService {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be at least 1");
 			}
 			Product product = products.get(itemRequest.productId());
-			if (product == null) {
+			if (product == null || !product.isActive()) {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product not found");
 			}
 			OrderItem item = new OrderItem();
@@ -107,7 +107,7 @@ public class OrderService {
 		} catch (StripeException ex) {
 			order.setStatus(OrderStatus.CANCELLED);
 			orderRepository.save(order);
-			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Stripe error: " + ex.getMessage(), ex);
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Payment provider request failed", ex);
 		}
 
 		order.setPaymentIntentId(intent.id());
@@ -146,7 +146,7 @@ public class OrderService {
 		try {
 			intent = stripeService.retrievePaymentIntent(paymentIntentId);
 		} catch (StripeException ex) {
-			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Stripe error: " + ex.getMessage(), ex);
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Payment provider request failed", ex);
 		}
 
 		switch (intent.status()) {
@@ -163,6 +163,10 @@ public class OrderService {
 		if (currency == null || currency.isBlank()) {
 			return "usd";
 		}
-		return currency.trim().toLowerCase(Locale.ROOT);
+        String normalized = currency.trim().toLowerCase(Locale.ROOT);
+        if (!"usd".equals(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Catalog prices are in USD");
+        }
+        return normalized;
 	}
 }

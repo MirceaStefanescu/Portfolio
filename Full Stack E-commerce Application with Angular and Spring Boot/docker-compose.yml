@@ -1,3 +1,5 @@
+name: fullstacke-commerceapplicationwithangularandspringboot
+
 services:
   mysql:
     image: mysql:8.4
@@ -7,14 +9,15 @@ services:
       MYSQL_PASSWORD: ecommerce
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql -h 127.0.0.1 -u $$MYSQL_USER -D $$MYSQL_DATABASE -Nse 'SELECT 1'"]
       interval: 5s
       timeout: 3s
       retries: 20
+    restart: unless-stopped
 
   backend:
     build: ./backend
@@ -22,10 +25,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ecommerce
       SPRING_DATASOURCE_USERNAME: ecommerce
       SPRING_DATASOURCE_PASSWORD: ecommerce
-      JWT_SECRET: change_me_to_a_long_random_string_at_least_32_bytes
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET to a random value of at least 32 bytes}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_MOCK_ENABLED: ${STRIPE_MOCK_ENABLED:-false}
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8081:8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -34,9 +38,11 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "4200:80"
+      - "127.0.0.1:4200:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   mysql-data:

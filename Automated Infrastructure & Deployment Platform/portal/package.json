@@ -5,9 +5,14 @@
   "description": "Self-service portal for generating deployment pipelines and infrastructure templates.",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "express": "^4.19.2"
-  }
+  },
+  "engines": {
+    "node": ">=26.10.0 <27"
+  },
+  "packageManager": "npm@12.2.0"
 }

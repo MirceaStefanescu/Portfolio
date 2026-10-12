@@ -6,6 +6,7 @@ import com.portfolio.pipeline.api.service.EventProducer;
 import com.portfolio.pipeline.api.service.PredictionQueryService;
 import com.portfolio.pipeline.api.service.PredictionSearchService;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,9 +36,8 @@ public class AnalyticsController {
   }
 
   @PostMapping("/events")
-  public ResponseEntity<Void> publishEvent(@RequestBody EventRequest request) {
-    eventProducer.publish(request);
-    return ResponseEntity.accepted().build();
+  public CompletableFuture<ResponseEntity<Void>> publishEvent(@RequestBody EventRequest request) {
+    return eventProducer.publish(request).thenApply(ignored -> ResponseEntity.accepted().build());
   }
 
   @GetMapping("/predictions")

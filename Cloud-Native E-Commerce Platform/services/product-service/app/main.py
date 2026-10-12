@@ -1,8 +1,8 @@
 import logging
 import os
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
@@ -14,21 +14,29 @@ from app.models import Product, ProductCreate, ProductUpdate
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
-app = FastAPI(title="Product Service")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    on_startup()
+    try:
+        yield
+    finally:
+        on_shutdown()
+
+
+app = FastAPI(title="Product Service", lifespan=lifespan)
 
 PRODUCTS_CREATED = Counter("products_created_total", "Total products created")
 PRODUCTS_UPDATED = Counter("products_updated_total", "Total products updated")
 PRODUCTS_DELETED = Counter("products_deleted_total", "Total products deleted")
 
 
-@app.on_event("startup")
 def on_startup() -> None:
     init_db()
     app.state.producer = build_producer()
     app.state.kafka_topic = os.getenv("KAFKA_TOPIC", "products")
 
 
-@app.on_event("shutdown")
 def on_shutdown() -> None:
     producer = getattr(app.state, "producer", None)
     if producer:
@@ -46,17 +54,21 @@ def metrics() -> Response:
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
-@app.get("/products", response_model=List[Product])
-def list_products() -> List[Product]:
+@app.get("/products", response_model=list[Product])
+def list_products() -> list[Product]:
     with get_connection() as conn:
-        rows = conn.execute("SELECT * FROM products ORDER BY created_at DESC").fetchall()
+        rows = conn.execute(
+            "SELECT * FROM products ORDER BY created_at DESC"
+        ).fetchall()
         return [Product(**dict(row)) for row in rows]
 
 
 @app.get("/products/{product_id}", response_model=Product)
 def get_product(product_id: str) -> Product:
     with get_connection() as conn:
-        row = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM products WHERE id = ?", (product_id,)
+        ).fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="Product not found")
         return Product(**dict(row))
@@ -107,14 +119,18 @@ def create_product(payload: ProductCreate) -> Product:
 @app.put("/products/{product_id}", response_model=Product)
 def update_product(product_id: str, payload: ProductUpdate) -> Product:
     with get_connection() as conn:
-        row = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM products WHERE id = ?", (product_id,)
+        ).fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="Product not found")
 
         existing = dict(row)
         updated = {
             "name": payload.name or existing["name"],
-            "description": payload.description if payload.description is not None else existing["description"],
+            "description": payload.description
+            if payload.description is not None
+            else existing["description"],
             "price_cents": payload.price_cents or existing["price_cents"],
             "currency": (payload.currency or existing["currency"]).upper(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -160,7 +176,9 @@ def update_product(product_id: str, payload: ProductUpdate) -> Product:
 @app.delete("/products/{product_id}", status_code=204)
 def delete_product(product_id: str) -> None:
     with get_connection() as conn:
-        row = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM products WHERE id = ?", (product_id,)
+        ).fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="Product not found")
         conn.execute("DELETE FROM products WHERE id = ?", (product_id,))
@@ -173,4 +191,3 @@ def delete_product(product_id: str) -> None:
         "product.deleted",
         {"id": product_id},
     )
-    return None

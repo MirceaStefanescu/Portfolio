@@ -22,10 +22,11 @@ verify:
 	./scripts/pipeline.sh verify
 
 test:
+	bash scripts/test-pipeline.sh
 	./scripts/pipeline.sh scan
 
 down:
 	docker compose down -v
 
 clean:
-	rm -rf artifacts storage backups .keys
+	rm -rf artifacts

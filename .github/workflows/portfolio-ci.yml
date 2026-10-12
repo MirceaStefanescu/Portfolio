@@ -1,0 +1,127 @@
+name: Portfolio CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portfolio-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - directory: CI/CD Pipeline Automation
+            angular: false
+            build: false
+          - directory: Automated Infrastructure & Deployment Platform/portal
+            angular: false
+            build: false
+          - directory: Secure Secrets Management & Observability Toolkit/app
+            angular: false
+            build: false
+          - directory: Full Stack E-commerce Application with Angular and Spring Boot/frontend
+            angular: true
+            build: true
+          - directory: Real-Time Chat & Collaboration Platform/frontend
+            angular: true
+            build: true
+          - directory: Habit Tracker & Routine Coach SaaS/backend
+            angular: false
+            build: false
+          - directory: Habit Tracker & Routine Coach SaaS/frontend
+            angular: false
+            build: true
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26.10.0'
+          cache: npm
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
+      - run: npm ci
+      - if: ${{ matrix.angular }}
+        run: npm test -- --watch=false
+      - if: ${{ !matrix.angular }}
+        run: npm test
+      - if: ${{ matrix.build }}
+        run: npm run build
+      - if: ${{ matrix.directory == 'CI/CD Pipeline Automation' }}
+        run: npm run lint
+
+  java:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - directory: Event-Driven E-Commerce Platform/services/order-service
+            java: '25'
+          - directory: Event-Driven E-Commerce Platform/services/inventory-service
+            java: '25'
+          - directory: Full Stack E-commerce Application with Angular and Spring Boot/backend
+            java: '25'
+          - directory: Real-Time Chat & Collaboration Platform/backend
+            java: '25'
+          - directory: Secure RAG Service & Knowledge API/api
+            java: '25'
+          - directory: Predictive Analytics Pipeline on Kubernetes/api
+            java: '25'
+          - directory: Predictive Analytics Pipeline on Kubernetes/flink
+            java: '11'
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - run: mvn --batch-mode --no-transfer-progress --strict-checksums verify
+
+  cloud-native-python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [product-service, order-service, payment-service]
+    defaults:
+      run:
+        working-directory: Cloud-Native E-Commerce Platform/services/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+          cache: pip
+          cache-dependency-path: Cloud-Native E-Commerce Platform/services/*/requirements*.txt
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m ruff check app tests
+      - run: python -m ruff format --check app tests
+      - run: python -m pytest -q
+
+  launcher:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: bash tests/test-portfolio-launcher.sh
+      - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promote.sh"
+      - run: bash "DevSecOps Pipeline with SBOM & SLSA/scripts/test-pipeline.sh"

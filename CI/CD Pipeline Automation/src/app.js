@@ -12,9 +12,9 @@ function createApp() {
   const httpRequestsTotal = new promClient.Counter({
     name: "http_requests_total",
     help: "Total number of HTTP requests",
-    labelNames: ["method", "route", "status"]
+    labelNames: ["method", "route", "status"],
+    registers: [register]
   });
-  register.registerMetric(httpRequestsTotal);
 
   app.use(express.json());
   app.use(express.static(path.join(__dirname, "..", "public")));

@@ -6,6 +6,7 @@ import { ChatMessage, ChatRoom, UserProfile } from "./models";
 
 @Component({
   selector: "app-root",
+  standalone: false,
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.css"]
 })
@@ -19,6 +20,7 @@ export class AppComponent implements OnInit, OnDestroy {
   connected = false;
 
   private readonly subscriptions: Subscription[] = [];
+  private historySubscription?: Subscription;
 
   constructor(private chatService: ChatService, private authService: AuthService) {}
 
@@ -33,7 +35,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.subscriptions.push(
       this.chatService.messages$.subscribe((message) => {
-        if (this.selectedRoom && message.roomId === this.selectedRoom.id) {
+        if (this.selectedRoom && message.roomId === this.selectedRoom.id
+            && !this.messages.some((existing) => existing.id === message.id)) {
           this.messages = [...this.messages, message];
         }
       })
@@ -64,16 +67,16 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   selectRoom(room: ChatRoom): void {
+    this.historySubscription?.unsubscribe();
     this.selectedRoom = room;
     this.messages = [];
     this.chatService.subscribeToRoom(room.id);
-    this.chatService.getMessages(room.id).subscribe({
+    this.historySubscription = this.chatService.getMessages(room.id).subscribe({
       next: (messages) => {
-        this.messages = messages;
+        const merged = new Map([...messages, ...this.messages].map((message) => [message.id, message]));
+        this.messages = [...merged.values()];
       },
-      error: () => {
-        this.messages = [];
-      }
+      error: () => { /* Keep messages already received over the live connection. */ }
     });
   }
 
@@ -103,8 +106,9 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     const sender = this.user?.displayName || this.user?.username || "anonymous";
-    this.chatService.sendMessage(this.selectedRoom.id, sender, content);
-    this.newMessage = "";
+    if (this.chatService.sendMessage(this.selectedRoom.id, sender, content)) {
+      this.newMessage = "";
+    }
   }
 
   login(): void {
@@ -116,6 +120,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.historySubscription?.unsubscribe();
     this.subscriptions.forEach((subscription) => subscription.unsubscribe());
     this.chatService.disconnect();
   }

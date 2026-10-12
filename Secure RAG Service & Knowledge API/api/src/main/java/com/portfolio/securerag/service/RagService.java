@@ -31,6 +31,9 @@ public class RagService {
                       QdrantClient qdrantClient,
                       AnswerComposer answerComposer,
                       AuditLogService auditLogService) {
+        if (ragProperties.getTopK() < 1 || ragProperties.getTopK() > 100) {
+            throw new IllegalArgumentException("Default top-k must be between 1 and 100.");
+        }
         this.ragProperties = ragProperties;
         this.qdrantProperties = qdrantProperties;
         this.embeddingService = embeddingService;

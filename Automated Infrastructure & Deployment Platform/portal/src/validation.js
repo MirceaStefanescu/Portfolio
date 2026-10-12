@@ -1,6 +1,12 @@
 const MAX_APP_COUNT = 50;
 
 function normalizeInput(body = {}) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return { valid: false, error: "Request must be a JSON object." };
+  }
+  if (body.appCount !== undefined && !Number.isInteger(Number(body.appCount))) {
+    return { valid: false, error: "App count must be an integer." };
+  }
   const rawAppName = String(body.appName || "").trim().toLowerCase();
   const rawEnvironment = String(body.environment || "").trim().toLowerCase();
   const provider = String(body.provider || "github").trim().toLowerCase();
@@ -33,7 +39,7 @@ function normalizeInput(body = {}) {
 }
 
 function isSafeName(value) {
-  return Boolean(value) && /^[a-z0-9-]+$/.test(value);
+  return typeof value === "string" && value.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(value);
 }
 
 module.exports = {

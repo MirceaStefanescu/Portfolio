@@ -39,8 +39,8 @@ variable "db_username" {
 }
 
 variable "db_password" {
-  type    = string
-  default = "chat"
+  type      = string
+  default   = "chat"
   sensitive = true
 }
 
@@ -50,7 +50,7 @@ variable "github_client_id" {
 }
 
 variable "github_client_secret" {
-  type    = string
-  default = ""
+  type      = string
+  default   = ""
   sensitive = true
 }

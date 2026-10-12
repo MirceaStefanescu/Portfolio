@@ -42,6 +42,11 @@ export class ChatService implements OnDestroy {
       }
     };
 
+    this.client.onWebSocketClose = () => {
+      this.roomSubscription = undefined;
+      this.connectedSubject.next(false);
+    };
+
     this.client.onDisconnect = () => {
       this.connectedSubject.next(false);
     };
@@ -50,8 +55,9 @@ export class ChatService implements OnDestroy {
   }
 
   disconnect(): void {
-    this.roomSubscription?.unsubscribe();
-    this.client?.deactivate();
+    if (this.client?.connected) this.roomSubscription?.unsubscribe();
+    this.roomSubscription = undefined;
+    void this.client?.deactivate();
     this.connectedSubject.next(false);
   }
 
@@ -69,15 +75,21 @@ export class ChatService implements OnDestroy {
     });
   }
 
-  sendMessage(roomId: string, sender: string | null, content: string): void {
+  sendMessage(roomId: string, sender: string | null, content: string): boolean {
     if (!this.client || !this.client.connected) {
-      return;
+      return false;
     }
 
-    this.client.publish({
-      destination: `/app/rooms/${roomId}/send`,
-      body: JSON.stringify({ sender, content })
-    });
+    try {
+      this.client.publish({
+        destination: `/app/rooms/${roomId}/send`,
+        body: JSON.stringify({ sender, content })
+      });
+      return true;
+    } catch {
+      this.connectedSubject.next(false);
+      return false;
+    }
   }
 
   listRooms(): Observable<ChatRoom[]> {

@@ -1,14 +1,8 @@
-from fastapi.testclient import TestClient
-
-from app.main import app
+from concurrent.futures import ThreadPoolExecutor
 
 
-def test_create_payment(tmp_path, monkeypatch):
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "payments.db"))
-    monkeypatch.setenv("KAFKA_ENABLED", "false")
-    monkeypatch.setenv("RABBITMQ_ENABLED", "false")
+def test_create_payment(client):
 
-    client = TestClient(app)
     payload = {"order_id": "order-1", "amount_cents": 1200, "currency": "usd"}
 
     response = client.post("/payments", json=payload)
@@ -20,3 +14,22 @@ def test_create_payment(tmp_path, monkeypatch):
     assert get_response.status_code == 200
     fetched = get_response.json()
     assert fetched["order_id"] == payload["order_id"]
+
+
+def test_repeated_and_concurrent_requests_create_one_payment(client):
+    payload = {"order_id": "same-order", "amount_cents": 1200, "currency": "usd"}
+    with ThreadPoolExecutor(max_workers=4) as workers:
+        responses = list(
+            workers.map(lambda _: client.post("/payments", json=payload), range(4))
+        )
+    assert all(response.status_code == 201 for response in responses)
+    assert len({response.json()["id"] for response in responses}) == 1
+    assert len(client.get("/payments").json()) == 1
+
+
+def test_reusing_order_with_changed_payment_is_conflict(client):
+    payload = {"order_id": "same-order", "amount_cents": 1200, "currency": "usd"}
+    assert client.post("/payments", json=payload).status_code == 201
+    payload["amount_cents"] = 1201
+    assert client.post("/payments", json=payload).status_code == 409
+    assert client.get("/payments").json()[0]["amount_cents"] == 1200

@@ -1,6 +1,6 @@
 {
   "name": "contextual-qa",
-  "dataset": "datasets/qa_with_context.jsonl",
+  "dataset": "../datasets/qa_with_context.jsonl",
   "metrics": ["accuracy", "hallucination_rate"],
   "prompt_template": "Use only the context to answer.\n\nContext:\n{context}\n\nQuestion: {input}\nAnswer:"
 }

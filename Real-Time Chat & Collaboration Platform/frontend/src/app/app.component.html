@@ -72,7 +72,7 @@
           [(ngModel)]="newMessage"
           placeholder="Type a message and hit enter"
         />
-        <button type="submit" [disabled]="!selectedRoom || !newMessage.trim()">Send</button>
+        <button type="submit" [disabled]="!connected || !selectedRoom || !newMessage.trim()">Send</button>
       </form>
     </section>
   </main>

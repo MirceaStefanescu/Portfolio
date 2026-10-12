@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+portfolio_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+
 projects=(
 "Automated Infrastructure & Deployment Platform|Automated Infrastructure & Deployment Platform|make dev|Portal: http://localhost:8080"
 "Cloud-Native E-Commerce Platform|Cloud-Native E-Commerce Platform|make dev|Product service: http://localhost:8010"
 "DevSecOps Pipeline with SBOM & SLSA|DevSecOps Pipeline with SBOM & SLSA|make dev|Optional: cp .env.example .env"
 "Event-Driven E-Commerce Platform|Event-Driven E-Commerce Platform|make dev|Order API: http://localhost:18081"
 "Full Stack E-commerce Application with Angular and Spring Boot|Full Stack E-commerce Application with Angular and Spring Boot|docker compose up --build|Frontend: http://localhost:4200"
+"Habit Tracker & Routine Coach SaaS|Habit Tracker & Routine Coach SaaS|make dev|Frontend: http://localhost:5173"
 "GitOps Platform - Argo CD & Helm|GitOps Platform - Argo CD & Helm|make dev|Requires kind, kubectl, helm"
 "Kubernetes FinOps & Cost Optimization|Kubernetes FinOps & Cost Optimization|make dev|Optional: cp .env.example .env"
 "Observability - New Relic & Prometheus|Observability - New Relic & Prometheus|make dev|Optional: cp .env.example .env"
@@ -61,10 +64,10 @@ PRESETS
 
 preset_indexes() {
   case "$1" in
-    fullstack) echo "2 4 5 10" ;;
-    data) echo "9" ;;
-    devops) echo "1 6 7 8 13" ;;
-    security) echo "3 11 12" ;;
+    fullstack) echo "2 4 5 6 11" ;;
+    data) echo "10" ;;
+    devops) echo "1 7 8 9 14" ;;
+    security) echo "3 12 13" ;;
     *) return 1 ;;
   esac
 }
@@ -87,12 +90,15 @@ show_preset() {
 
 resolve_index() {
   local input="$1"
-  if [[ "$input" =~ ^[0-9]+$ ]]; then
-    local idx=$((input - 1))
-    if (( idx >= 0 && idx < ${#names[@]} )); then
-      printf '%s' "$idx"
-      return 0
-    fi
+  if [[ "$input" =~ ^0*([1-9][0-9]*)$ ]]; then
+    local number="${BASH_REMATCH[1]}"
+    for i in "${!names[@]}"; do
+      if [[ "$number" == "$((i + 1))" ]]; then
+        printf '%s' "$i"
+        return 0
+      fi
+    done
+    return 1
   fi
 
   local input_lc="${input,,}"
@@ -109,14 +115,14 @@ resolve_index() {
 show_project() {
   local idx="$1"
   printf 'Project: %s\n' "${names[$idx]}"
-  printf 'Path: %s\n' "${paths[$idx]}"
+  printf 'Path: %s\n' "$portfolio_root/${paths[$idx]}"
   printf 'Run: %s\n' "${commands[$idx]}"
   printf 'Notes: %s\n' "${notes[$idx]}"
 }
 
 run_project() {
   local idx="$1"
-  local dir="${paths[$idx]}"
+  local dir="$portfolio_root/${paths[$idx]}"
   local cmd="${commands[$idx]}"
 
   if [[ ! -d "$dir" ]]; then

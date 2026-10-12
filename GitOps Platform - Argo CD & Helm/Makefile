@@ -81,8 +81,10 @@ promote:
 	./scripts/promote.sh "$(ENV)" "$(TAG)" "$(STRATEGY)"
 
 test:
+	bash scripts/test-promote.sh
 	helm lint charts/platform-service
 	if command -v terraform >/dev/null 2>&1; then \
+		set -e; \
 		terraform -chdir=terraform/aws fmt -check; \
 		terraform -chdir=terraform/azure fmt -check; \
 		terraform -chdir=terraform/gcp fmt -check; \

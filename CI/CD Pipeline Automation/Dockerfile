@@ -1,8 +1,8 @@
-FROM node:20-slim
+FROM node:26.10.0-slim
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev --ignore-scripts
 
 COPY src ./src
 COPY public ./public
