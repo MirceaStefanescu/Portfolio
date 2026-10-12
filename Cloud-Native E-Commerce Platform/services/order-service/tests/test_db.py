@@ -1,6 +1,7 @@
 import sqlite3
 
 import pytest
+
 from app.db import get_connection
 
 
