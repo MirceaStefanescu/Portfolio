@@ -1,12 +1,14 @@
 import json
 import logging
 import os
+import sqlite3
 import threading
-import time
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 import pika
 from kafka import KafkaProducer
+from kafka.errors import KafkaError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -19,7 +21,7 @@ def rabbitmq_enabled() -> bool:
     return os.getenv("RABBITMQ_ENABLED", "true").lower() == "true"
 
 
-def build_producer() -> Optional[KafkaProducer]:
+def build_producer() -> KafkaProducer | None:
     if not kafka_enabled():
         LOGGER.info("Kafka disabled via KAFKA_ENABLED=false")
         return None
@@ -33,10 +35,10 @@ def build_producer() -> Optional[KafkaProducer]:
 
 
 def publish_event(
-    producer: Optional[KafkaProducer],
+    producer: KafkaProducer | None,
     topic: str,
     event_type: str,
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
 ) -> None:
     if producer is None:
         return
@@ -44,14 +46,14 @@ def publish_event(
     event = {"event_type": event_type, "payload": payload}
     try:
         producer.send(topic, event).get(timeout=5)
-    except Exception as exc:  # pragma: no cover - best effort
+    except KafkaError as exc:  # pragma: no cover - broker integration
         LOGGER.warning("Failed to publish Kafka event: %s", exc)
 
 
 def start_payment_request_consumer(
-    on_message: Callable[[Dict[str, Any]], None],
+    on_message: Callable[[dict[str, Any]], None],
     stop_event: threading.Event,
-) -> Optional[threading.Thread]:
+) -> threading.Thread | None:
     if not rabbitmq_enabled():
         return None
 
@@ -64,11 +66,14 @@ def start_payment_request_consumer(
     return thread
 
 
-def _rabbit_loop(on_message: Callable[[Dict[str, Any]], None], stop_event: threading.Event) -> None:
+def _rabbit_loop(
+    on_message: Callable[[dict[str, Any]], None], stop_event: threading.Event
+) -> None:
     url = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
     queue = os.getenv("PAYMENT_QUEUE", "payment.requests")
 
     while not stop_event.is_set():
+        connection = None
         try:
             params = pika.URLParameters(url)
             connection = pika.BlockingConnection(params)
@@ -79,18 +84,24 @@ def _rabbit_loop(on_message: Callable[[Dict[str, Any]], None], stop_event: threa
             def callback(ch, method, properties, body):
                 try:
                     payload = json.loads(body.decode("utf-8"))
+                    if not isinstance(payload, dict):
+                        raise TypeError("Payment request must be an object")
                     on_message(payload)
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                except Exception as exc:  # pragma: no cover - best effort
-                    LOGGER.warning("Failed to process payment request: %s", exc)
+                except (ValueError, TypeError) as exc:
+                    LOGGER.warning("Invalid payment request: %s", exc)
+                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+                except sqlite3.Error:
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+                    raise
+                else:
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
 
             channel.basic_consume(queue=queue, on_message_callback=callback)
-
             while not stop_event.is_set():
                 connection.process_data_events(time_limit=1)
-
-            connection.close()
-        except Exception as exc:  # pragma: no cover - best effort
+        except (pika.exceptions.AMQPError, OSError, sqlite3.Error) as exc:
             LOGGER.warning("RabbitMQ consumer error: %s", exc)
-            time.sleep(5)
+        finally:
+            if connection is not None and connection.is_open:
+                connection.close()
+        stop_event.wait(5)

@@ -22,7 +22,14 @@ public class JwtService {
 			@Value("${app.jwt.issuer}") String issuer,
 			@Value("${app.jwt.ttl-minutes}") long ttlMinutes
 	) {
-		this.secret = secret;
+        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32
+                || secret.startsWith("change_me")) {
+            throw new IllegalArgumentException("Configure JWT_SECRET with at least 32 random bytes");
+        }
+        if (issuer == null || issuer.isBlank() || ttlMinutes <= 0) {
+            throw new IllegalArgumentException("JWT issuer and positive lifetime are required");
+        }
+        this.secret = secret;
 		this.issuer = issuer;
 		this.ttl = Duration.ofMinutes(ttlMinutes);
 	}
@@ -57,6 +64,7 @@ public class JwtService {
 	private Claims parseClaims(String token) {
 		return Jwts.parser()
 				.verifyWith(signingKey())
+                .requireIssuer(issuer)
 				.build()
 				.parseSignedClaims(token)
 				.getPayload();

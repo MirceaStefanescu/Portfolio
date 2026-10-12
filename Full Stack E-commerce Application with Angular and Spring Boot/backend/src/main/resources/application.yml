@@ -26,9 +26,10 @@ management:
 app:
   jwt:
     issuer: portofolio
-    secret: ${JWT_SECRET:change_me_to_a_long_random_string_at_least_32_bytes}
+    secret: ${JWT_SECRET:}
     ttl-minutes: ${JWT_TTL_MINUTES:60}
 
 stripe:
+  mock-enabled: ${STRIPE_MOCK_ENABLED:false}
   secret-key: ${STRIPE_SECRET_KEY:}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:}

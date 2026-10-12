@@ -52,8 +52,8 @@ resource "kubernetes_deployment" "blue" {
 
       spec {
         container {
-          name             = "app"
-          image            = var.image
+          name              = "app"
+          image             = var.image
           image_pull_policy = "IfNotPresent"
 
           port {
@@ -120,8 +120,8 @@ resource "kubernetes_deployment" "green" {
 
       spec {
         container {
-          name             = "app"
-          image            = var.image
+          name              = "app"
+          image             = var.image
           image_pull_policy = "IfNotPresent"
 
           port {
@@ -197,8 +197,8 @@ resource "kubernetes_deployment" "rolling" {
 
       spec {
         container {
-          name             = "app"
-          image            = var.image
+          name              = "app"
+          image             = var.image
           image_pull_policy = "IfNotPresent"
 
           port {

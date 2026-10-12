@@ -1,7 +1,6 @@
 import re
 import string
 from collections import Counter
-from typing import Optional
 
 
 def _normalize(text: str) -> str:
@@ -32,7 +31,7 @@ def token_f1(prediction: str, expected: str) -> float:
     return 2 * precision * recall / (precision + recall)
 
 
-def hallucination_rate(prediction: str, context: Optional[str]) -> Optional[float]:
+def hallucination_rate(prediction: str, context: str | None) -> float | None:
     if not context:
         return None
     pred_tokens = re.findall(r"[a-zA-Z0-9]+", prediction.lower())
@@ -44,8 +43,8 @@ def hallucination_rate(prediction: str, context: Optional[str]) -> Optional[floa
 
 
 def score_metric(
-    metric: str, prediction: str, expected: Optional[str], context: Optional[str]
-) -> Optional[float]:
+    metric: str, prediction: str, expected: str | None, context: str | None
+) -> float | None:
     if metric == "accuracy":
         if expected is None:
             return None

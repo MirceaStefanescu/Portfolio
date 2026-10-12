@@ -2,8 +2,8 @@ import logging
 import os
 import threading
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import Dict, List
 
 import requests
 from fastapi import FastAPI, HTTPException
@@ -21,14 +21,23 @@ from app.models import Order, OrderCreate, OrderItem
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
-app = FastAPI(title="Order Service")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    on_startup()
+    try:
+        yield
+    finally:
+        on_shutdown()
+
+
+app = FastAPI(title="Order Service", lifespan=lifespan)
 
 ORDERS_CREATED = Counter("orders_created_total", "Total orders created")
 ORDERS_PAID = Counter("orders_paid_total", "Total orders paid")
 ORDERS_FAILED = Counter("orders_failed_total", "Total orders failed")
 
 
-@app.on_event("startup")
 def on_startup() -> None:
     init_db()
     app.state.producer = build_producer()
@@ -40,9 +49,13 @@ def on_startup() -> None:
     )
 
 
-@app.on_event("shutdown")
 def on_shutdown() -> None:
     app.state.stop_event.set()
+    thread = app.state.consumer_thread
+    if thread is not None:
+        thread.join(timeout=5)
+        if thread.is_alive():
+            raise RuntimeError("Consumer did not stop; producer remains open")
     producer = getattr(app.state, "producer", None)
     if producer:
         producer.flush()
@@ -63,9 +76,14 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _fetch_product(product_id: str) -> Dict:
+def _fetch_product(product_id: str) -> dict:
     base_url = os.getenv("PRODUCT_SERVICE_URL", "http://product-service:8000")
-    response = requests.get(f"{base_url}/products/{product_id}", timeout=5)
+    try:
+        response = requests.get(f"{base_url}/products/{product_id}", timeout=5)
+    except requests.RequestException as exc:
+        raise HTTPException(
+            status_code=502, detail="Product service unavailable"
+        ) from exc
     if response.status_code == 404:
         raise HTTPException(status_code=400, detail=f"Product {product_id} not found")
     if response.status_code >= 400:
@@ -73,7 +91,7 @@ def _fetch_product(product_id: str) -> Dict:
     return response.json()
 
 
-def _load_items(order_id: str) -> List[OrderItem]:
+def _load_items(order_id: str) -> list[OrderItem]:
     with get_connection() as conn:
         rows = conn.execute(
             "SELECT product_id, name, quantity, price_cents FROM order_items WHERE order_id = ?",
@@ -91,32 +109,34 @@ def _load_order(order_id: str) -> Order:
         return Order(items=items, **dict(row))
 
 
-def _update_order_status(order_id: str, status: str) -> None:
+def _update_order_status(order_id: str, status: str) -> bool:
     with get_connection() as conn:
-        conn.execute(
-            "UPDATE orders SET status = ?, updated_at = ? WHERE id = ?",
-            (status, _now(), order_id),
+        result = conn.execute(
+            "UPDATE orders SET status = ?, updated_at = ? WHERE id = ? AND status != ?",
+            (status, _now(), order_id, status),
         )
-        conn.commit()
+        return result.rowcount > 0
 
 
-def handle_payment_event(event: Dict) -> None:
+def handle_payment_event(event: dict) -> None:
+    if not isinstance(event, dict) or not isinstance(event.get("payload"), dict):
+        raise TypeError("Invalid payment event")
     event_type = event.get("event_type")
-    payload = event.get("payload", {})
+    payload = event["payload"]
     order_id = payload.get("order_id")
     if not order_id:
         return
 
-    if event_type == "payment.authorized":
-        _update_order_status(order_id, "paid")
+    if event_type == "payment.authorized" and _update_order_status(order_id, "paid"):
         ORDERS_PAID.inc()
-    elif event_type == "payment.failed":
-        _update_order_status(order_id, "payment_failed")
+    elif event_type == "payment.failed" and _update_order_status(
+        order_id, "payment_failed"
+    ):
         ORDERS_FAILED.inc()
 
 
-@app.get("/orders", response_model=List[Order])
-def list_orders() -> List[Order]:
+@app.get("/orders", response_model=list[Order])
+def list_orders() -> list[Order]:
     with get_connection() as conn:
         rows = conn.execute("SELECT * FROM orders ORDER BY created_at DESC").fetchall()
     orders = []
@@ -135,9 +155,17 @@ def get_order(order_id: str) -> Order:
 @app.post("/orders", response_model=Order, status_code=201)
 def create_order(payload: OrderCreate) -> Order:
     if not payload.items:
-        raise HTTPException(status_code=400, detail="Order must include at least one item")
+        raise HTTPException(
+            status_code=400, detail="Order must include at least one item"
+        )
 
-    items: List[OrderItem] = []
+    product_ids = [item.product_id for item in payload.items]
+    if len(product_ids) != len(set(product_ids)):
+        raise HTTPException(
+            status_code=400, detail="Duplicate products are not supported"
+        )
+
+    items: list[OrderItem] = []
     total_cents = 0
     currency = None
 
@@ -145,7 +173,9 @@ def create_order(payload: OrderCreate) -> Order:
         product = _fetch_product(item.product_id)
         product_currency = product["currency"]
         if currency and product_currency != currency:
-            raise HTTPException(status_code=400, detail="Mixed currencies are not supported")
+            raise HTTPException(
+                status_code=400, detail="Mixed currencies are not supported"
+            )
         currency = product_currency
         line_total = product["price_cents"] * item.quantity
         total_cents += line_total

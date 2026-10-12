@@ -27,9 +27,9 @@ qdrant:
   api-key: ${QDRANT_API_KEY:}
 
 security:
-  dev-api-key: ${DEV_API_KEY:dev-api-key}
+  dev-api-key: ${DEV_API_KEY:}
   jwt:
-    secret: ${JWT_SECRET:dev-secret-change-this-dev-secret-change-this}
+    secret: ${JWT_SECRET:}
     issuer: ${JWT_ISSUER:secure-rag}
     ttl-seconds: ${JWT_TTL_SECONDS:3600}
 

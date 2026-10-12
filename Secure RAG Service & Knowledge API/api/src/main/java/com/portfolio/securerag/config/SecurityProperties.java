@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "security")
 public class SecurityProperties {
 
-    private String devApiKey = "dev-api-key";
+    private String devApiKey = "";
     private final Jwt jwt = new Jwt();
 
     public String getDevApiKey() {
@@ -21,7 +21,7 @@ public class SecurityProperties {
     }
 
     public static class Jwt {
-        private String secret = "dev-secret-change-this-dev-secret-change-this";
+        private String secret = "";
         private String issuer = "secure-rag";
         private long ttlSeconds = 3600;
 

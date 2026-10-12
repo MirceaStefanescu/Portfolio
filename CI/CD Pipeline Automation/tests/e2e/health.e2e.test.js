@@ -1,33 +1,35 @@
+const { describe, it, before, after } = require("node:test");
+const assert = require("node:assert/strict");
 const { startServer } = require("../../src/server");
 
 describe("e2e", () => {
   let server;
   let baseUrl;
 
-  beforeAll(() => {
+  before(() => {
     const started = startServer(0);
     server = started.server;
     const { port } = server.address();
     baseUrl = `http://127.0.0.1:${port}`;
   });
 
-  afterAll((done) => {
-    server.close(done);
-  });
+  after(() => new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  }));
 
   it("serves the homepage", async () => {
     const response = await fetch(`${baseUrl}/`);
 
-    expect(response.status).toBe(200);
+    assert.equal(response.status, 200);
     const body = await response.text();
-    expect(body).toContain("CI/CD Pipeline Automation");
+    assert.ok(body.includes("CI/CD Pipeline Automation"));
   });
 
   it("exposes metrics", async () => {
     const response = await fetch(`${baseUrl}/metrics`);
 
-    expect(response.status).toBe(200);
+    assert.equal(response.status, 200);
     const body = await response.text();
-    expect(body).toContain("http_requests_total");
+    assert.ok(body.includes("http_requests_total"));
   });
 });

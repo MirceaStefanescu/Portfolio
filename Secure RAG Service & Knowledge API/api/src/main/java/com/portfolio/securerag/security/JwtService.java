@@ -47,6 +47,12 @@ public class JwtService {
     }
 
     private Key buildKey(String secret) {
+        if (secret == null || secret.startsWith("dev-secret")) {
+            throw new IllegalArgumentException("Configure a random JWT_SECRET.");
+        }
+        if (securityProperties.getJwt().getTtlSeconds() <= 0) {
+            throw new IllegalArgumentException("JWT lifetime must be positive.");
+        }
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         if (keyBytes.length < 32) {
             throw new IllegalArgumentException("JWT secret must be at least 32 bytes.");

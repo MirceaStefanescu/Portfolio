@@ -9,16 +9,22 @@ service:
   type: ClusterIP
   port: 80
 
-resources: {}
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# Existing Kubernetes Secret with JWT_SECRET and DEV_API_KEY.
+existingSecret: secure-rag-secrets
 
 env:
   qdrantUrl: http://qdrant:6333
   qdrantCollection: rag_docs
   qdrantApiKey: ""
-  jwtSecret: dev-secret-change-this-dev-secret-change-this
   jwtIssuer: secure-rag
   jwtTtlSeconds: "3600"
-  devApiKey: dev-api-key
   ragVectorSize: "64"
   ragChunkSize: "800"
   ragChunkOverlap: "120"

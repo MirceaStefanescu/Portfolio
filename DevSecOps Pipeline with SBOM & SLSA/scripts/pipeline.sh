@@ -138,7 +138,12 @@ sign_artifacts() {
 }
 
 verify_signatures() {
-  ensure_keys
+  for required in "$KEYS_DIR/cosign.pub" "$ARTIFACTS_DIR/sbom.sig" "$ARTIFACTS_DIR/sbom.cdx.json"; do
+    if [ ! -f "$required" ]; then
+      echo "Missing verification input: $required" >&2
+      return 1
+    fi
+  done
   log "verifying signatures"
   docker run --rm --network host \
     -v "$KEYS_DIR:/keys:ro" \

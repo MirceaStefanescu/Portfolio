@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:ecommerce-test;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+app:
+  jwt:
+    secret: test-only-not-for-deployment-0123456789abcdef
+stripe:
+  secret-key: ""
+  mock-enabled: true

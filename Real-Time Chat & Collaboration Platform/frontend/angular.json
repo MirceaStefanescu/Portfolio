@@ -9,18 +9,25 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular/build:application",
           "options": {
-            "outputPath": "dist/realtime-chat-frontend",
+            "outputPath": {
+              "base": "dist/realtime-chat-frontend",
+              "browser": ""
+            },
             "index": "src/index.html",
-            "main": "src/main.ts",
             "polyfills": [
               "zone.js"
             ],
             "tsConfig": "tsconfig.app.json",
-            "assets": ["src/assets"],
-            "styles": ["src/styles.css"],
-            "scripts": []
+            "assets": [
+              "src/assets"
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
+            "scripts": [],
+            "browser": "src/main.ts"
           },
           "configurations": {
             "production": {
@@ -38,22 +45,43 @@
                 }
               ],
               "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
             }
-          }
+          },
+          "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@angular/build:dev-server",
           "options": {
-            "browserTarget": "realtime-chat-frontend:build"
+            "buildTarget": "realtime-chat-frontend:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "realtime-chat-frontend:build:production"
+              "buildTarget": "realtime-chat-frontend:build:production"
+            },
+            "development": {
+              "buildTarget": "realtime-chat-frontend:build:development"
             }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "tsconfig.spec.json"
           }
         }
       }
     }
   },
-  "defaultProject": "realtime-chat-frontend"
+  "cli": {
+    "cache": {
+      "enabled": true
+    },
+    "analytics": false
+  }
 }

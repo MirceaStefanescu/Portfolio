@@ -20,7 +20,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
-      serviceAccountName: {{ include "secure-rag.fullname" . }}
+      serviceAccountName: {{ if .Values.serviceAccount.create }}{{ default (include "secure-rag.fullname" .) .Values.serviceAccount.name }}{{ else }}{{ default "default" .Values.serviceAccount.name }}{{ end }}
       containers:
         - name: api
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -36,13 +36,19 @@ spec:
             - name: QDRANT_API_KEY
               value: {{ .Values.env.qdrantApiKey | quote }}
             - name: JWT_SECRET
-              value: {{ .Values.env.jwtSecret | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | quote }}
+                  key: JWT_SECRET
             - name: JWT_ISSUER
               value: {{ .Values.env.jwtIssuer | quote }}
             - name: JWT_TTL_SECONDS
               value: {{ .Values.env.jwtTtlSeconds | quote }}
             - name: DEV_API_KEY
-              value: {{ .Values.env.devApiKey | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | quote }}
+                  key: DEV_API_KEY
             - name: RAG_VECTOR_SIZE
               value: {{ .Values.env.ragVectorSize | quote }}
             - name: RAG_CHUNK_SIZE

@@ -59,7 +59,7 @@ and alerts flow to Prometheus and Grafana to validate releases and uptime.
 - Config management: Ansible for config templates and rollout actions.
 - CI/CD: Jenkins for pipeline orchestration.
 - Observability: Prometheus + Grafana for metrics and alerts.
-- Tests: Jest + Supertest for unit, integration, and e2e coverage.
+- Tests: Node.js built-in test runner + Supertest for unit, integration, and e2e coverage.
 
 ## Quickstart (local)
 Prereqs:

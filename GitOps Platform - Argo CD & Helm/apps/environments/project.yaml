@@ -6,7 +6,7 @@ metadata:
 spec:
   description: GitOps platform environments
   sourceRepos:
-    - https://github.com/MirceaStefanescu/Portofolio.git
+    - https://github.com/MirceaStefanescu/Portfolio.git
   destinations:
     - namespace: platform-dev
       server: https://kubernetes.default.svc

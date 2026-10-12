@@ -51,7 +51,7 @@ test(
   const serverPath = path.join(__dirname, "..", "src", "server.js");
   const env = { ...process.env, PORT: String(port) };
 
-  const child = spawn("node", [serverPath], {
+  const child = spawn(process.execPath, [serverPath], {
     env,
     stdio: ["ignore", "pipe", "pipe"]
   });

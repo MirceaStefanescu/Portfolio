@@ -1,14 +1,22 @@
 import os
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
+
 
 def db_path() -> str:
     return os.getenv("DB_PATH", "/data/products.db")
 
 
-def get_connection() -> sqlite3.Connection:
+@contextmanager
+def get_connection() -> Iterator[sqlite3.Connection]:
     conn = sqlite3.connect(db_path())
-    conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        conn.row_factory = sqlite3.Row
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def init_db() -> None:

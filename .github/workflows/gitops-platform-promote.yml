@@ -24,6 +24,10 @@ permissions:
 jobs:
   promote:
     runs-on: ubuntu-latest
+    env:
+      TARGET_ENVIRONMENT: ${{ inputs.environment }}
+      IMAGE_TAG: ${{ inputs.image_tag }}
+      ROLLOUT_STRATEGY: ${{ inputs.strategy }}
     defaults:
       run:
         working-directory: "GitOps Platform - Argo CD & Helm"
@@ -35,7 +39,7 @@ jobs:
 
       - name: Update environment values
         run: |
-          ./scripts/promote.sh "${{ inputs.environment }}" "${{ inputs.image_tag }}" "${{ inputs.strategy }}"
+          bash ./scripts/promote.sh "$TARGET_ENVIRONMENT" "$IMAGE_TAG" "$ROLLOUT_STRATEGY"
 
       - name: Commit and push
         run: |
@@ -45,5 +49,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -am "promote: ${{ inputs.environment }} -> ${{ inputs.image_tag }}"
+          git add -- "charts/platform-service/env/$TARGET_ENVIRONMENT.yaml"
+          git commit -m "promote: $TARGET_ENVIRONMENT -> $IMAGE_TAG"
           git push

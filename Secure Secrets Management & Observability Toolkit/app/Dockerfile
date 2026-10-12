@@ -1,9 +1,9 @@
-FROM node:18-alpine
+FROM node:26.10.0-alpine
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install --production
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts
 
 COPY src ./src
 COPY entrypoint.sh /entrypoint.sh

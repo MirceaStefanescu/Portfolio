@@ -30,6 +30,9 @@ public class AuthController {
                           SecurityProperties securityProperties,
                           AuditLogService auditLogService) {
         this.jwtService = jwtService;
+        if (securityProperties.getDevApiKey() == null || securityProperties.getDevApiKey().length() < 32) {
+            throw new IllegalArgumentException("Configure DEV_API_KEY with at least 32 random characters.");
+        }
         this.securityProperties = securityProperties;
         this.auditLogService = auditLogService;
     }
@@ -37,7 +40,9 @@ public class AuthController {
     @PostMapping("/token")
     public ResponseEntity<TokenResponse> token(@RequestHeader("X-Dev-Key") String devKey,
                                                @Valid @RequestBody TokenRequest request) {
-        if (!securityProperties.getDevApiKey().equals(devKey)) {
+        if (devKey == null || !java.security.MessageDigest.isEqual(
+                securityProperties.getDevApiKey().getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                devKey.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
             auditLogService.record("anonymous", "TOKEN", request.username(), "DENIED", "invalid dev key");
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid dev key");
         }

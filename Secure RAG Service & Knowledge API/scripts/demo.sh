@@ -2,7 +2,7 @@
 set -euo pipefail
 
 API_URL=${API_URL:-http://localhost:8090}
-DEV_KEY=${DEV_API_KEY:-dev-api-key}
+DEV_KEY=${DEV_API_KEY:?Set the configured DEV_API_KEY before running this demo}
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 DOC_FILE="$SCRIPT_DIR/../docs/sample-docs/oss-doc.json"

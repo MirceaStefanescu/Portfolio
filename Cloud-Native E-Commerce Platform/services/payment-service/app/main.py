@@ -2,8 +2,8 @@ import logging
 import os
 import threading
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
@@ -15,13 +15,22 @@ from app.models import Payment, PaymentCreate
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
-app = FastAPI(title="Payment Service")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    on_startup()
+    try:
+        yield
+    finally:
+        on_shutdown()
+
+
+app = FastAPI(title="Payment Service", lifespan=lifespan)
 
 PAYMENTS_PROCESSED = Counter("payments_processed_total", "Total payments processed")
 PAYMENTS_FAILED = Counter("payments_failed_total", "Total payments failed")
 
 
-@app.on_event("startup")
 def on_startup() -> None:
     init_db()
     app.state.producer = build_producer()
@@ -33,9 +42,13 @@ def on_startup() -> None:
     )
 
 
-@app.on_event("shutdown")
 def on_shutdown() -> None:
     app.state.stop_event.set()
+    thread = app.state.consumer_thread
+    if thread is not None:
+        thread.join(timeout=5)
+        if thread.is_alive():
+            raise RuntimeError("Consumer did not stop; producer remains open")
     producer = getattr(app.state, "producer", None)
     if producer:
         producer.flush()
@@ -71,6 +84,18 @@ def _create_payment(order_id: str, amount_cents: int, currency: str) -> Payment:
     )
 
     with get_connection() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        existing = conn.execute(
+            "SELECT * FROM payments WHERE order_id = ? ORDER BY created_at LIMIT 1",
+            (order_id,),
+        ).fetchone()
+        if existing is not None:
+            if (
+                existing["amount_cents"] != amount_cents
+                or existing["currency"] != currency.upper()
+            ):
+                raise ValueError("Order already has a payment with different details")
+            return Payment(**dict(existing))
         conn.execute(
             """
             INSERT INTO payments (id, order_id, status, amount_cents, currency, created_at)
@@ -102,18 +127,12 @@ def _create_payment(order_id: str, amount_cents: int, currency: str) -> Payment:
 
 
 def handle_payment_request(message: dict) -> None:
-    order_id = message.get("order_id")
-    amount_cents = message.get("amount_cents")
-    currency = message.get("currency")
-
-    if not order_id or amount_cents is None or not currency:
-        return
-
-    _create_payment(order_id, int(amount_cents), currency)
+    payload = PaymentCreate.model_validate(message)
+    _create_payment(payload.order_id, payload.amount_cents, payload.currency)
 
 
-@app.get("/payments", response_model=List[Payment])
-def list_payments(order_id: Optional[str] = None) -> List[Payment]:
+@app.get("/payments", response_model=list[Payment])
+def list_payments(order_id: str | None = None) -> list[Payment]:
     query = "SELECT * FROM payments"
     params = ()
     if order_id:
@@ -129,7 +148,9 @@ def list_payments(order_id: Optional[str] = None) -> List[Payment]:
 @app.get("/payments/{payment_id}", response_model=Payment)
 def get_payment(payment_id: str) -> Payment:
     with get_connection() as conn:
-        row = conn.execute("SELECT * FROM payments WHERE id = ?", (payment_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM payments WHERE id = ?", (payment_id,)
+        ).fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="Payment not found")
         return Payment(**dict(row))
@@ -137,4 +158,7 @@ def get_payment(payment_id: str) -> Payment:
 
 @app.post("/payments", response_model=Payment, status_code=201)
 def create_payment(payload: PaymentCreate) -> Payment:
-    return _create_payment(payload.order_id, payload.amount_cents, payload.currency)
+    try:
+        return _create_payment(payload.order_id, payload.amount_cents, payload.currency)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc

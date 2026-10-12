@@ -3,6 +3,9 @@ package com.portfolio.pipeline.api.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.portfolio.pipeline.api.model.EventRequest;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,12 +28,15 @@ public class EventProducer {
     this.topic = topic;
   }
 
-  public void publish(EventRequest request) {
+  public CompletableFuture<Void> publish(EventRequest request) {
     if (request.eventType() == null || request.eventType().isBlank()) {
       throw new IllegalArgumentException("eventType is required");
     }
 
     double value = request.value() == null ? 0.0 : request.value();
+    if (!Double.isFinite(value)) {
+      throw new IllegalArgumentException("value must be finite");
+    }
     Instant timestamp = request.timestamp() == null ? Instant.now() : request.timestamp();
 
     Map<String, Object> payload = new HashMap<>();
@@ -40,9 +46,13 @@ public class EventProducer {
 
     try {
       String json = objectMapper.writeValueAsString(payload);
-      kafkaTemplate.send(topic, request.eventType(), json);
+      return kafkaTemplate.send(topic, request.eventType(), json)
+          .<Void>thenApply(result -> null)
+          .exceptionally(error -> {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Event broker unavailable", error);
+          });
     } catch (Exception e) {
-      throw new IllegalStateException("Failed to serialize event", e);
+      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Event could not be published", e);
     }
   }
 }

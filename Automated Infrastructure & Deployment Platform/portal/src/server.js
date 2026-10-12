@@ -210,7 +210,7 @@ app.get("/api/metrics", (req, res) => {
       `portal_requests_total{endpoint=\"terraform\"} ${metrics.terraform}`,
       `portal_requests_total{endpoint=\"helm\"} ${metrics.helm}`,
       `portal_requests_total{endpoint=\"services\"} ${metrics.services}`
-    ].join("\n")
+    ].join("\n") + "\n"
   );
 });
 
@@ -219,13 +219,20 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
+  if (err.type === "entity.parse.failed" || err.type === "entity.too.large") {
+    const status = err.type === "entity.too.large" ? 413 : 400;
+    return res.status(status).json({ error: status === 413 ? "Request too large" : "Invalid JSON", requestId: req.requestId });
+  }
   logError(err, { requestId: req.requestId, path: req.originalUrl });
   res.status(500).json({ error: "Internal server error", requestId: req.requestId });
 });
 
-app.listen(config.port, () => {
-  log("info", "server.ready", { port: config.port });
-});
+if (require.main === module) {
+  app.listen(config.port, () => {
+    log("info", "server.ready", { port: config.port });
+  });
+}
+module.exports = { app };
 
 function wrapAsync(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);

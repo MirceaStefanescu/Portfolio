@@ -13,7 +13,7 @@ This project demonstrates an end-to-end online shop with a modern SPA UI, RESTfu
 
 ## Tech stack
 - Backend: Spring Boot 4 (Java 21), Spring Security, JPA/Hibernate, JWT (mature, production-ready REST stack)
-- Frontend: Angular 21, TypeScript, RxJS (typed SPA with component-driven UI)
+- Frontend: Angular 22, TypeScript, RxJS (typed SPA with component-driven UI)
 - Infra: MySQL 8, Docker Compose, Nginx, Stripe API (local parity and external payment integration)
 - CI: GitHub Actions (planned)
 
@@ -34,10 +34,12 @@ This project demonstrates an end-to-end online shop with a modern SPA UI, RESTfu
 ## Quickstart (local)
 Prereqs:
 - Docker (recommended)
-- Or: Node.js 20+, Angular CLI, Java 21, Maven, MySQL 8+
+- Or: Node.js 22.12+ (or 24/26), Angular CLI, Java 21, Maven, MySQL 8+
 
 Run with Docker (one command):
 ```bash
+# Set JWT_SECRET to a randomly generated value of at least 32 bytes first.
+# For a local simulation only: export STRIPE_MOCK_ENABLED=true
 docker compose up --build
 ```
 Then open `http://localhost:4200`.
@@ -47,6 +49,8 @@ Run without Docker:
 # backend
 cd backend
 cp .env.example .env
+# Edit .env: set a random JWT_SECRET and choose Stripe test credentials or explicit mock mode.
+set -a; . ./.env; set +a
 ./mvnw spring-boot:run
 
 # frontend
@@ -86,7 +90,7 @@ npm test
 ```
 
 ## Security
-Secrets are loaded from environment variables (`backend/.env`, see `backend/.env.example`). Authentication uses Spring Security with JWTs, bcrypt password hashing, and Jakarta Validation for request input. This is a demo app and does not include production hardening like rate limiting, audit logging, or advanced fraud checks.
+Secrets are read from environment variables (see `backend/.env.example`). Spring Boot does not load `.env` automatically; export its values before starting. Do not commit `.env`. Authentication uses Spring Security with JWTs, bcrypt password hashing, and Jakarta Validation for request input. This is a demo app and does not include production hardening like rate limiting, audit logging, or advanced fraud checks.
 
 ## Roadmap / tradeoffs
 - Add UI screenshots and a short demo video.
@@ -96,7 +100,9 @@ Secrets are loaded from environment variables (`backend/.env`, see `backend/.env
 
 ## Notes / limitations
 - CORS is restricted to localhost origins by default.
-- Stripe runs in demo mode when no secret key is configured.
+- Without a Stripe key, payment requests return 503. Set `STRIPE_MOCK_ENABLED=true` explicitly for a local simulation; it cannot confirm real Stripe intent IDs. Mock payments do not charge money.
+- Catalog prices are in USD; orders reject other currencies.
+- Backend tests use an isolated in-memory H2 database and simulated payments. They do not access MySQL or Stripe.
 - REST endpoints include `GET /api/products`, `POST /api/auth/login`, and `POST /api/orders`.
 
 ## Decisions and rationale
