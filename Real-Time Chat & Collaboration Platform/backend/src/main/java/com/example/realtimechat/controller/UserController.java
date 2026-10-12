@@ -4,6 +4,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +23,11 @@ public class UserController {
   ) {
     this.demoAuthEnabled = demoAuthEnabled;
     this.demoUser = demoUser;
+  }
+
+  @GetMapping("/csrf")
+  public CsrfToken csrf(CsrfToken token) {
+    return token;
   }
 
   @GetMapping("/me")

@@ -1,6 +1,7 @@
 package com.portfolio.securerag.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -39,6 +40,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = header.substring(7);
+        UsernamePasswordAuthenticationToken authentication;
         try {
             Claims claims = jwtService.parseToken(token);
             List<String> roles = claims.get("roles", List.class);
@@ -50,16 +52,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(claims.getSubject(), token, authorities);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            filterChain.doFilter(request, response);
-        } catch (Exception ex) {
+            authentication = new UsernamePasswordAuthenticationToken(claims.getSubject(), token, authorities);
+        } catch (JwtException | IllegalArgumentException | ClassCastException ex) {
             logger.warn("JWT validation failed: {}", ex.getMessage());
             SecurityContextHolder.clearContext();
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Invalid or expired token\"}");
+            return;
         }
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        filterChain.doFilter(request, response);
     }
 }

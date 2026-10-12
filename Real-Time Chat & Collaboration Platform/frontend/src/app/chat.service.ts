@@ -1,10 +1,12 @@
 import { Injectable, OnDestroy } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { BehaviorSubject, Observable, Subject } from "rxjs";
+import { BehaviorSubject, firstValueFrom, Observable, Subject, switchMap } from "rxjs";
 import { Client, StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { environment } from "../environments/environment";
 import { ChatMessage, ChatRoom } from "./models";
+
+interface CsrfToken { headerName: string; token: string; }
 
 @Injectable({
   providedIn: "root"
@@ -34,6 +36,17 @@ export class ChatService implements OnDestroy {
       heartbeatOutgoing: 10000,
       debug: environment.production ? () => {} : (message) => console.log(message)
     });
+
+    const client = this.client;
+    client.beforeConnect = async () => {
+      try {
+        const csrf = await firstValueFrom(this.csrfToken());
+        client.connectHeaders = { [csrf.headerName]: csrf.token };
+      } catch {
+        if (this.client === client) this.connectedSubject.next(false);
+        await client.deactivate();
+      }
+    };
 
     this.client.onConnect = () => {
       this.connectedSubject.next(true);
@@ -99,11 +112,19 @@ export class ChatService implements OnDestroy {
   }
 
   createRoom(name: string): Observable<ChatRoom> {
-    return this.http.post<ChatRoom>(
-      `${environment.apiBaseUrl}/api/rooms`,
-      { name },
-      { withCredentials: true }
+    return this.csrfToken().pipe(
+      switchMap((csrf) => this.http.post<ChatRoom>(
+        `${environment.apiBaseUrl}/api/rooms`,
+        { name },
+        { withCredentials: true, headers: { [csrf.headerName]: csrf.token } }
+      ))
     );
+  }
+
+  private csrfToken(): Observable<CsrfToken> {
+    return this.http.get<CsrfToken>(`${environment.apiBaseUrl}/api/csrf`, {
+      withCredentials: true
+    });
   }
 
   getMessages(roomId: string, limit = 50): Observable<ChatMessage[]> {

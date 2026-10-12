@@ -2,10 +2,21 @@ const express = require("express");
 const cors = require("cors");
 const { randomUUID } = require("crypto");
 
-function createApp() {
-  const app = express();
+function createApp({ corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5173" } = {}) {
+  let allowedOrigin;
+  try {
+    const parsed = new URL(corsOrigin);
+    if (typeof corsOrigin !== "string" || !["http:", "https:"].includes(parsed.protocol) ||
+        parsed.origin !== corsOrigin || parsed.hostname.includes("*")) {
+      throw new Error("Invalid origin");
+    }
+    allowedOrigin = parsed.origin;
+  } catch {
+    throw new TypeError("CORS_ORIGIN must be one exact HTTP(S) origin without credentials, path, query, fragment, or wildcard.");
+  }
 
-  app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
+  const app = express();
+  app.use(cors({ origin: [allowedOrigin] }));
   app.use(express.json());
 
   const demoUser = {
