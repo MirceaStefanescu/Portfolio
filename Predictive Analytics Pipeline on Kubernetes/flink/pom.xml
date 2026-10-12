@@ -13,7 +13,8 @@
     <maven.compiler.release>${java.version}</maven.compiler.release>
     <flink.version>1.17.2</flink.version>
     <scala.binary.version>2.12</scala.binary.version>
-    <flink.jdbc.version>3.4.0-1.20</flink.jdbc.version>
+    <!-- The connector suffix must match the Flink runtime line (1.17). -->
+    <flink.jdbc.version>3.1.2-1.17</flink.jdbc.version>
     <flink.elasticsearch.version>3.0.1-1.17</flink.elasticsearch.version>
   </properties>
 
