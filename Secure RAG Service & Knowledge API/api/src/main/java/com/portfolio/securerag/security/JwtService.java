@@ -3,20 +3,19 @@ package com.portfolio.securerag.security;
 import com.portfolio.securerag.config.SecurityProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import javax.crypto.SecretKey;
 import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
 
     private final SecurityProperties securityProperties;
-    private final Key signingKey;
+    private final SecretKey signingKey;
 
     public JwtService(SecurityProperties securityProperties) {
         this.securityProperties = securityProperties;
@@ -28,25 +27,25 @@ public class JwtService {
         Instant expiry = now.plusSeconds(securityProperties.getJwt().getTtlSeconds());
 
         return Jwts.builder()
-                .setSubject(username)
-                .setIssuer(securityProperties.getJwt().getIssuer())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(expiry))
+                .subject(username)
+                .issuer(securityProperties.getJwt().getIssuer())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiry))
                 .claim("roles", roles)
-                .signWith(signingKey, SignatureAlgorithm.HS256)
+                .signWith(signingKey, Jwts.SIG.HS256)
                 .compact();
     }
 
     public Claims parseToken(String token) {
-        return Jwts.parserBuilder()
+        return Jwts.parser()
                 .requireIssuer(securityProperties.getJwt().getIssuer())
-                .setSigningKey(signingKey)
+                .verifyWith(signingKey)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
-    private Key buildKey(String secret) {
+    private SecretKey buildKey(String secret) {
         if (secret == null || secret.startsWith("dev-secret")) {
             throw new IllegalArgumentException("Configure a random JWT_SECRET.");
         }
