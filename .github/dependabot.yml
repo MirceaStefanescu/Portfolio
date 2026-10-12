@@ -1,0 +1,120 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: npm
+    directories:
+      - "/Automated Infrastructure & Deployment Platform/portal"
+      - "/CI/CD Pipeline Automation"
+      - "/Full Stack E-commerce Application with Angular and Spring Boot/frontend"
+      - "/Habit Tracker & Routine Coach SaaS/backend"
+      - "/Habit Tracker & Routine Coach SaaS/frontend"
+      - "/Real-Time Chat & Collaboration Platform/frontend"
+      - "/Secure Secrets Management & Observability Toolkit/app"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      compatible-updates:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security-updates:
+        applies-to: security-updates
+        patterns: ['*']
+
+  - package-ecosystem: maven
+    directories:
+      - "/Event-Driven E-Commerce Platform/services/inventory-service"
+      - "/Event-Driven E-Commerce Platform/services/order-service"
+      - "/Full Stack E-commerce Application with Angular and Spring Boot/backend"
+      - "/Predictive Analytics Pipeline on Kubernetes/api"
+      - "/Predictive Analytics Pipeline on Kubernetes/flink"
+      - "/Real-Time Chat & Collaboration Platform/backend"
+      - "/Secure RAG Service & Knowledge API/api"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      compatible-updates:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security-updates:
+        applies-to: security-updates
+        patterns: ['*']
+
+  - package-ecosystem: pip
+    directories:
+      - "/Cloud-Native E-Commerce Platform/services/order-service"
+      - "/Cloud-Native E-Commerce Platform/services/payment-service"
+      - "/Cloud-Native E-Commerce Platform/services/product-service"
+      - "/LLMOps Evaluation Harness"
+      - "/Prompt Quality & Safety"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      compatible-updates:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security-updates:
+        applies-to: security-updates
+        patterns: ['*']
+
+  - package-ecosystem: docker
+    directories:
+      - "/Automated Infrastructure & Deployment Platform/portal"
+      - "/CI/CD Pipeline Automation"
+      - "/Cloud-Native E-Commerce Platform/services/order-service"
+      - "/Cloud-Native E-Commerce Platform/services/payment-service"
+      - "/Cloud-Native E-Commerce Platform/services/product-service"
+      - "/DevSecOps Pipeline with SBOM & SLSA/app"
+      - "/Event-Driven E-Commerce Platform/services/inventory-service"
+      - "/Event-Driven E-Commerce Platform/services/order-service"
+      - "/Full Stack E-commerce Application with Angular and Spring Boot/backend"
+      - "/Full Stack E-commerce Application with Angular and Spring Boot/frontend"
+      - "/Predictive Analytics Pipeline on Kubernetes/api"
+      - "/Predictive Analytics Pipeline on Kubernetes/flink"
+      - "/Real-Time Chat & Collaboration Platform/backend"
+      - "/Real-Time Chat & Collaboration Platform/frontend"
+      - "/Secure RAG Service & Knowledge API/api"
+      - "/Secure Secrets Management & Observability Toolkit/app"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      compatible-updates:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security-updates:
+        applies-to: security-updates
+        patterns: ['*']
+
+  - package-ecosystem: terraform
+    directories:
+      - "/Automated Infrastructure & Deployment Platform/terraform/environments/dev"
+      - "/Automated Infrastructure & Deployment Platform/terraform/modules/platform"
+      - "/CI/CD Pipeline Automation/terraform/environments/aws-eks"
+      - "/CI/CD Pipeline Automation/terraform/environments/local-kind"
+      - "/CI/CD Pipeline Automation/terraform/modules/cicd-app"
+      - "/Cloud-Native E-Commerce Platform/infra/terraform"
+      - "/GitOps Platform - Argo CD & Helm/terraform/aws"
+      - "/GitOps Platform - Argo CD & Helm/terraform/azure"
+      - "/GitOps Platform - Argo CD & Helm/terraform/gcp"
+      - "/Real-Time Chat & Collaboration Platform/infra/terraform"
+      - "/Secure Secrets Management & Observability Toolkit/terraform/examples/local-vault"
+      - "/Secure Secrets Management & Observability Toolkit/terraform/modules/observability-stack"
+      - "/Secure Secrets Management & Observability Toolkit/terraform/modules/vault-policy"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      compatible-updates:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security-updates:
+        applies-to: security-updates
+        patterns: ['*']

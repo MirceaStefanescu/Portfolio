@@ -5,7 +5,7 @@ GitOps delivery platform for platform engineers and SREs who need repeatable, au
 ## Features
 - Argo CD app-of-apps manages dev/staging/prod with drift detection and self-healing.
 - Helm charts with environment-specific values stored in Git for consistent releases.
-- GitHub Actions promotion pipelines update env values and trigger Argo CD syncs with approvals.
+- GitHub Actions proposes environment changes in draft pull requests; reviewed merges can be reconciled by an independently configured Argo CD instance.
 - Terraform provisions EKS/AKS/GKE clusters with shared networking and IAM baselines.
 - Progressive delivery (canary and blue/green) with automated rollback gates.
 - Velero backups for cluster state and persistent volumes to support DR.
@@ -56,7 +56,20 @@ Promote an image tag:
 ```
 make promote ENV=staging TAG=6.5.4 STRATEGY=blueGreen
 ```
-GitHub Actions promotion: `.github/workflows/gitops-platform-promote.yml`.
+The root GitOps Platform Promote workflow starts from the default branch and opens
+a draft PR on a unique automation branch. It never pushes directly to main,
+approves a PR, or merges it. A no-op creates no branch or PR.
+
+Repository setup: allow GitHub Actions to create pull requests, retain a read-only
+default token, require Portfolio status on main, and configure dev/staging/prod
+environments for default-branch deployment access. Production should require an
+owner review. GitHub's creation setting also permits PR approvals; this workflow
+does not use that capability. No personal access token is required.
+
+Review the proposed diff and approve CI execution when GitHub requests it before
+merging. If PR creation fails after the branch push, inspect that branch and any
+existing PR instead of rerunning blindly. Argo CD and real deployments are not
+started by this workflow.
 
 Back up environments:
 ```
@@ -88,8 +101,8 @@ flowchart LR
   Charts --> Argo
   Values --> Argo
   Values --> GHA
-  GHA --> Values
-  GHA --> Argo
+  GHA --> PR[Draft pull request]
+  PR --> Values
   Argo --> Dev
   Argo --> Staging
   Argo --> Prod
@@ -102,7 +115,7 @@ flowchart LR
   TF --> Prod
 ```
 
-Helm charts and environment-specific values live in Git. GitHub Actions promotes changes by updating environment values and triggering Argo CD syncs. Argo CD reconciles clusters across dev/staging/prod, with progressive delivery handled by Argo Rollouts and backups handled by Velero. Terraform provisions the multi-cloud clusters and baseline infrastructure.
+Helm charts and environment-specific values live in Git. GitHub Actions proposes value changes in draft pull requests. After review, successful CI, and merge, an independently configured Argo CD instance can reconcile the new values across dev/staging/prod. Argo Rollouts handles progressive delivery and Velero handles backups. Terraform provisions the multi-cloud clusters and baseline infrastructure.
 
 ## Tests
 ```

@@ -1,4 +1,4 @@
-# Portofolio
+# Portfolio
 
 This repository contains multiple projects. Each project lives at the repository
 root in its own folder.
@@ -43,3 +43,14 @@ root in its own folder.
 - `DevSecOps Pipeline with SBOM & SLSA` - automated CI/CD pipeline with SBOMs, scanning, signing, and policy gates for supply-chain security.
 - `CI/CD Pipeline Automation` - automated CI/CD pipeline for web apps with Jenkins, Docker, Terraform, Ansible, and Kubernetes.
 - `LLMOps Evaluation Harness` - evaluation harness for LLM quality checks with metrics, run artifacts, and CI integration.
+- `Habit Tracker & Routine Coach SaaS` - React and Express habit-tracking demonstration; in-memory data resets on restart.
+
+## Repository checks and maintenance
+
+Portfolio CI runs the shared checks and publishes a single Portfolio status
+result for branch protection. Dependabot is configured in the root
+.github/dependabot.yml for the monorepo; nested configurations are examples for
+standalone projects.
+
+See [Contributing](CONTRIBUTING.md) and [Security policy](SECURITY.md).
+Each project's LICENSE applies to that project.
