@@ -16,6 +16,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
+                // Authentication uses an explicit Authorization: Bearer header only.
+                // Cookies, HTTP Basic, and stored session authentication are not accepted.
+                // Re-enable CSRF protection before adding any browser-managed credentials.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth

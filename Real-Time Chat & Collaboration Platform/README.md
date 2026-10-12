@@ -76,6 +76,16 @@ mvn -f backend/pom.xml test
 ## Security
 Secrets: use `.env` (see `.env.example`). OAuth2 session cookies protect REST and WebSocket access. Demo auth is for local development only.
 
+State-changing REST requests require a session CSRF token in both OAuth and demo
+modes. The frontend fetches it from GET /api/csrf immediately before creating a
+room. SockJS transport endpoints are exempt only from the HTTP token check;
+Spring Security validates the session token in the STOMP CONNECT headers instead.
+Every connection or reconnect obtains a fresh token. Browser origins remain
+restricted, and OAuth mode requires authentication for the WebSocket handshake
+and allowed room destinations. Client sends to broker topics or other destinations
+are rejected. Logout uses Spring's CSRF-protected confirmation page.
+
+
 ## Notes / limitations
 - Status: MVP; OAuth2 is required unless demo auth is enabled.
 - Kafka fan-out is configured for local single-broker usage.

@@ -115,3 +115,20 @@ Set distinct randomly generated `JWT_SECRET` (at least 32 bytes) and `DEV_API_KE
 Requests accept `topK` between 1 and 100. Chunk size must be positive, with overlap smaller than chunk size. Unit tests do not establish live Qdrant or production identity-provider integration.
 
 The Helm chart reads JWT_SECRET and DEV_API_KEY from an existing Kubernetes Secret named `secure-rag-secrets` by default (override `existingSecret`). Prepare that Secret through your existing secret-management process before installing; keys are not chart values. Default CPU requests support the enabled HPA. `serviceAccount.name` selects an existing account when `serviceAccount.create=false`.
+
+
+### CSRF and bearer authentication
+
+Protected API requests require an explicit `Authorization: Bearer <JWT>`
+header. The server neither accepts an authentication cookie nor restores
+authentication from an HTTP session, and HTTP Basic/form login are not enabled.
+CSRF protection is disabled for this header-only API; statelessness alone would
+not justify that decision if browser-managed credentials were introduced.
+
+`BearerAuthenticationTest` exercises the real security filter chain and signed
+tokens: bearer requests succeed, while cookies, query parameters, HTTP Basic,
+stored session authentication, and malformed tokens cannot authenticate.
+Revisit CSRF protection before adding cookie or session authentication.
+JWT validation errors produce HTTP 401. Exceptions from an authenticated
+application handler continue through normal application error handling; they
+are not relabeled as invalid credentials.

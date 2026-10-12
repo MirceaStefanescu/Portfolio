@@ -34,7 +34,7 @@ public class SecurityConfig {
     if (demoAuthEnabled) {
       http
           .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-          .csrf(csrf -> csrf.disable())
+          .csrf(csrf -> csrf.ignoringRequestMatchers("/ws/**"))
           .cors(cors -> {});
 
       return http.build();
@@ -42,12 +42,12 @@ public class SecurityConfig {
 
     http
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/actuator/**", "/oauth2/**", "/login/**", "/error", "/ws/**").permitAll()
+            .requestMatchers("/actuator/**", "/oauth2/**", "/login/**", "/error", "/api/csrf").permitAll()
             .anyRequest().authenticated()
         )
         .oauth2Login(oauth -> oauth.defaultSuccessUrl(frontendBaseUrl, true))
         .logout(logout -> logout.logoutSuccessUrl(frontendBaseUrl))
-        .csrf(csrf -> csrf.disable())
+        .csrf(csrf -> csrf.ignoringRequestMatchers("/ws/**"))
         .cors(cors -> {});
 
     return http.build();
@@ -58,7 +58,7 @@ public class SecurityConfig {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOrigins(splitOrigins());
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "X-CSRF-TOKEN"));
     configuration.setAllowCredentials(true);
     configuration.setMaxAge(3600L);
 

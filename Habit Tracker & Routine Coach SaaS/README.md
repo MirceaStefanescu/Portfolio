@@ -80,9 +80,14 @@ npm test
 
 ## Security and limitations
 The API has no authentication or multi-user isolation. Run this demonstration on a
-trusted local machine, with a narrow CORS_ORIGIN when exposing it beyond localhost.
-No production credentials are needed. The billing URL is illustrative and must not
-be used for a real checkout. The backend restarts with the sample habits.
+trusted local machine. CORS defaults to the documented frontend at http://localhost:5173.
+Set CORS_ORIGIN in the backend process environment to one exact HTTP(S) origin for a
+different frontend; wildcards, opaque origins, credentials and URL paths are rejected
+at startup. The example .env file is documentation and is not loaded automatically.
+CORS controls which browser origins can read responses; it does not authenticate
+clients or prevent direct requests. No production credentials are needed. The billing
+URL is illustrative and must not be used for a real checkout. The backend restarts
+with the sample habits.
 
 ## Roadmap / tradeoffs
 - Add calendar integrations (Google/Apple)

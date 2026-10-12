@@ -15,7 +15,7 @@ This project demonstrates an end-to-end online shop with a modern SPA UI, RESTfu
 - Backend: Spring Boot 4 (Java 21), Spring Security, JPA/Hibernate, JWT (mature, production-ready REST stack)
 - Frontend: Angular 22, TypeScript, RxJS (typed SPA with component-driven UI)
 - Infra: MySQL 8, Docker Compose, Nginx, Stripe API (local parity and external payment integration)
-- CI: GitHub Actions (planned)
+- CI: root Portfolio CI runs backend verification and frontend tests/builds on pull requests.
 
 ## Demo
 - Live: Not deployed yet.
@@ -34,7 +34,7 @@ This project demonstrates an end-to-end online shop with a modern SPA UI, RESTfu
 ## Quickstart (local)
 Prereqs:
 - Docker (recommended)
-- Or: Node.js 22.12+ (or 24/26), Angular CLI, Java 21, Maven, MySQL 8+
+- Or: Node.js 26.10+ (26.x), Angular CLI, Java 21, Maven, MySQL 8+
 
 Run with Docker (one command):
 ```bash
@@ -109,3 +109,17 @@ Secrets are read from environment variables (see `backend/.env.example`). Spring
 - Angular SPA + REST API keeps UI and backend concerns decoupled for easier iteration.
 - JWT auth enables stateless scaling and clean API boundaries.
 - Docker Compose ensures a one-command local run with consistent dependencies.
+
+
+### CSRF and bearer authentication
+
+Protected API requests require an explicit `Authorization: Bearer <JWT>`
+header. The server neither accepts an authentication cookie nor restores
+authentication from an HTTP session, and HTTP Basic/form login are not enabled.
+CSRF protection is disabled for this header-only API; statelessness alone would
+not justify that decision if browser-managed credentials were introduced.
+
+`BearerAuthenticationTest` exercises the real security filter chain and signed
+tokens: bearer requests succeed, while cookies, query parameters, HTTP Basic,
+stored session authentication, and malformed tokens cannot authenticate.
+Revisit CSRF protection before adding cookie or session authentication.
