@@ -122,6 +122,34 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
       - run: bash tests/test-portfolio-launcher.sh
       - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promote.sh"
+      - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promotion-pr.sh"
+      - run: bash tests/test-ci-status.sh
       - run: bash "DevSecOps Pipeline with SBOM & SLSA/scripts/test-pipeline.sh"
+
+  gitops:
+    uses: ./.github/workflows/gitops-platform-ci.yml
+  prompt-quality:
+    uses: ./.github/workflows/prompt-quality-safety-ci.yml
+  llmops:
+    uses: ./.github/workflows/llmops-eval-harness-ci.yml
+  status:
+    name: Portfolio status
+    if: ${{ always() }}
+    needs: [node, java, cloud-native-python, launcher, gitops, prompt-quality, llmops]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    env:
+      NEEDS_JSON: ${{ toJSON(needs) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+      - run: bash scripts/check-ci-status.sh

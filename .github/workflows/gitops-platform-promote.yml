@@ -7,48 +7,43 @@ on:
         description: Target environment (dev, staging, prod)
         required: true
         type: choice
-        options:
-          - dev
-          - staging
-          - prod
+        options: [dev, staging, prod]
       image_tag:
-        description: Image tag to promote
+        description: Image tag to propose
         required: true
       strategy:
         description: Rollout strategy override (optional)
         required: false
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: gitops-promote-${{ inputs.environment }}
+  cancel-in-progress: false
 
 jobs:
   promote:
+    if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: write
+      pull-requests: write
     env:
       TARGET_ENVIRONMENT: ${{ inputs.environment }}
       IMAGE_TAG: ${{ inputs.image_tag }}
       ROLLOUT_STRATEGY: ${{ inputs.strategy }}
-    defaults:
-      run:
-        working-directory: "GitOps Platform - Argo CD & Helm"
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      PROMOTION_BRANCH: automation/promote-${{ inputs.environment }}-${{ github.run_id }}-${{ github.run_attempt }}
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout default branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
-
-      - name: Update environment values
-        run: |
-          bash ./scripts/promote.sh "$TARGET_ENVIRONMENT" "$IMAGE_TAG" "$ROLLOUT_STRATEGY"
-
-      - name: Commit and push
-        run: |
-          if [[ -z "$(git status --porcelain)" ]]; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -- "charts/platform-service/env/$TARGET_ENVIRONMENT.yaml"
-          git commit -m "promote: $TARGET_ENVIRONMENT -> $IMAGE_TAG"
-          git push
+      - name: Propose promotion
+        run: bash "GitOps Platform - Argo CD & Helm/scripts/open-promotion-pr.sh" "$TARGET_ENVIRONMENT" "$IMAGE_TAG" "$ROLLOUT_STRATEGY"

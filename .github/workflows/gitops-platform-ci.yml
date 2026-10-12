@@ -1,14 +1,8 @@
 name: GitOps Platform CI
 
 on:
-  push:
-    paths:
-      - 'GitOps Platform - Argo CD & Helm/**'
-      - '.github/workflows/gitops-platform-ci.yml'
-  pull_request:
-    paths:
-      - 'GitOps Platform - Argo CD & Helm/**'
-      - '.github/workflows/gitops-platform-ci.yml'
+  workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,18 +10,19 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: "GitOps Platform - Argo CD & Helm"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
 
       - name: Run checks
         run: make test
