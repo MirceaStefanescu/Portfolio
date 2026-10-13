@@ -1,5 +1,6 @@
 services:
   vault:
+    container_name: !reset null
     ports: !reset []
   app:
     ports: !reset []
