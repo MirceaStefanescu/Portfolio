@@ -7,7 +7,7 @@ trap cleanup EXIT
 mkdir -p "$work/bin"
 cat > "$work/bin/kubectl" <<'STUB'
 #!/usr/bin/env bash
-printf '%s\n' "$*" >> "$ANSIBLE_CALLS"
+printf '%s | kubeconfig=%s\n' "$*" "$KUBECONFIG" >> "$ANSIBLE_CALLS"
 case "$*" in
   *'create namespace'*) printf 'apiVersion: v1\nkind: Namespace\nmetadata: {name: fixture}\n' ;;
   *'create configmap'*) printf 'apiVersion: v1\nkind: ConfigMap\nmetadata: {name: fixture}\n' ;;
@@ -28,4 +28,11 @@ ansible-playbook -i "$root/ansible/inventory/local.ini" "$root/ansible/playbooks
 tr -d '\r' < "$work/render with spaces/app.env" | grep -qx 'RELEASE_COLOR=green'
 tr -d '\r' < "$work/render with spaces/app.env" | grep -qx 'BUILD_ID=checked'
 tr -d '\r' < "$work/render with spaces/app.env" | grep -qx 'ENVIRONMENT=staging'
-echo 'Ansible defaults, overrides, paths and explicit context checks passed'
+# External targets preserve the caller's kubeconfig/current context, including merged files.
+: > "$ANSIBLE_CALLS"
+TF_ENV=aws-eks KUBECONTEXT= KUBECONFIG="$work/cloud-one:$work/cloud-two" \
+  ansible-playbook -i "$root/ansible/inventory/local.ini" "$root/ansible/playbooks/configure-app.yml" \
+  -e "{\"deploy_dir\":\"$work/render with spaces\"}"
+! grep -q -- '--context' "$ANSIBLE_CALLS"
+grep -qF "kubeconfig=$work/cloud-one:$work/cloud-two" "$ANSIBLE_CALLS"
+echo 'Ansible defaults, overrides, paths and local/external context checks passed'

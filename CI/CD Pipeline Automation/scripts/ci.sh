@@ -7,7 +7,7 @@ cd "$ROOT_DIR"
 IMAGE_NAME="${IMAGE_NAME:-cicd-demo}"
 IMAGE_TAG="${IMAGE_TAG:-local}"
 FULL_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
-TF_ENV="${TF_ENV:-local-kind}"
+export TF_ENV="${TF_ENV:-local-kind}"
 TF_DIR="terraform/environments/${TF_ENV}"
 
 if [[ "$TF_ENV" == "local-kind" ]]; then
@@ -29,10 +29,11 @@ npm test
 echo "Building Docker image ${FULL_IMAGE}"
 docker build -t "${FULL_IMAGE}" .
 
+if [[ "$TF_ENV" == "local-kind" && ( "${RUN_TERRAFORM:-false}" == "true" || "${RUN_DEPLOY:-false}" == "true" ) ]]; then
+  kind load docker-image "$FULL_IMAGE" --name "${CLUSTER_NAME:-cicd-demo}"
+fi
+
 if [[ "${RUN_TERRAFORM:-false}" == "true" ]]; then
-  if [[ "$TF_ENV" == "local-kind" ]]; then
-    kind load docker-image "$FULL_IMAGE" --name "${CLUSTER_NAME:-cicd-demo}"
-  fi
   echo "Running Terraform apply"
   terraform -chdir="${TF_DIR}" init -input=false
   terraform -chdir="${TF_DIR}" apply -auto-approve \

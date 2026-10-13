@@ -193,3 +193,11 @@ credentials and existing clusters are outside the local quickstart.
 References: [MinIO source](https://github.com/minio/minio),
 [local-path volume types](https://github.com/rancher/local-path-provisioner#volume-types),
 [Velero filesystem backup](https://velero.io/docs/v1.18/file-system-backup/).
+
+Production uses `autoPromotionEnabled: false`: an update pauses after the preview
+is ready and keeps the previous active version serving traffic. Inspect the
+preview before using the standard `kubectl argo rollouts promote platform-service`
+command in `platform-prod` with this project's kubeconfig/context. This optional
+command needs the official Argo Rollouts kubectl plugin. A paused rollout is an
+approval gate, not a startup failure. Roll back the Git revision to restore the
+previous desired image through Argo CD.

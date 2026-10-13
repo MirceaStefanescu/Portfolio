@@ -20,6 +20,18 @@ pipeline {
   }
 
   stages {
+    stage("Select local Kubernetes target") {
+      when { expression { return params.TF_ENV == "local-kind" } }
+      steps {
+        script {
+          env.KUBECONFIG = env.KUBECONFIG ?: "${env.WORKSPACE}/.kube/config"
+          env.KUBECONTEXT = env.KUBECONTEXT ?: "kind-${env.CLUSTER_NAME ?: 'cicd-demo'}"
+          env.TF_VAR_kubeconfig = env.KUBECONFIG
+          env.TF_VAR_kube_context = env.KUBECONTEXT
+        }
+      }
+    }
+
     stage("Install") {
       steps {
         sh "npm ci"
@@ -53,6 +65,11 @@ pipeline {
     stage("Docker Build") {
       steps {
         sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+        script {
+          if (params.TF_ENV == "local-kind" && (params.AUTO_APPLY || params.AUTO_DEPLOY)) {
+            sh "kind load docker-image ${IMAGE_NAME}:${IMAGE_TAG} --name ${env.CLUSTER_NAME ?: 'cicd-demo'}"
+          }
+        }
       }
     }
 

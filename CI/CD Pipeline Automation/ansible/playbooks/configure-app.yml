@@ -4,15 +4,18 @@
   vars:
     namespace: cicd-demo
     configmap_name: cicd-demo-env
-    kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default(playbook_dir + '/../../.kube/config', true) }}"
-    kube_context: "{{ lookup('env', 'KUBECONTEXT') | default('kind-' + (lookup('env', 'CLUSTER_NAME') | default('cicd-demo', true)), true) }}"
-    kubectl: "kubectl --kubeconfig {{ kubeconfig | quote }} --context {{ kube_context | quote }}"
+    target_environment: "{{ lookup('env', 'TF_ENV') | default('local-kind', true) }}"
+    kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default((playbook_dir + '/../../.kube/config') if target_environment == 'local-kind' else (lookup('env', 'HOME') + '/.kube/config'), true) }}"
+    kube_context: "{{ lookup('env', 'KUBECONTEXT') | default(('kind-' + (lookup('env', 'CLUSTER_NAME') | default('cicd-demo', true))) if target_environment == 'local-kind' else '', true) }}"
+    kubectl: "kubectl{{ (' --context ' + (kube_context | quote)) if kube_context else '' }}"
     deploy_dir: "{{ playbook_dir }}/../../deploy"
     app_environment: dev
     release_color: blue
     build_id: local
     git_sha: dev
     deploy_mode: blue-green
+  environment:
+    KUBECONFIG: "{{ kubeconfig }}"
   tasks:
     - name: Ensure deploy directory exists
       ansible.builtin.file:

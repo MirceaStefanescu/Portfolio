@@ -193,7 +193,9 @@ See the [provider's versioned resource migration guide](https://registry.terrafo
 
 ## Verified deployment behavior
 
-The kind, Terraform and Ansible helpers use the project-local `.kube/config`.
+For `TF_ENV=local-kind`, the helpers use the project-local `.kube/config`. Other
+Terraform environments preserve the agent's configured kubeconfig/current context;
+`KUBECONFIG` and `KUBECONTEXT` can select an explicit external target.
 Run `make kind-up` and `make docker-build` before `make terraform-init` /
 `make terraform-apply`. The local Terraform target loads `IMAGE` into kind before
 creating deployments. Ansible requires a supported POSIX control node; the tested

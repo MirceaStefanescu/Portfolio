@@ -3,22 +3,30 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
-export KUBECONFIG="${KUBECONFIG:-$ROOT_DIR/.kube/config}"
 
 NAMESPACE="${NAMESPACE:-cicd-demo}"
 APP_NAME="${APP_NAME:-cicd-demo}"
 IMAGE="${IMAGE:-cicd-demo:local}"
 CLUSTER_NAME="${CLUSTER_NAME:-cicd-demo}"
-KUBECONTEXT="${KUBECONTEXT:-kind-$CLUSTER_NAME}"
+if [[ "${TF_ENV:-local-kind}" == "local-kind" ]]; then
+  export KUBECONFIG="${KUBECONFIG:-$ROOT_DIR/.kube/config}"
+  KUBECONTEXT="${KUBECONTEXT:-kind-$CLUSTER_NAME}"
+fi
 ROLLOUT_TIMEOUT="${ROLLOUT_TIMEOUT:-120s}"
-kubectl() { command kubectl --context "$KUBECONTEXT" "$@"; }
+kubectl() {
+  if [[ -n "${KUBECONTEXT:-}" ]]; then
+    command kubectl --context "$KUBECONTEXT" "$@"
+  else
+    command kubectl "$@"
+  fi
+}
 
 if ! command -v kubectl >/dev/null 2>&1; then
   echo "kubectl is required but not installed."
   exit 1
 fi
 
-if [[ "${LOAD_KIND_IMAGE:-false}" == "true" && -n "${IMAGE}" ]]; then
+if [[ "${TF_ENV:-local-kind}" == "local-kind" && "${LOAD_KIND_IMAGE:-false}" == "true" && -n "${IMAGE}" ]]; then
   if command -v kind >/dev/null 2>&1; then
     kind load docker-image "${IMAGE}" --name "${CLUSTER_NAME}"
   fi
