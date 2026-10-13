@@ -28,7 +28,7 @@ public class PredictionSearchService {
     match.put("event_type", query);
 
     Map<String, Object> queryBody = new HashMap<>();
-    queryBody.put("match", match);
+    queryBody.put("match_phrase_prefix", match);
 
     Map<String, Object> payload = new HashMap<>();
     payload.put("size", safeLimit);
@@ -36,6 +36,7 @@ public class PredictionSearchService {
 
     try {
       Request request = new Request("GET", "/predictions/_search");
+      request.addParameter("ignore_unavailable", "true");
       request.setJsonEntity(objectMapper.writeValueAsString(payload));
       Response response = restClient.performRequest(request);
       return objectMapper.readValue(response.getEntity().getContent(), MAP_TYPE);

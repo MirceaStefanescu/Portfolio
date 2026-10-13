@@ -2,14 +2,17 @@
   hosts: local
   gather_facts: false
   vars:
-    namespace: "{{ namespace | default('cicd-demo') }}"
-    configmap_name: "{{ configmap_name | default('cicd-demo-env') }}"
+    namespace: cicd-demo
+    configmap_name: cicd-demo-env
+    kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default(playbook_dir + '/../../.kube/config', true) }}"
+    kube_context: "{{ lookup('env', 'KUBECONTEXT') | default('kind-' + (lookup('env', 'CLUSTER_NAME') | default('cicd-demo', true)), true) }}"
+    kubectl: "kubectl --kubeconfig {{ kubeconfig | quote }} --context {{ kube_context | quote }}"
     deploy_dir: "{{ playbook_dir }}/../../deploy"
-    environment: "{{ environment | default('dev') }}"
-    release_color: "{{ release_color | default('blue') }}"
-    build_id: "{{ build_id | default('local') }}"
-    git_sha: "{{ git_sha | default('dev') }}"
-    deploy_mode: "{{ deploy_mode | default('blue-green') }}"
+    app_environment: dev
+    release_color: blue
+    build_id: local
+    git_sha: dev
+    deploy_mode: blue-green
   tasks:
     - name: Ensure deploy directory exists
       ansible.builtin.file:
@@ -25,26 +28,30 @@
 
     - name: Build namespace manifest
       ansible.builtin.command: >
-        kubectl create namespace {{ namespace }}
+        {{ kubectl }} create namespace {{ namespace }}
         --dry-run=client -o yaml
       register: namespace_manifest
       changed_when: false
 
     - name: Apply namespace manifest
-      ansible.builtin.command: kubectl apply -f -
+      ansible.builtin.command: "{{ kubectl }} apply -f -"
       args:
         stdin: "{{ namespace_manifest.stdout }}"
+      register: namespace_apply
+      changed_when: "' created' in namespace_apply.stdout or ' configured' in namespace_apply.stdout"
 
     - name: Build configmap manifest
       ansible.builtin.command: >
-        kubectl -n {{ namespace }}
+        {{ kubectl }} -n {{ namespace }}
         create configmap {{ configmap_name }}
-        --from-env-file={{ deploy_dir }}/app.env
+        --from-env-file={{ (deploy_dir + '/app.env') | quote }}
         --dry-run=client -o yaml
       register: configmap_manifest
       changed_when: false
 
     - name: Apply configmap manifest
-      ansible.builtin.command: kubectl -n {{ namespace }} apply -f -
+      ansible.builtin.command: "{{ kubectl }} -n {{ namespace }} apply -f -"
       args:
         stdin: "{{ configmap_manifest.stdout }}"
+      register: configmap_apply
+      changed_when: "' created' in configmap_apply.stdout or ' configured' in configmap_apply.stdout"

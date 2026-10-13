@@ -240,6 +240,9 @@ resource "kubernetes_deployment_v1" "rolling" {
 }
 
 resource "kubernetes_service_v1" "blue_green" {
+  # Do not route traffic until the target deployments have completed their rollout.
+  depends_on = [kubernetes_deployment_v1.blue, kubernetes_deployment_v1.green]
+
   count = var.deploy_mode == "blue-green" ? 1 : 0
 
   metadata {

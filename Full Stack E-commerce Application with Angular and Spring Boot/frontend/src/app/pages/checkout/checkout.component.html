@@ -9,14 +9,14 @@
       <div class="summary">
         <h3>Order summary</h3>
         <ul>
-          <li *ngFor="let item of items()">
-            <span>{{ item.product.name }} x {{ item.quantity }}</span>
-            <span>{{ item.product.price * item.quantity | currency:'USD' }}</span>
+          <li *ngFor="let item of summaryItems()">
+            <span>{{ item.name }} x {{ item.quantity }}</span>
+            <span>{{ item.unitPrice * item.quantity | currency:currency() }}</span>
           </li>
         </ul>
         <div class="total">
           <strong>Total</strong>
-          <span>{{ total() | currency:'USD' }}</span>
+          <span>{{ total() | currency:currency() }}</span>
         </div>
       </div>
 

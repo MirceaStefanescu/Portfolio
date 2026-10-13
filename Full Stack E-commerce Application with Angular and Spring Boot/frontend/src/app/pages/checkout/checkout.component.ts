@@ -2,6 +2,7 @@ import { CurrencyPipe, NgFor, NgIf } from '@angular/common';
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DEFAULT_CURRENCY, STRIPE_PUBLISHABLE_KEY } from '../../core/config/app-config';
+import { OrderResponse } from '../../core/models/order';
 import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
 
@@ -25,12 +26,17 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   fatalError = signal(false);
 
   items = this.cartService.items;
-  total = computed(() =>
-    this.items().reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
-      0
-    )
-  );
+  order = signal<OrderResponse | null>(null);
+  summaryItems = computed(() => this.order()?.items ?? this.items().map((item) => ({
+    productId: item.product.id,
+    name: item.product.name,
+    quantity: item.quantity,
+    unitPrice: item.product.price
+  })));
+  currency = computed(() => (this.order()?.currency ?? DEFAULT_CURRENCY).toUpperCase());
+  total = computed(() => this.order()?.totalAmount ?? this.items().reduce(
+    (sum, item) => sum + item.product.price * item.quantity, 0
+  ));
 
   private stripe: any;
   private card: any;
@@ -65,6 +71,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
     this.orderService.createOrder(payload).subscribe({
       next: (order) => {
+        this.order.set(order);
         this.orderId = order.id;
         this.paymentIntentId = order.paymentIntentId ?? null;
         this.clientSecret = order.clientSecret ?? null;
@@ -99,7 +106,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       }
 
       this.orderService.confirmPayment(this.orderId, this.paymentIntentId).subscribe({
-        next: () => {
+        next: (order) => {
+          this.order.set(order);
           this.status.set('success');
           this.cartService.clear();
         },
@@ -135,7 +143,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     }
 
     this.orderService.confirmPayment(this.orderId, paymentIntent.id).subscribe({
-      next: () => {
+      next: (order) => {
+        this.order.set(order);
         this.status.set('success');
         this.cartService.clear();
       },

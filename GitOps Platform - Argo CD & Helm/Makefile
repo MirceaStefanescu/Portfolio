@@ -4,6 +4,15 @@ SHELL := /usr/bin/env bash
 
 CLUSTER_NAME ?= gitops-platform
 KUBECONTEXT := kind-$(CLUSTER_NAME)
+# Keep all local-demo commands away from the user's default kubeconfig.
+export KUBECONFIG ?= $(CURDIR)/.kube/config
+KUBECTL := kubectl --context "$(KUBECONTEXT)"
+HELM := helm --kube-context "$(KUBECONTEXT)"
+KIND_NODE_IMAGE ?= kindest/node:v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5
+ARGOCD_CHART_VERSION ?= 10.10.3
+ROLLOUTS_CHART_VERSION ?= 2.43.7
+MINIO_CHART_VERSION ?= 5.4.0
+VELERO_CHART_VERSION ?= 12.2.1
 
 ARGOCD_NAMESPACE ?= argocd
 ROLLOUTS_NAMESPACE ?= argo-rollouts
@@ -21,60 +30,64 @@ APP_OF_APPS ?= apps/bootstrap/app-of-apps.yaml
 dev: kind-up argocd rollouts minio velero apps
 
 kind-up:
-	kind get clusters | grep -qx "$(CLUSTER_NAME)" || kind create cluster --name "$(CLUSTER_NAME)" --config "kind-config.yaml"
-	kubectl config use-context "$(KUBECONTEXT)"
-	kubectl wait --for=condition=Ready nodes --all --timeout=120s
+	mkdir -p "$(dir $(KUBECONFIG))"
+	kind get clusters | grep -qx "$(CLUSTER_NAME)" || kind create cluster --name "$(CLUSTER_NAME)" --kubeconfig "$(KUBECONFIG)" --image "$(KIND_NODE_IMAGE)" --config "kind-config.yaml"
+	kind export kubeconfig --name "$(CLUSTER_NAME)" --kubeconfig "$(KUBECONFIG)"
+	$(KUBECTL) wait --for=condition=Ready nodes --all --timeout=120s
+	# Velero supports local PVs, but skips kind's default hostPath PVs.
+	$(KUBECTL) annotate storageclass standard defaultVolumeType=local --overwrite
 
 argocd:
 	helm repo add argo https://argoproj.github.io/argo-helm
 	helm repo update
-	helm upgrade --install argocd argo/argo-cd -n $(ARGOCD_NAMESPACE) --create-namespace -f infra/argocd/values.yaml
-	kubectl -n $(ARGOCD_NAMESPACE) rollout status deploy/argocd-server --timeout=180s
+	$(HELM) upgrade --install argocd argo/argo-cd --version $(ARGOCD_CHART_VERSION) --wait --timeout 180s -n $(ARGOCD_NAMESPACE) --create-namespace -f infra/argocd/values.yaml
+	$(KUBECTL) -n $(ARGOCD_NAMESPACE) rollout status deploy/argocd-server --timeout=180s
 
 rollouts:
 	helm repo add argo https://argoproj.github.io/argo-helm
 	helm repo update
-	helm upgrade --install argo-rollouts argo/argo-rollouts -n $(ROLLOUTS_NAMESPACE) --create-namespace -f infra/rollouts/values.yaml
-	kubectl -n $(ROLLOUTS_NAMESPACE) rollout status deploy/argo-rollouts --timeout=180s
+	$(HELM) upgrade --install argo-rollouts argo/argo-rollouts --version $(ROLLOUTS_CHART_VERSION) --wait --timeout 180s -n $(ROLLOUTS_NAMESPACE) --create-namespace -f infra/rollouts/values.yaml
+	$(KUBECTL) -n $(ROLLOUTS_NAMESPACE) rollout status deploy/argo-rollouts --timeout=180s
 
 minio:
+	bash ../scripts/build-local-minio.sh "$(CLUSTER_NAME)"
 	helm repo add minio https://charts.min.io/
 	helm repo update
-	helm upgrade --install minio minio/minio -n $(INFRA_NAMESPACE) --create-namespace -f k8s/minio/values.yaml \
+	$(HELM) upgrade --install minio minio/minio --version $(MINIO_CHART_VERSION) --wait --timeout 180s -n $(INFRA_NAMESPACE) --create-namespace -f k8s/minio/values.yaml \
 		--set rootUser=$(MINIO_ACCESS_KEY) \
 		--set rootPassword=$(MINIO_SECRET_KEY) \
 		--set buckets[0].name=$(MINIO_BUCKET)
 
 velero:
-	kubectl create namespace $(VELERO_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	$(KUBECTL) create namespace $(VELERO_NAMESPACE) --dry-run=client -o yaml | $(KUBECTL) apply -f -
 	printf "[default]\naws_access_key_id=%s\naws_secret_access_key=%s\n" "$(MINIO_ACCESS_KEY)" "$(MINIO_SECRET_KEY)" | \
-		kubectl -n $(VELERO_NAMESPACE) create secret generic velero-credentials --from-file=cloud=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -
+		$(KUBECTL) -n $(VELERO_NAMESPACE) create secret generic velero-credentials --from-file=cloud=/dev/stdin --dry-run=client -o yaml | $(KUBECTL) apply -f -
 	helm repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
 	helm repo update
-	helm upgrade --install velero vmware-tanzu/velero -n $(VELERO_NAMESPACE) -f k8s/velero/values.yaml \
+	$(HELM) upgrade --install velero vmware-tanzu/velero --version $(VELERO_CHART_VERSION) --wait --timeout 180s -n $(VELERO_NAMESPACE) -f k8s/velero/values.yaml \
 		--set configuration.backupStorageLocation[0].bucket=$(MINIO_BUCKET) \
 		--set configuration.backupStorageLocation[0].config.s3Url=http://minio.$(INFRA_NAMESPACE).svc:9000
 
 apps:
-	kubectl apply -n $(ARGOCD_NAMESPACE) -f $(APP_OF_APPS)
+	$(KUBECTL) apply -n $(ARGOCD_NAMESPACE) -f $(APP_OF_APPS)
 
 backup:
-	kubectl apply -f k8s/velero/backup.yaml
-	kubectl -n $(VELERO_NAMESPACE) get backups
+	$(KUBECTL) create -f k8s/velero/backup.yaml
+	$(KUBECTL) -n $(VELERO_NAMESPACE) get backups
 
 status:
-	kubectl -n $(ARGOCD_NAMESPACE) get applications
-	kubectl -n $(ARGOCD_NAMESPACE) get appprojects
-	kubectl -n $(VELERO_NAMESPACE) get pods
+	$(KUBECTL) -n $(ARGOCD_NAMESPACE) get applications
+	$(KUBECTL) -n $(ARGOCD_NAMESPACE) get appprojects
+	$(KUBECTL) -n $(VELERO_NAMESPACE) get pods
 
 port-forward-argocd:
-	kubectl -n $(ARGOCD_NAMESPACE) port-forward svc/argocd-server 8080:443
+	$(KUBECTL) -n $(ARGOCD_NAMESPACE) port-forward svc/argocd-server 8080:443
 
 argocd-password:
-	kubectl -n $(ARGOCD_NAMESPACE) get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+	$(KUBECTL) -n $(ARGOCD_NAMESPACE) get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
 
 destroy:
-	kind delete cluster --name $(CLUSTER_NAME)
+	kind delete cluster --name "$(CLUSTER_NAME)" --kubeconfig "$(KUBECONFIG)"
 
 promote:
 	if [ -z "$(ENV)" ] || [ -z "$(TAG)" ]; then echo "Usage: make promote ENV=dev TAG=1.2.3 [STRATEGY=canary|blueGreen]"; exit 1; fi

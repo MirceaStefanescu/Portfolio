@@ -8,4 +8,5 @@ if ! command -v kind >/dev/null 2>&1; then
   exit 1
 fi
 
-kind delete cluster --name "${CLUSTER_NAME}"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+kind delete cluster --name "${CLUSTER_NAME}" --kubeconfig "${KUBECONFIG:-$ROOT_DIR/.kube/config}"

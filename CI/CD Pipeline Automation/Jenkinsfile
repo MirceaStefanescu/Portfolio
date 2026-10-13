@@ -22,7 +22,7 @@ pipeline {
   stages {
     stage("Install") {
       steps {
-        sh "npm install"
+        sh "npm ci"
       }
     }
 
@@ -92,7 +92,7 @@ pipeline {
       steps {
         sh """
           ansible-playbook -i ansible/inventory/local.ini ansible/playbooks/configure-app.yml \
-            -e \\"environment=${ENVIRONMENT}\\" \
+            -e \\"app_environment=${ENVIRONMENT}\\" \
             -e \\"release_color=${RELEASE_COLOR}\\" \
             -e \\"build_id=${IMAGE_TAG}\\" \
             -e \\"git_sha=${env.GIT_COMMIT ?: 'dev'}\\" \
@@ -110,7 +110,7 @@ pipeline {
           if (params.DEPLOY_MODE == "rolling") {
             sh "IMAGE=${IMAGE_NAME}:${IMAGE_TAG} ./scripts/rolling.sh"
           } else {
-            sh "./scripts/blue-green.sh ${RELEASE_COLOR}"
+            sh "IMAGE=${IMAGE_NAME}:${IMAGE_TAG} ./scripts/blue-green.sh ${RELEASE_COLOR}"
           }
         }
       }

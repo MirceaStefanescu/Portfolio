@@ -1,6 +1,8 @@
 FROM alpine:3.24
 
-RUN adduser -D appuser
+RUN apk upgrade --no-cache \
+    && apk del --no-cache apk-tools \
+    && adduser -D appuser
 WORKDIR /app
 COPY index.html /app/index.html
 EXPOSE 8080

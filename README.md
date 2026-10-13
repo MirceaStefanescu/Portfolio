@@ -95,3 +95,49 @@ they do not migrate existing Grafana, Vault or Qdrant volumes.
 References: [Confluent compatibility](https://docs.confluent.io/platform/7.9/installation/versions-interoperability.html),
 [Grafana upgrades](https://grafana.com/docs/grafana/latest/upgrade-guide/upgrade-v13.0/),
 [OpenTelemetry exporter migration](https://github.com/open-telemetry/opentelemetry-collector/issues/11337).
+
+## Runnable demonstrations
+
+Start with `./portfolio-launcher.sh --list` and `--show "Project name"` to inspect
+an existing entry point. Run one large stack at a time; several projects use the
+same default ports. Docker must be running with Linux containers. The Make/Bash
+commands below require a POSIX shell; Docker Desktop with Git Bash can also run
+the isolated Compose checks.
+
+Six complete Compose scenarios have an isolated verifier:
+
+```bash
+python scripts/demo-check.py portal
+# Also: chat, ecommerce, predictive, observability, secrets
+python scripts/demo-check.py chat --keep
+```
+
+Requires Python 3.11+ and Docker Compose v2. Each run uses fresh demo data, a unique
+Compose project and random loopback ports. It verifies the feature before reporting
+success and removes its containers/volumes afterward. `--keep` retains a successful
+stack for a browser walkthrough and prints its URLs and exact cleanup command.
+No provider account is used; E-commerce payments and Chat authentication are
+explicitly local demo modes. The six scenarios also run in Portfolio CI.
+
+| Project | Demonstrated local behavior | Entry point / remaining external scope |
+| --- | --- | --- |
+| Automated Infrastructure & Deployment Platform | Portal, four healthy service integrations, pipeline/Terraform/Helm template generation | `python scripts/demo-check.py portal`; generated templates require a separately configured deployment target |
+| Cloud-Native E-Commerce Platform | Order → brokers → payment → order update; persistence, duplicate handling and broker recovery | Project `make integration-test`; payments are simulated |
+| DevSecOps Pipeline with SBOM & SLSA | Real SBOM, Trivy/Grype gates, image/SBOM/provenance signatures; altered SBOM rejected | Project local quickstart; storage replication uses local folders |
+| Event-Driven E-Commerce Platform | Order creation and Kafka-driven inventory reduction | Project Compose quickstart and demo commands; implements Order and Inventory |
+| Full Stack E-commerce Application with Angular and Spring Boot | Registration, catalog/cart, simulated checkout, receipt and paid order history | `python scripts/demo-check.py ecommerce`; Stripe requires separate sandbox credentials |
+| Habit Tracker & Routine Coach SaaS | Habit CRUD, daily check-ins and counts in the React UI | Project backend/frontend quickstart; single-user, in-memory data |
+| GitOps Platform - Argo CD & Helm | Argo CD sync/health, three environments and self-healing; Velero data restore | Project `make dev`; cloud Terraform and a private mirrored repository need their own configuration |
+| Kubernetes FinOps & Cost Optimization | Namespace costs, real metrics, HPA scale-up/scale-down, persistent-volume backup | Project `make dev`; local costs are estimates, not cloud bills |
+| Observability - New Relic & Prometheus | Live metrics/logs/dashboard; stopped-service alert delivered and resolved | `python scripts/demo-check.py observability`; New Relic is optional and needs an account |
+| Predictive Analytics Pipeline on Kubernetes | Kafka/Flink event-time windows persisted in PostgreSQL and searchable in Elasticsearch | `python scripts/demo-check.py predictive`; send a continuing stream to advance the final window |
+| Real-Time Chat & Collaboration Platform | Two browser sessions exchange messages and retain history after reload | `python scripts/demo-check.py chat --keep`; OAuth provider login is separate |
+| Secure RAG Service & Knowledge API | Bearer/RBAC checks, Qdrant ingest/query and source attribution | Project `make dev` / `make demo`; local embeddings and LLM responses are deterministic mocks |
+| Prompt Quality & Safety | CLI suite evaluation and report artifacts | Project `make demo`; mock scores cover the supplied suite, not arbitrary models |
+| Secure Secrets Management & Observability Toolkit | Vault/AppRole, secret rotation, application/audit logs and metrics | `python scripts/demo-check.py secrets`; local development Vault |
+| CI/CD Pipeline Automation | Terraform provisioning, repeatable Ansible configuration, safe blue/green and rolling routing | Project Kubernetes quickstart; Jenkins/cloud agents must be configured separately |
+| LLMOps Evaluation Harness | Dataset evaluation and persisted result artifacts | Project documented CLI demo; real providers require separate configuration |
+
+These are the implemented local demonstration boundaries verified in October 2026.
+Planned features, production availability, external billing, OAuth/Stripe/New Relic
+accounts and cloud deployments are separate from these results.

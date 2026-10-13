@@ -160,3 +160,36 @@ configuration or `ARM_SUBSCRIPTION_ID`. AKS node provisioning stays `Manual`;
 new clusters use the region's recommended Kubernetes version unless overridden.
 Existing clusters should keep an explicit supported version and follow the service's
 sequential upgrade requirements. Validation does not provision or migrate resources.
+
+## Reproducible local cluster
+
+`make dev` pins the tested Helm chart versions and Kubernetes node image. It uses
+this project's `.kube/config` and an explicit kind context, preserving the user's
+default kubeconfig. For additional commands in this shell, use:
+
+```bash
+export KUBECONFIG="$PWD/.kube/config"
+make status
+make backup
+kubectl -n velero get backups,podvolumebackups
+```
+
+Each `make backup` creates a new backup. A completed Kubernetes-object backup alone
+does not prove that file contents were saved: inspect `podvolumebackups` and test a
+restore into an isolated namespace. The kind storage class is annotated to create
+`local` PVs, which Velero's filesystem backup supports. Existing `hostPath` PVs are
+not converted by this setting; recreate only disposable demo data or migrate real
+data separately.
+
+The public MinIO images used by the old quickstart are no longer available. The
+shared `../scripts/build-local-minio.sh` builds the official server/client commits
+with Go 1.27.2 and loads them into this kind cluster. This is a local demonstration
+of the archived upstream software, not a maintained production-storage service.
+The first source build requires network access and takes longer than cached runs.
+
+Remove this project's test cluster with `make destroy`. Cloud accounts, real
+credentials and existing clusters are outside the local quickstart.
+
+References: [MinIO source](https://github.com/minio/minio),
+[local-path volume types](https://github.com/rancher/local-path-provisioner#volume-types),
+[Velero filesystem backup](https://velero.io/docs/v1.18/file-system-backup/).

@@ -63,7 +63,7 @@ and alerts flow to Prometheus and Grafana to validate releases and uptime.
 
 ## Quickstart (local)
 Prereqs:
-- Node.js 20+
+- Node.js 26.11+
 - Docker and Docker Compose
 - Make (optional)
 
@@ -91,7 +91,7 @@ Kubernetes demo (optional):
 make kind-up
 make docker-build
 make deploy-blue
-kubectl -n cicd-demo port-forward svc/cicd-demo 8080:80
+KUBECONFIG="$PWD/.kube/config" kubectl --context kind-cicd-demo -n cicd-demo port-forward svc/cicd-demo 8080:80
 make deploy-green
 ```
 Rolling strategy:
@@ -190,3 +190,24 @@ review the plan for unintended replacements. CI validates configuration only;
 it does not migrate state or provision a cluster.
 
 See the [provider's versioned resource migration guide](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/guides/versioned-resources).
+
+## Verified deployment behavior
+
+The kind, Terraform and Ansible helpers use the project-local `.kube/config`.
+Run `make kind-up` and `make docker-build` before `make terraform-init` /
+`make terraform-apply`. The local Terraform target loads `IMAGE` into kind before
+creating deployments. Ansible requires a supported POSIX control node; the tested
+ansible-core 2.21.5 supports Python 3.12–3.14.
+
+Ansible renders the ConfigMap with defaults or `-e` overrides. Repeat application
+is idempotent. Already-running pods read environment variables at startup; deploy
+a new image or explicitly roll out the affected deployment after configuration
+changes. Blue/green and rolling scripts wait for readiness before replacing the
+Service selector. A failed rollout leaves the current traffic selector intact.
+
+`npm test` covers the HTTP API, metrics and routing failure behavior.
+`bash scripts/test-ansible.sh` checks the Ansible defaults, overrides, paths with
+spaces and explicit Kubernetes context without connecting to a real cluster.
+The Jenkinsfile is a template requiring an agent with Docker, kind/kubectl,
+Terraform, Ansible and the intended credentials/context; the local CLI proofs do
+not imply that an arbitrary Jenkins installation is already configured.

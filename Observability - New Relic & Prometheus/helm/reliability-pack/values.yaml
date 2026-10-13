@@ -73,7 +73,7 @@ prometheusRule:
             runbook_url: "runbooks/telemetry-pipeline-down.md"
         - alert: LogIngestionStalled
           expr: |
-            rate(loki_ingester_bytes_total[5m]) == 0
+            rate(loki_distributor_bytes_received_total[5m]) == 0
           for: 15m
           labels:
             severity: warning

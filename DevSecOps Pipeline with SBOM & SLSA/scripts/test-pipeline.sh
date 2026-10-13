@@ -10,10 +10,13 @@ trap cleanup EXIT
 mkdir -p "$work/project/scripts" "$work/bin"
 cp "$source_dir/pipeline.sh" "$work/project/scripts/pipeline.sh"
 export ARTIFACTS_DIR="$work/artifacts" STORAGE_DIR="$work/storage"
+export SCANNER_CACHE_DIR="$work/cache" ENV_FILE="$work/no-env"
+export IMAGE="localhost:5000/demo@sha256:fixture"
 export BACKUP_DIR="$work/backups" KEYS_DIR="$work/keys" CALLS="$work/calls"
 cat > "$work/bin/docker" <<'STUB'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$CALLS"
+if [[ "$*" == *'ps -q registry'* ]]; then printf 'test-registry'; fi
 STUB
 chmod +x "$work/bin/docker"
 export PATH="$work/bin:$PATH"
@@ -23,10 +26,22 @@ if bash "$work/project/scripts/pipeline.sh" verify > "$work/missing.log" 2>&1; t
 fi
 test ! -e "$CALLS"
 printf 'test public key' > "$KEYS_DIR/cosign.pub"
-printf 'test signature' > "$ARTIFACTS_DIR/sbom.sig"
+printf '{}' > "$ARTIFACTS_DIR/sbom.bundle.json"
+printf 'localhost:5000/demo@sha256:fixture' > "$ARTIFACTS_DIR/image-digest.txt"
 printf '{}' > "$ARTIFACTS_DIR/sbom.cdx.json"
 bash "$work/project/scripts/pipeline.sh" verify
-test "$(wc -l < "$CALLS")" -eq 2
+test "$(grep -c ' verify\| verify-blob\| verify-attestation' "$CALLS")" -eq 3
 ! grep -q 'generate-key-pair' "$CALLS"
 test ! -e "$KEYS_DIR/cosign.key"
+for remote in example.org:5000 localhost.attacker.example:5000; do
+  if LOCAL_DEMO=1 REGISTRY="$remote" bash "$work/project/scripts/pipeline.sh" verify > "$work/remote.log" 2>&1; then
+    echo "Local-only signing must reject remote registries" >&2; exit 1
+  fi
+done
+if LOCAL_DEMO=1 IMAGE=example.org/demo:dev bash "$work/project/scripts/pipeline.sh" verify > "$work/image.log" 2>&1; then
+  echo "Local-only signing must reject a remote image override" >&2; exit 1
+fi
+if IMAGE=localhost:5000/demo@sha256:other bash "$work/project/scripts/pipeline.sh" verify > "$work/mismatch.log" 2>&1; then
+  echo "Verification must reject a different selected image" >&2; exit 1
+fi
 echo "Pipeline verification orchestration checks passed"

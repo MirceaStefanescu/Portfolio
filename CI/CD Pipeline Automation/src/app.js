@@ -16,12 +16,22 @@ function createApp() {
     registers: [register]
   });
 
+  const httpDuration = new promClient.Histogram({
+    name: "http_server_requests_seconds",
+    help: "HTTP request duration in seconds",
+    labelNames: ["method", "route", "status"],
+    buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+    registers: [register]
+  });
+
   app.use(express.json());
   app.use(express.static(path.join(__dirname, "..", "public")));
 
   app.use((req, res, next) => {
+    const endTimer = httpDuration.startTimer();
     res.on("finish", () => {
-      const route = req.route?.path || req.path || "unknown";
+      const route = req.route?.path || "unmatched";
+      endTimer({ method: req.method, route, status: String(res.statusCode) });
       httpRequestsTotal.inc({
         method: req.method,
         route,

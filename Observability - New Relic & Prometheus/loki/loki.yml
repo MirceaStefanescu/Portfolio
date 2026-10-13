@@ -4,6 +4,8 @@ server:
   http_listen_port: 3100
 
 ingester:
+  wal:
+    dir: /loki/wal
   lifecycler:
     address: 127.0.0.1
     ring:
@@ -43,3 +45,6 @@ chunk_store_config:
 table_manager:
   retention_deletes_enabled: false
   retention_period: 0s
+
+compactor:
+  working_directory: /loki/compactor

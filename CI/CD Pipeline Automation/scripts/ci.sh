@@ -10,8 +10,15 @@ FULL_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 TF_ENV="${TF_ENV:-local-kind}"
 TF_DIR="terraform/environments/${TF_ENV}"
 
+if [[ "$TF_ENV" == "local-kind" ]]; then
+  export KUBECONFIG="${KUBECONFIG:-$ROOT_DIR/.kube/config}"
+  export KUBECONTEXT="${KUBECONTEXT:-kind-${CLUSTER_NAME:-cicd-demo}}"
+  export TF_VAR_kubeconfig="$KUBECONFIG"
+  export TF_VAR_kube_context="$KUBECONTEXT"
+fi
+
 echo "Installing dependencies"
-npm install
+npm ci
 
 echo "Linting"
 npm run lint
@@ -23,6 +30,9 @@ echo "Building Docker image ${FULL_IMAGE}"
 docker build -t "${FULL_IMAGE}" .
 
 if [[ "${RUN_TERRAFORM:-false}" == "true" ]]; then
+  if [[ "$TF_ENV" == "local-kind" ]]; then
+    kind load docker-image "$FULL_IMAGE" --name "${CLUSTER_NAME:-cicd-demo}"
+  fi
   echo "Running Terraform apply"
   terraform -chdir="${TF_DIR}" init -input=false
   terraform -chdir="${TF_DIR}" apply -auto-approve \
@@ -37,7 +47,7 @@ fi
 if [[ "${RUN_ANSIBLE:-false}" == "true" ]]; then
   echo "Running Ansible configuration"
   ansible-playbook -i ansible/inventory/local.ini ansible/playbooks/configure-app.yml \
-    -e "environment=${ENVIRONMENT:-dev}" \
+    -e "app_environment=${ENVIRONMENT:-dev}" \
     -e "release_color=${RELEASE_COLOR:-blue}" \
     -e "build_id=${IMAGE_TAG}" \
     -e "git_sha=${GIT_SHA:-dev}" \
@@ -49,6 +59,6 @@ if [[ "${RUN_DEPLOY:-false}" == "true" ]]; then
   if [[ "${DEPLOY_MODE:-blue-green}" == "rolling" ]]; then
     IMAGE="${FULL_IMAGE}" ./scripts/rolling.sh
   else
-    ./scripts/blue-green.sh "${RELEASE_COLOR:-blue}"
+    IMAGE="${FULL_IMAGE}" ./scripts/blue-green.sh "${RELEASE_COLOR:-blue}"
   fi
 fi

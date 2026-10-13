@@ -118,3 +118,16 @@ Secrets: use `.env` (see `.env.example`). Vault handles runtime secret injection
 - Jenkins plus GitHub Actions keeps legacy jobs compatible while enabling GitHub-native workflows.
 - Terraform modules and Helm charts provide reusable, auditable building blocks.
 - Vault centralizes secret management to avoid per-pipeline secret sprawl.
+
+## Isolated functional demonstration
+
+From the repository root:
+
+```bash
+python scripts/demo-check.py portal
+# Retain a successful stack for inspection:
+python scripts/demo-check.py portal --keep
+```
+
+The verifier uses fresh data and random loopback ports, prints the exact URLs and
+cleanup command, and fails if the demonstrated behavior is missing. The portal generates templates; it does not provision an external environment merely by rendering them.

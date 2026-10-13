@@ -16,3 +16,6 @@
 **/.env
 **/.env.local
 **/runs/
+
+# Private credentials for isolated local Kubernetes demos
+**/.kube/
