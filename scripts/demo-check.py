@@ -134,7 +134,7 @@ def chat(ports, command):
 def ecommerce(ports, command):
     port = ports["backend"][8080]
     wait(lambda: http(port, "/actuator/health")[0] == 200, "E-commerce API")
-    assert http(ports["frontend"][80])[0] == 200
+    wait(lambda: http(ports["frontend"][80])[0] == 200, "E-commerce frontend")
     products = successful(port, "/api/products")
     assert products
     user = {"fullName": "Local Demo", "email": f"demo-{uuid.uuid4().hex[:8]}@example.test",
