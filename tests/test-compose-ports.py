@@ -2,6 +2,7 @@
 import json
 import os
 import secrets
+import sys
 import subprocess
 from pathlib import Path
 
@@ -18,8 +19,10 @@ for name in files:
     result = subprocess.run(
         ["docker", "compose", "-f", str(root / name), "config",
          "--no-env-resolution", "--format", "json"],
-        check=True, capture_output=True, text=True, env=environment,
+        check=False, capture_output=True, text=True, env=environment,
     )
+    if result.returncode:
+        sys.exit(f"{name}: {result.stderr.strip()}")
     configuration = json.loads(result.stdout)
     for service, value in configuration["services"].items():
         for port in value.get("ports", []):

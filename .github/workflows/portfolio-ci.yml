@@ -126,6 +126,8 @@ jobs:
         with:
           python-version: '3.14'
       - run: ./portfolio-launcher.sh --list
+      - name: Prepare documented Chat environment example
+        run: cp "Real-Time Chat & Collaboration Platform/.env.example" "Real-Time Chat & Collaboration Platform/.env"
       - run: python tests/test-compose-ports.py
       - run: bash tests/test-portfolio-launcher.sh
       - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promote.sh"
