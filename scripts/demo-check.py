@@ -279,7 +279,7 @@ def main():
     empty_env = workspace / "empty.env"
     empty_env.write_text("", encoding="utf-8")
     environment = os.environ.copy()
-    environment.update(JWT_SECRET=secrets.token_urlsafe(48), DEV_API_KEY=secrets.token_urlsafe(48),
+    environment.update(CHAT_ENV_FILE=str(empty_env), JWT_SECRET=secrets.token_urlsafe(48), DEV_API_KEY=secrets.token_urlsafe(48),
                        DEMO_AUTH="true", STRIPE_MOCK_ENABLED="true", STRIPE_SECRET_KEY="",
                        DB_URL="jdbc:postgresql://postgres:5432/chat", DB_USERNAME="chat", DB_PASSWORD="chat")
     path, services, published = PROJECTS[args.project]

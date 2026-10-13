@@ -47,7 +47,7 @@ services:
     build:
       context: ../backend
     env_file:
-      - ../.env
+      - ${CHAT_ENV_FILE:-../.env}
     environment:
       DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/chat}
       DB_USERNAME: ${DB_USERNAME:-chat}
