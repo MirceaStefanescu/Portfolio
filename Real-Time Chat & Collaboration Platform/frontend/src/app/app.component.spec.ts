@@ -1,3 +1,4 @@
+import { ChangeDetectorRef, provideZonelessChangeDetection } from "@angular/core";
 import { Subject, of } from "rxjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppComponent } from "./app.component";
@@ -31,7 +32,7 @@ describe("room timeline and composer", () => {
     };
     component = new AppComponent(service as unknown as ChatService, {
       user$: of(null), loadProfile: () => of(null)
-    } as unknown as AuthService);
+    } as unknown as AuthService, { markForCheck: vi.fn() } as unknown as ChangeDetectorRef);
     component.ngOnInit();
   });
 
@@ -86,5 +87,39 @@ describe("room timeline and composer", () => {
     histories.get("a")!.next([message("late", "a")]);
     expect(component.messages).toEqual([]);
     expect(service["disconnect"]).toHaveBeenCalledOnce();
+  });
+});
+
+
+describe("asynchronous rendering with zoneless Angular", () => {
+  it("renders profile, connection, rooms and incoming messages without a user event", async () => {
+    const connected = new Subject<boolean>();
+    const rooms = new Subject<ChatRoom[]>();
+    const incoming = new Subject<ChatMessage>();
+    const profile = new Subject<any>();
+    await TestBed.configureTestingModule({
+      imports: [AppModule],
+      providers: [provideZonelessChangeDetection(),
+        { provide: ChatService, useValue: {
+          connect: vi.fn(), disconnect: vi.fn(), subscribeToRoom: vi.fn(),
+          connected$: connected, messages$: incoming,
+          listRooms: () => rooms, getMessages: () => of([])
+        } },
+        { provide: AuthService, useValue: { user$: profile, loadProfile: () => of(null) } }
+      ]
+    }).compileComponents();
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    connected.next(true);
+    profile.next({ username: "demo", displayName: "Demo User" });
+    rooms.next([room("rendered-room")]);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain("Connected");
+    expect(fixture.nativeElement.textContent).toContain("Demo User");
+    expect(fixture.nativeElement.textContent).toContain("rendered-room");
+    incoming.next(message("received-without-click", "rendered-room"));
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain("received-without-click");
   });
 });

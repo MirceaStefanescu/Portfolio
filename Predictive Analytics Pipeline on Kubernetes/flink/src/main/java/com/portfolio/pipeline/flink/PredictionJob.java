@@ -104,7 +104,8 @@ public class PredictionJob {
     Elasticsearch7SinkBuilder<Prediction> builder = new Elasticsearch7SinkBuilder<>();
     builder.setHosts(HttpHost.create(host));
     builder.setEmitter((prediction, context, indexer) -> indexPrediction(prediction, indexer));
-    builder.setBulkFlushMaxActions(200);
+    builder.setBulkFlushMaxActions(200)
+            .setBulkFlushInterval(1000L);
     return builder.build();
   }
 

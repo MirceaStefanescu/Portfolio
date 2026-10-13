@@ -61,6 +61,14 @@ jobs:
         run: npm run build
       - if: ${{ matrix.directory == 'CI/CD Pipeline Automation' }}
         run: npm run lint
+      - if: ${{ matrix.directory == 'CI/CD Pipeline Automation' }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14' # ansible-core 2.21 supports control nodes through Python 3.14
+      - if: ${{ matrix.directory == 'CI/CD Pipeline Automation' }}
+        run: python -m pip install ansible-core==2.21.5
+      - if: ${{ matrix.directory == 'CI/CD Pipeline Automation' }}
+        run: bash scripts/test-ansible.sh
 
   java:
     runs-on: ubuntu-latest
@@ -221,6 +229,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: make test
 
+  demo-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [portal, chat, ecommerce, predictive, observability, secrets]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.15'
+      - name: Verify an isolated runnable demo and clean up its data
+        run: python scripts/demo-check.py "${{ matrix.project }}"
+
   terraform:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -318,7 +341,7 @@ jobs:
   status:
     name: Portfolio status
     if: ${{ always() }}
-    needs: [node, java, cloud-native-python, broker-integration, launcher, chat-postgres, container-validation, docker-build, terraform, helm, finops, gitops, prompt-quality, llmops]
+    needs: [node, java, cloud-native-python, broker-integration, launcher, chat-postgres, container-validation, demo-integration, docker-build, terraform, helm, finops, gitops, prompt-quality, llmops]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

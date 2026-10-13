@@ -133,3 +133,16 @@ monitoring, tracing, kubernetes, grafana, prometheus, alertmanager, loki, observ
 Tools and software: docker, kubernetes, grafana, helm, prometheus, alertmanager, loki, new relic, velero, opentelemetry.
 
 Skills: kubernetes, devops, ci/cd.
+
+## Isolated functional demonstration
+
+From the repository root:
+
+```bash
+python scripts/demo-check.py observability
+# Retain a successful stack for inspection:
+python scripts/demo-check.py observability --keep
+```
+
+The verifier uses fresh data and random loopback ports, prints the exact URLs and
+cleanup command, and fails if the demonstrated behavior is missing. The check verifies actual metrics/logs and deliberately stops only its own demo API until Alertmanager receives ServiceDown, then restarts it and verifies resolution. The local receiver does not contact an external notification service.

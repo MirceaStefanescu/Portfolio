@@ -1,8 +1,13 @@
 SHELL := /bin/sh
-TF_ENV ?= local-kind
+export TF_ENV ?= local-kind
+ifeq ($(TF_ENV),local-kind)
+export KUBECONFIG ?= $(CURDIR)/.kube/config
+export TF_VAR_kubeconfig ?= $(KUBECONFIG)
+export TF_VAR_kube_context ?= kind-$(or $(CLUSTER_NAME),cicd-demo)
+endif
 TF_DIR := terraform/environments/$(TF_ENV)
 IMAGE ?= cicd-demo:local
-LOAD_KIND_IMAGE ?= true
+LOAD_KIND_IMAGE ?= $(if $(filter local-kind,$(TF_ENV)),true,false)
 
 .PHONY: dev dev-app test lint ci kind-up kind-down terraform-init terraform-apply terraform-destroy docker-build ansible-config deploy-blue deploy-green deploy-rolling
 
@@ -32,7 +37,10 @@ terraform-init:
 	terraform -chdir=$(TF_DIR) init
 
 terraform-apply:
-	terraform -chdir=$(TF_DIR) apply -auto-approve
+ifeq ($(TF_ENV),local-kind)
+	kind load docker-image "$(IMAGE)" --name "$(or $(CLUSTER_NAME),cicd-demo)"
+endif
+	terraform -chdir=$(TF_DIR) apply -auto-approve -var="image=$(IMAGE)"
 
 terraform-destroy:
 	terraform -chdir=$(TF_DIR) destroy -auto-approve

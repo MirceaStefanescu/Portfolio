@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from "@angular/core";
 import { Subscription } from "rxjs";
 import { AuthService } from "./auth.service";
 import { ChatService } from "./chat.service";
@@ -22,7 +22,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly subscriptions: Subscription[] = [];
   private historySubscription?: Subscription;
 
-  constructor(private chatService: ChatService, private authService: AuthService) {}
+  constructor(private chatService: ChatService, private authService: AuthService, private changes: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.chatService.connect();
@@ -30,6 +30,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.chatService.connected$.subscribe((connected) => {
         this.connected = connected;
+        this.changes.markForCheck();
       })
     );
 
@@ -38,6 +39,7 @@ export class AppComponent implements OnInit, OnDestroy {
         if (this.selectedRoom && message.roomId === this.selectedRoom.id
             && !this.messages.some((existing) => existing.id === message.id)) {
           this.messages = [...this.messages, message];
+        this.changes.markForCheck();
         }
       })
     );
@@ -45,6 +47,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.authService.user$.subscribe((user) => {
         this.user = user;
+        this.changes.markForCheck();
       })
     );
 
@@ -56,12 +59,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.chatService.listRooms().subscribe({
       next: (rooms) => {
         this.rooms = rooms;
+        this.changes.markForCheck();
         if (!this.selectedRoom && rooms.length > 0) {
           this.selectRoom(rooms[0]);
         }
       },
       error: () => {
         this.rooms = [];
+        this.changes.markForCheck();
       }
     });
   }
@@ -75,6 +80,7 @@ export class AppComponent implements OnInit, OnDestroy {
       next: (messages) => {
         const merged = new Map([...messages, ...this.messages].map((message) => [message.id, message]));
         this.messages = [...merged.values()];
+        this.changes.markForCheck();
       },
       error: () => { /* Keep messages already received over the live connection. */ }
     });
@@ -90,6 +96,7 @@ export class AppComponent implements OnInit, OnDestroy {
       next: (room) => {
         this.newRoomName = "";
         this.rooms = [...this.rooms, room];
+        this.changes.markForCheck();
         this.selectRoom(room);
       }
     });

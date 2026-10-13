@@ -94,3 +94,16 @@ are rejected. Logout uses Spring's CSRF-protected confirmation page.
 - Add presence, typing indicators, and message search.
 - Introduce Redis for presence and rate limiting.
 - Tradeoff: session-based auth keeps the UI simple but complicates API use from external clients.
+
+## Isolated functional demonstration
+
+From the repository root:
+
+```bash
+python scripts/demo-check.py chat
+# Retain a successful stack for inspection:
+python scripts/demo-check.py chat --keep
+```
+
+The verifier uses fresh data and random loopback ports, prints the exact URLs and
+cleanup command, and fails if the demonstrated behavior is missing. With `--keep`, open the printed frontend URL in two tabs, create a room, exchange messages and reload to inspect persisted history. Demo authentication is enabled only in this isolated stack.

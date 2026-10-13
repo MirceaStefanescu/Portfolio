@@ -12,7 +12,7 @@ Logs are not arriving in Loki/Grafana, reducing troubleshooting capability.
 
 ## Diagnostics
 PromQL:
-- `rate(loki_ingester_bytes_total[5m])`
+- `rate(loki_distributor_bytes_received_total[5m])`
 
 Docker Compose:
 - `docker compose ps`

@@ -20,9 +20,21 @@ pipeline {
   }
 
   stages {
+    stage("Select local Kubernetes target") {
+      when { expression { return params.TF_ENV == "local-kind" } }
+      steps {
+        script {
+          env.KUBECONFIG = env.KUBECONFIG ?: "${env.WORKSPACE}/.kube/config"
+          env.KUBECONTEXT = env.KUBECONTEXT ?: "kind-${env.CLUSTER_NAME ?: 'cicd-demo'}"
+          env.TF_VAR_kubeconfig = env.KUBECONFIG
+          env.TF_VAR_kube_context = env.KUBECONTEXT
+        }
+      }
+    }
+
     stage("Install") {
       steps {
-        sh "npm install"
+        sh "npm ci"
       }
     }
 
@@ -53,6 +65,11 @@ pipeline {
     stage("Docker Build") {
       steps {
         sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+        script {
+          if (params.TF_ENV == "local-kind" && (params.AUTO_APPLY || params.AUTO_DEPLOY)) {
+            sh "kind load docker-image ${IMAGE_NAME}:${IMAGE_TAG} --name ${env.CLUSTER_NAME ?: 'cicd-demo'}"
+          }
+        }
       }
     }
 
@@ -92,7 +109,7 @@ pipeline {
       steps {
         sh """
           ansible-playbook -i ansible/inventory/local.ini ansible/playbooks/configure-app.yml \
-            -e \\"environment=${ENVIRONMENT}\\" \
+            -e \\"app_environment=${ENVIRONMENT}\\" \
             -e \\"release_color=${RELEASE_COLOR}\\" \
             -e \\"build_id=${IMAGE_TAG}\\" \
             -e \\"git_sha=${env.GIT_COMMIT ?: 'dev'}\\" \
@@ -110,7 +127,7 @@ pipeline {
           if (params.DEPLOY_MODE == "rolling") {
             sh "IMAGE=${IMAGE_NAME}:${IMAGE_TAG} ./scripts/rolling.sh"
           } else {
-            sh "./scripts/blue-green.sh ${RELEASE_COLOR}"
+            sh "IMAGE=${IMAGE_NAME}:${IMAGE_TAG} ./scripts/blue-green.sh ${RELEASE_COLOR}"
           }
         }
       }

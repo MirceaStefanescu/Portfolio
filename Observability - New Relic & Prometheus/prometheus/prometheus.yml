@@ -18,3 +18,14 @@ scrape_configs:
   - job_name: "otel-collector"
     static_configs:
       - targets: ["otel-collector:8889"]
+
+  - job_name: "demo-api"
+    static_configs:
+      - targets: ["demo-api:8080"]
+        labels:
+          namespace: local-demo
+          pod: demo-api
+
+  - job_name: "loki"
+    static_configs:
+      - targets: ["loki:3100"]

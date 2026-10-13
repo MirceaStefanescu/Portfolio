@@ -173,3 +173,16 @@ Local benchmark harness:
 - Grafana
 
 Role: Java Engineer.
+
+## Isolated functional demonstration
+
+From the repository root:
+
+```bash
+python scripts/demo-check.py predictive
+# Retain a successful stack for inspection:
+python scripts/demo-check.py predictive --keep
+```
+
+The verifier uses fresh data and random loopback ports, prints the exact URLs and
+cleanup command, and fails if the demonstrated behavior is missing. The check streams 200 events across event-time windows and compares PostgreSQL results with Elasticsearch. `demo/send-events.sh` uses the same longer stream; the final incomplete window needs newer events, not just wall-clock waiting.

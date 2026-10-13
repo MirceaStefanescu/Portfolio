@@ -2,7 +2,7 @@ environment: prod
 replicaCount: 3
 
 image:
-  tag: "6.5.3"
+  tag: "6.15.0"
 
 rollout:
   enabled: true

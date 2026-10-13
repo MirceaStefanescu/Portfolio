@@ -123,3 +123,16 @@ not justify that decision if browser-managed credentials were introduced.
 tokens: bearer requests succeed, while cookies, query parameters, HTTP Basic,
 stored session authentication, and malformed tokens cannot authenticate.
 Revisit CSRF protection before adding cookie or session authentication.
+
+## Isolated functional demonstration
+
+From the repository root:
+
+```bash
+python scripts/demo-check.py ecommerce
+# Retain a successful stack for inspection:
+python scripts/demo-check.py ecommerce --keep
+```
+
+The verifier uses fresh data and random loopback ports, prints the exact URLs and
+cleanup command, and fails if the demonstrated behavior is missing. The isolated stack enables mock payments. The normal stack still requires an explicitly configured payment mode; a missing Stripe key must not silently enable mock payments.

@@ -4,7 +4,8 @@ filebeat.inputs:
     paths:
       - /var/log/app/app.log
     fields:
-      service: demo-app
+      service:
+        name: demo-app
       log_type: app
     fields_under_root: true
 
@@ -13,7 +14,8 @@ filebeat.inputs:
     paths:
       - /vault/audit/audit.log
     fields:
-      service: vault
+      service:
+        name: vault
       log_type: audit
     fields_under_root: true
 

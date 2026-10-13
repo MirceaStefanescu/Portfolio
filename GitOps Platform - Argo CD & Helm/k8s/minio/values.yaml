@@ -12,3 +12,22 @@ buckets:
 persistence:
   enabled: true
   size: 10Gi
+  storageClass: standard
+
+# Built from pinned official source by make minio; never pulled from a third-party mirror.
+image:
+  repository: portfolio-minio
+  tag: "2025-10-15"
+  pullPolicy: Never
+mcImage:
+  repository: portfolio-mc
+  tag: "2025-08-13"
+  pullPolicy: Never
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1
+    memory: 512Mi

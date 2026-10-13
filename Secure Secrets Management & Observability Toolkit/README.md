@@ -134,3 +134,16 @@ Vault uses its image-owned `/vault/logs` directory for the audit volume and
 existing read-only mounts of those named volumes. Back up retained volumes and
 verify their ownership before migrating an existing installation; the tests use
 new volumes and do not change existing data or permissions.
+
+## Isolated functional demonstration
+
+From the repository root:
+
+```bash
+python scripts/demo-check.py secrets
+# Retain a successful stack for inspection:
+python scripts/demo-check.py secrets --keep
+```
+
+The verifier uses fresh data and random loopback ports, prints the exact URLs and
+cleanup command, and fails if the demonstrated behavior is missing. The check waits for the real secret refresh interval and verifies both application and Vault audit events in Elasticsearch. Secrets are masked in application responses.

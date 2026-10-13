@@ -20,8 +20,10 @@ services:
         "otel-collector:4317",
         "--otlp-insecure",
         "--duration",
-        "0s",
+        "inf",
         "--rate",
+        "1",
+        "--batch-size",
         "1",
         "--service",
         "demo-service"
@@ -39,8 +41,10 @@ services:
         "otel-collector:4317",
         "--otlp-insecure",
         "--duration",
-        "0s",
+        "inf",
         "--rate",
+        "1",
+        "--batch-size",
         "1",
         "--otlp-attributes",
         "service.name=\"demo-service\""
@@ -88,6 +92,7 @@ services:
       - "-config.file=/etc/loki/loki.yml"
     volumes:
       - ./loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/loki
     ports:
       - "127.0.0.1:3100:3100"
 
@@ -101,15 +106,21 @@ services:
     depends_on:
       - loki
 
+  demo-api:
+    build:
+      context: ../CI/CD Pipeline Automation
+    mem_limit: 512m
+
   log-generator:
     image: busybox:1.38
     command:
       - "sh"
       - "-c"
-      - "i=0; while true; do echo \"$$(date -Iseconds) level=info msg=\\\"heartbeat\\\" count=$$i\" >> /var/log/app/app.log; i=$$((i+1)); sleep 2; done"
+      - "i=0; while true; do echo \"$$(date -Iseconds) level=info msg=\\\"heartbeat\\\" count=$$i\" >> /var/log/app/app.log; i=$$((i+1)); wget -q -O /dev/null http://demo-api:8080/api/info || true; sleep 2; done"
     volumes:
       - ./logs:/var/log/app
 
 volumes:
+  loki-data:
   prometheus-data:
   grafana-data:

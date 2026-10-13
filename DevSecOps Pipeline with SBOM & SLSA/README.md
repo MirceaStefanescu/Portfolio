@@ -20,7 +20,7 @@ Supply chain risk and compliance requirements make it hard to ship quickly witho
 - Scans dependencies and images with Trivy and Grype and enforces severity thresholds.
 - Signs images, SBOMs, and provenance attestations with Cosign.
 - Policy gates block releases that fail vulnerability checks.
-- Multi-cloud, high availability pipeline with replicated artifact storage and backups.
+- Local artifact replication into three named storage folders and timestamped backups.
 - Audit-ready metadata and repeatable release promotions.
 
 ## Architecture
@@ -47,7 +47,7 @@ flowchart LR
   Store --> Backup[Backups]
 ```
 
-CI builds produce artifacts and SBOMs, which are scanned and signed before policy gates allow promotion. Signed artifacts and SBOMs are stored in replicated object storage with backups, while container images are pushed to registries in each cloud for high availability and deployment.
+CI builds produce artifacts and SBOMs, which are scanned and signed before policy gates allow promotion. The local implementation copies signed artifacts into filesystem folders named aws, azure and gcp, and pushes the image to a local registry. Real multi-cloud storage, availability and deployment require external integrations.
 
 ## Tech stack (and why)
 - GitHub Actions: repo-native CI workflows with policy gates and traceable runs.
@@ -66,12 +66,14 @@ Prereqs:
 Run:
 ```
 cp .env.example .env
-# update COSIGN_PASSWORD in .env before first run
+# Bash: enter a private password for the local signing key.
+read -rs -p "Local signing password: " COSIGN_PASSWORD; echo
+export COSIGN_PASSWORD
 make dev
 ```
 
 Outputs:
-- `artifacts/`: SBOM, dependency and image scan reports, and SBOM signature.
+- `artifacts/`: SBOM, scanner reports, image digest, signature bundle, generated provenance and verification results.
 - `storage/`: replicated artifacts for AWS/Azure/GCP simulation.
 - `backups/`: timestamped backups of artifacts.
 
@@ -111,7 +113,7 @@ Secrets: use `.env` for local Cosign keys, prefer KMS or keyless OIDC in CI, kee
 - `app/`: demo container image used by the pipeline.
 - `demo/`: pipeline architecture and artifact replication visuals.
 - `scripts/pipeline.sh`: local end-to-end pipeline runner.
-- `policy/provenance.json`: sample SLSA-style provenance predicate.
+- `policy/provenance.json`: illustrative predicate; the runner generates the signed predicate from the actual Dockerfile hash and pushed image digest.
 - `ci/github-actions/pipeline.yml`: GitHub Actions pipeline template.
 - `ci/jenkins/Jenkinsfile`: Jenkins pipeline template.
 
@@ -122,3 +124,21 @@ security, docker, kubernetes, ci/cd, devsecops, github actions, sbom, slsa
 Tools and software: docker, jenkins, terraform, kubernetes, github actions, trivy, grype, cosign.
 
 Skills: java, security, kubernetes, spring boot, ci/cd.
+
+## Local signing and verification boundary
+
+The example selects `LOCAL_DEMO=1` with a loopback registry. This mode verifies
+signatures against the local public key without uploading artifacts to a public
+transparency log. It rejects remote registry/image overrides. Outside this explicit
+mode, Cosign's transparency-log behavior remains enabled. Local signatures and
+SLSA-format metadata do not establish a certified SLSA level or trusted CI builder.
+
+The runner freezes the pushed image digest before SBOM generation and scanning,
+then signs that same digest. The generated provenance includes the actual
+Dockerfile SHA-256. `make verify` checks the image, SBOM bundle and attestation;
+a different selected image, missing inputs or modified SBOM fails verification.
+The High/Critical Trivy and High Grype gates remain enforced.
+
+Use `SCANNER_CACHE_DIR` to select an existing managed cache and `ENV_FILE` to select
+a dedicated environment file. Relative artifact/storage/key paths in `.env` are
+resolved against this project. Keys and signing passwords remain local and ignored.
