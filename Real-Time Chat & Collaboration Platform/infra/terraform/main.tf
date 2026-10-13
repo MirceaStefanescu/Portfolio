@@ -2,7 +2,7 @@ terraform {
   required_providers {
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.24"
+      version = "~> 3.3"
     }
   }
 }
@@ -11,16 +11,16 @@ provider "kubernetes" {
   config_path = var.kubeconfig_path
 }
 
-resource "kubernetes_namespace" "chat" {
+resource "kubernetes_namespace_v1" "chat" {
   metadata {
     name = var.namespace
   }
 }
 
-resource "kubernetes_secret" "app" {
+resource "kubernetes_secret_v1" "app" {
   metadata {
     name      = "realtime-chat-secrets"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
   }
 
   data = {
@@ -33,10 +33,10 @@ resource "kubernetes_secret" "app" {
   type = "Opaque"
 }
 
-resource "kubernetes_persistent_volume_claim" "postgres" {
+resource "kubernetes_persistent_volume_claim_v1" "postgres" {
   metadata {
     name      = "postgres-data"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -48,10 +48,10 @@ resource "kubernetes_persistent_volume_claim" "postgres" {
   }
 }
 
-resource "kubernetes_deployment" "postgres" {
+resource "kubernetes_deployment_v1" "postgres" {
   metadata {
     name      = "postgres"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
     labels = {
       app = "postgres"
     }
@@ -87,7 +87,7 @@ resource "kubernetes_deployment" "postgres" {
             name = "POSTGRES_USER"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.app.metadata[0].name
+                name = kubernetes_secret_v1.app.metadata[0].name
                 key  = "db_username"
               }
             }
@@ -96,7 +96,7 @@ resource "kubernetes_deployment" "postgres" {
             name = "POSTGRES_PASSWORD"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.app.metadata[0].name
+                name = kubernetes_secret_v1.app.metadata[0].name
                 key  = "db_password"
               }
             }
@@ -111,7 +111,7 @@ resource "kubernetes_deployment" "postgres" {
         volume {
           name = "postgres-data"
           persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim.postgres.metadata[0].name
+            claim_name = kubernetes_persistent_volume_claim_v1.postgres.metadata[0].name
           }
         }
       }
@@ -119,10 +119,10 @@ resource "kubernetes_deployment" "postgres" {
   }
 }
 
-resource "kubernetes_service" "postgres" {
+resource "kubernetes_service_v1" "postgres" {
   metadata {
     name      = "postgres"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
   }
   spec {
     selector = {
@@ -135,10 +135,10 @@ resource "kubernetes_service" "postgres" {
   }
 }
 
-resource "kubernetes_deployment" "zookeeper" {
+resource "kubernetes_deployment_v1" "zookeeper" {
   metadata {
     name      = "zookeeper"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
     labels = {
       app = "zookeeper"
     }
@@ -180,10 +180,10 @@ resource "kubernetes_deployment" "zookeeper" {
   }
 }
 
-resource "kubernetes_service" "zookeeper" {
+resource "kubernetes_service_v1" "zookeeper" {
   metadata {
     name      = "zookeeper"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
   }
   spec {
     selector = {
@@ -196,10 +196,10 @@ resource "kubernetes_service" "zookeeper" {
   }
 }
 
-resource "kubernetes_deployment" "kafka" {
+resource "kubernetes_deployment_v1" "kafka" {
   metadata {
     name      = "kafka"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
     labels = {
       app = "kafka"
     }
@@ -257,10 +257,10 @@ resource "kubernetes_deployment" "kafka" {
   }
 }
 
-resource "kubernetes_service" "kafka" {
+resource "kubernetes_service_v1" "kafka" {
   metadata {
     name      = "kafka"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
   }
   spec {
     selector = {
@@ -273,10 +273,10 @@ resource "kubernetes_service" "kafka" {
   }
 }
 
-resource "kubernetes_deployment" "backend" {
+resource "kubernetes_deployment_v1" "backend" {
   metadata {
     name      = "realtime-chat-backend"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
     labels = {
       app = "realtime-chat-backend"
     }
@@ -312,7 +312,7 @@ resource "kubernetes_deployment" "backend" {
             name = "DB_USERNAME"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.app.metadata[0].name
+                name = kubernetes_secret_v1.app.metadata[0].name
                 key  = "db_username"
               }
             }
@@ -321,7 +321,7 @@ resource "kubernetes_deployment" "backend" {
             name = "DB_PASSWORD"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.app.metadata[0].name
+                name = kubernetes_secret_v1.app.metadata[0].name
                 key  = "db_password"
               }
             }
@@ -342,7 +342,7 @@ resource "kubernetes_deployment" "backend" {
             name = "GITHUB_CLIENT_ID"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.app.metadata[0].name
+                name = kubernetes_secret_v1.app.metadata[0].name
                 key  = "github_client_id"
               }
             }
@@ -351,7 +351,7 @@ resource "kubernetes_deployment" "backend" {
             name = "GITHUB_CLIENT_SECRET"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.app.metadata[0].name
+                name = kubernetes_secret_v1.app.metadata[0].name
                 key  = "github_client_secret"
               }
             }
@@ -362,10 +362,10 @@ resource "kubernetes_deployment" "backend" {
   }
 }
 
-resource "kubernetes_service" "backend" {
+resource "kubernetes_service_v1" "backend" {
   metadata {
     name      = "realtime-chat-backend"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
   }
   spec {
     selector = {
@@ -378,10 +378,10 @@ resource "kubernetes_service" "backend" {
   }
 }
 
-resource "kubernetes_deployment" "frontend" {
+resource "kubernetes_deployment_v1" "frontend" {
   metadata {
     name      = "realtime-chat-frontend"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
     labels = {
       app = "realtime-chat-frontend"
     }
@@ -414,10 +414,10 @@ resource "kubernetes_deployment" "frontend" {
   }
 }
 
-resource "kubernetes_service" "frontend" {
+resource "kubernetes_service_v1" "frontend" {
   metadata {
     name      = "realtime-chat-frontend"
-    namespace = kubernetes_namespace.chat.metadata[0].name
+    namespace = kubernetes_namespace_v1.chat.metadata[0].name
   }
   spec {
     selector = {

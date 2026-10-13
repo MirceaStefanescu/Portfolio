@@ -17,5 +17,5 @@ provider "vault" {
 module "app_policy" {
   source = "../../modules/vault-policy"
   name   = "app-policy"
-  policy = file("${path.module}/../../vault/policies/app-policy.hcl")
+  policy = file("${path.module}/../../../vault/policies/app-policy.hcl")
 }

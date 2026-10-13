@@ -4,7 +4,7 @@ locals {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "5.5.0"
+  version = "6.7.3"
 
   name = local.name
   cidr = var.vpc_cidr
@@ -19,13 +19,19 @@ module "vpc" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "20.8.0"
+  version = "21.29.0"
 
-  cluster_name    = local.name
-  cluster_version = var.eks_version
+  name               = local.name
+  kubernetes_version = var.eks_version
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
+
+  addons = {
+    vpc-cni    = { before_compute = true }
+    coredns    = {}
+    kube-proxy = {}
+  }
 
   eks_managed_node_groups = {
     default = {
