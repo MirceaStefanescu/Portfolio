@@ -11,7 +11,7 @@ Event-driven e-commerce platform for high-traffic retail teams that need scalabl
 - Prometheus metrics and Grafana dashboards for service and business KPIs
 
 ## Tech stack (and why)
-- Backend: Spring Boot (Java 17) microservices with Actuator metrics for production readiness.
+- Backend: Spring Boot (Java 25) microservices with Actuator metrics for production readiness.
 - Eventing: Apache Kafka on AWS MSK for durable, replayable streams.
 - Infra: Amazon EKS + Docker for orchestration and horizontal scaling.
 - CI: Jenkins pipelines for build, test, image publish, and deploy.
@@ -34,7 +34,7 @@ Event-driven e-commerce platform for high-traffic retail teams that need scalabl
 ## Quickstart (local)
 Prereqs:
 - Docker and Docker Compose
-- Java 17+ and Maven (optional for running tests)
+- Java 25+ and Maven (optional for running tests)
 
 Run:
 ```

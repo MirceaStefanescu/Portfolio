@@ -46,5 +46,26 @@ def test_failed_rabbit_publication_closes_connection(monkeypatch):
         messaging.pika.exceptions.AMQPConnectionError()
     )
     monkeypatch.setattr(messaging.pika, "BlockingConnection", lambda _: connection)
-    messaging.send_payment_request({"order_id": "one"})
+    with pytest.raises(messaging.pika.exceptions.AMQPConnectionError):
+        messaging.send_payment_request({"order_id": "one"})
     connection.close.assert_called_once()
+
+
+def test_rabbit_publication_requires_broker_confirmation(monkeypatch):
+    monkeypatch.setenv("RABBITMQ_ENABLED", "true")
+    connection = Mock(is_open=True)
+    channel = connection.channel.return_value
+    monkeypatch.setattr(messaging.pika, "BlockingConnection", lambda _: connection)
+    messaging.send_payment_request({"order_id": "one"})
+    channel.confirm_delivery.assert_called_once()
+    assert channel.basic_publish.call_args.kwargs["mandatory"] is True
+    connection.close.assert_called_once()
+
+
+def test_kafka_publication_failure_is_not_hidden():
+    from kafka.errors import KafkaError
+
+    producer = Mock()
+    producer.send.return_value.get.side_effect = KafkaError("offline")
+    with pytest.raises(KafkaError):
+        messaging.publish_event(producer, "orders", "order.created", {"id": "one"})

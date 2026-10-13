@@ -150,3 +150,13 @@ terraform, kubernetes, ci/cd, helm, argo cd, gitops, velero, multi-env
 Tools and software: docker, terraform, kubernetes, helm, github actions, argo cd, velero.
 
 Skills: kubernetes, devops, terraform, ci/cd.
+
+### Azure and Google provider upgrades
+
+The configurations validate with AzureRM 5.9 and Google 8.6. Existing deployments
+must back up state and review the providers' major-version upgrade guides and a
+plan before applying. Azure requires a subscription ID through the normal provider
+configuration or `ARM_SUBSCRIPTION_ID`. AKS node provisioning stays `Manual`;
+new clusters use the region's recommended Kubernetes version unless overridden.
+Existing clusters should keep an explicit supported version and follow the service's
+sequential upgrade requirements. Validation does not provision or migrate resources.

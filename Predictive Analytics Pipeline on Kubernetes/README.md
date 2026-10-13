@@ -18,7 +18,7 @@ Use case: An IoT sensor network emits temperature events; Flink aggregates and s
 - Apache Flink: low-latency, stateful stream processing and windowed analytics.
 - PostgreSQL: transactional storage for prediction history.
 - Elasticsearch: fast search and analytics over predictions.
-- Spring Boot (Java 17): REST API for ingestion and query access.
+- Spring Boot (Java 25): REST API for ingestion and query access.
 - KEDA + Kubernetes: autoscaling based on Kafka lag signals.
 - Grafana: dashboards for prediction metrics and pipeline health.
 
@@ -33,7 +33,7 @@ Use case: An IoT sensor network emits temperature events; Flink aggregates and s
 ## Quickstart (local)
 Prereqs:
 - Docker and Docker Compose
-- Java 17+ (optional, only if running services outside Docker)
+- Java 25+ (optional, only if running services outside Docker)
 
 Run:
 ```

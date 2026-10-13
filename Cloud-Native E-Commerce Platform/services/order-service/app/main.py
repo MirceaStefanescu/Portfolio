@@ -3,11 +3,13 @@ import os
 import threading
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
+import pika
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
+from kafka.errors import KafkaError
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 
 from app.db import get_connection, init_db
@@ -73,7 +75,7 @@ def metrics() -> Response:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _fetch_product(product_id: str) -> dict:
@@ -211,29 +213,7 @@ def create_order(payload: OrderCreate) -> Order:
 
     ORDERS_CREATED.inc()
 
-    send_payment_request(
-        {
-            "order_id": order_id,
-            "amount_cents": total_cents,
-            "currency": currency,
-            "customer_id": payload.customer_id,
-        }
-    )
-
-    publish_event(
-        app.state.producer,
-        app.state.orders_topic,
-        "order.created",
-        {
-            "order_id": order_id,
-            "customer_id": payload.customer_id,
-            "total_cents": total_cents,
-            "currency": currency,
-            "status": "pending",
-        },
-    )
-
-    return Order(
+    order = Order(
         id=order_id,
         customer_id=payload.customer_id,
         status="pending",
@@ -243,3 +223,45 @@ def create_order(payload: OrderCreate) -> Order:
         created_at=now,
         updated_at=now,
     )
+    _dispatch_order(order)
+    return order
+
+
+def _dispatch_order(order: Order) -> None:
+    try:
+        send_payment_request(
+            {
+                "order_id": order.id,
+                "amount_cents": order.total_cents,
+                "currency": order.currency,
+                "customer_id": order.customer_id,
+            }
+        )
+        publish_event(
+            app.state.producer,
+            app.state.orders_topic,
+            "order.created",
+            {
+                "order_id": order.id,
+                "customer_id": order.customer_id,
+                "total_cents": order.total_cents,
+                "currency": order.currency,
+                "status": "pending",
+            },
+        )
+    except (pika.exceptions.AMQPError, KafkaError, OSError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "message": "Order saved; message delivery pending. Retry the saved order.",
+                "order_id": order.id,
+                "retry_url": f"/orders/{order.id}/retry-delivery",
+            },
+        ) from exc
+
+
+@app.post("/orders/{order_id}/retry-delivery", response_model=Order)
+def retry_delivery(order_id: str) -> Order:
+    order = _load_order(order_id)
+    _dispatch_order(order)
+    return _load_order(order_id)

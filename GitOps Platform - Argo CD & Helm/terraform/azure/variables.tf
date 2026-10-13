@@ -18,8 +18,8 @@ variable "cluster_name" {
 
 variable "kubernetes_version" {
   type        = string
-  description = "Kubernetes version"
-  default     = "1.29.2"
+  description = "AKS version override; null selects the regional recommendation for a new cluster"
+  default     = null
 }
 
 variable "node_count" {

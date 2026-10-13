@@ -2,7 +2,7 @@ import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
@@ -77,7 +77,7 @@ def get_product(product_id: str) -> Product:
 @app.post("/products", response_model=Product, status_code=201)
 def create_product(payload: ProductCreate) -> Product:
     product_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     product = Product(
         id=product_id,
         name=payload.name,
@@ -133,7 +133,7 @@ def update_product(product_id: str, payload: ProductUpdate) -> Product:
             else existing["description"],
             "price_cents": payload.price_cents or existing["price_cents"],
             "currency": (payload.currency or existing["currency"]).upper(),
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
 
         conn.execute(

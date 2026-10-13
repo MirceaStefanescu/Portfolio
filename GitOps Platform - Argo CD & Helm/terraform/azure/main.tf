@@ -24,6 +24,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
   dns_prefix          = "${var.cluster_name}-dns"
   kubernetes_version  = var.kubernetes_version
 
+  node_provisioning_profile {
+    mode = "Manual"
+  }
+
   default_node_pool {
     name           = "system"
     node_count     = var.node_count

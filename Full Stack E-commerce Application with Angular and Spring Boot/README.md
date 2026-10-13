@@ -12,7 +12,7 @@ This project demonstrates an end-to-end online shop with a modern SPA UI, RESTfu
 - Order creation, confirmation, and history APIs
 
 ## Tech stack
-- Backend: Spring Boot 4 (Java 21), Spring Security, JPA/Hibernate, JWT (mature, production-ready REST stack)
+- Backend: Spring Boot 4 (Java 26), Spring Security, JPA/Hibernate, JWT (mature, production-ready REST stack)
 - Frontend: Angular 22, TypeScript, RxJS (typed SPA with component-driven UI)
 - Infra: MySQL 8, Docker Compose, Nginx, Stripe API (local parity and external payment integration)
 - CI: root Portfolio CI runs backend verification and frontend tests/builds on pull requests.
@@ -34,7 +34,7 @@ This project demonstrates an end-to-end online shop with a modern SPA UI, RESTfu
 ## Quickstart (local)
 Prereqs:
 - Docker (recommended)
-- Or: Node.js 26.10+ (26.x), Angular CLI, Java 21, Maven, MySQL 8+
+- Or: Node.js 26.11.1+ (26.x), Angular CLI, Java 26, Maven, MySQL 8+
 
 Run with Docker (one command):
 ```bash

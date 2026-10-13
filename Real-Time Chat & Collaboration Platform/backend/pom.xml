@@ -18,7 +18,7 @@
   <description>Real-time chat backend with WebSocket, Kafka, and PostgreSQL</description>
 
   <properties>
-    <java.version>17</java.version>
+    <java.version>25</java.version>
     <postgresql.version>42.7.14</postgresql.version>
   </properties>
 
