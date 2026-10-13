@@ -46,8 +46,9 @@ def publish_event(
     event = {"event_type": event_type, "payload": payload}
     try:
         producer.send(topic, event).get(timeout=5)
-    except KafkaError as exc:  # pragma: no cover - broker integration
+    except KafkaError as exc:
         LOGGER.warning("Failed to publish Kafka event: %s", exc)
+        raise
 
 
 def start_payment_request_consumer(
@@ -90,7 +91,7 @@ def _rabbit_loop(
                 except (ValueError, TypeError) as exc:
                     LOGGER.warning("Invalid payment request: %s", exc)
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-                except sqlite3.Error:
+                except (sqlite3.Error, KafkaError):
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
                     raise
                 else:
@@ -99,7 +100,7 @@ def _rabbit_loop(
             channel.basic_consume(queue=queue, on_message_callback=callback)
             while not stop_event.is_set():
                 connection.process_data_events(time_limit=1)
-        except (pika.exceptions.AMQPError, OSError, sqlite3.Error) as exc:
+        except (pika.exceptions.AMQPError, OSError, sqlite3.Error, KafkaError) as exc:
             LOGGER.warning("RabbitMQ consumer error: %s", exc)
         finally:
             if connection is not None and connection.is_open:

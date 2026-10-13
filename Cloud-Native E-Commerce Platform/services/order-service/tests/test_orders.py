@@ -63,3 +63,41 @@ def test_product_service_connection_failure_is_a_bad_gateway(client, monkeypatch
     )
     assert response.status_code == 502
     assert client.get("/orders").json() == []
+
+
+def test_failed_delivery_can_retry_existing_order_without_duplicate(
+    client, monkeypatch
+):
+    from unittest.mock import Mock
+
+    import pika
+
+    from app import main
+
+    monkeypatch.setattr(
+        main,
+        "_fetch_product",
+        lambda _: {
+            "id": "one",
+            "name": "Coffee",
+            "price_cents": 500,
+            "currency": "USD",
+        },
+    )
+    dispatch = Mock(side_effect=[pika.exceptions.AMQPConnectionError(), None])
+    monkeypatch.setattr(main, "send_payment_request", dispatch)
+    counter_before = main.ORDERS_CREATED._value.get()
+    response = client.post(
+        "/orders",
+        json={"customer_id": "one", "items": [{"product_id": "one", "quantity": 2}]},
+    )
+    assert response.status_code == 503
+    detail = response.json()["detail"]
+    saved = client.get("/orders").json()
+    assert len(saved) == 1 and saved[0]["id"] == detail["order_id"]
+    retry = client.post(detail["retry_url"])
+    assert retry.status_code == 200 and retry.json() == saved[0]
+    assert client.get("/orders").json() == saved
+    assert dispatch.call_args_list[0] == dispatch.call_args_list[1]
+    assert main.ORDERS_CREATED._value.get() == counter_before + 1
+    assert client.post("/orders/missing/retry-delivery").status_code == 404

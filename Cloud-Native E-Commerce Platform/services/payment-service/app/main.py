@@ -3,10 +3,11 @@ import os
 import threading
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
+from kafka.errors import KafkaError
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 
 from app.db import get_connection, init_db
@@ -66,7 +67,7 @@ def metrics() -> Response:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _create_payment(order_id: str, amount_cents: int, currency: str) -> Payment:
@@ -95,32 +96,37 @@ def _create_payment(order_id: str, amount_cents: int, currency: str) -> Payment:
                 or existing["currency"] != currency.upper()
             ):
                 raise ValueError("Order already has a payment with different details")
-            return Payment(**dict(existing))
-        conn.execute(
-            """
-            INSERT INTO payments (id, order_id, status, amount_cents, currency, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                payment.id,
-                payment.order_id,
-                payment.status,
-                payment.amount_cents,
-                payment.currency,
-                payment.created_at,
-            ),
-        )
+            payment = Payment(**dict(existing))
+        else:
+            conn.execute(
+                """
+                INSERT INTO payments (id, order_id, status, amount_cents, currency, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    payment.id,
+                    payment.order_id,
+                    payment.status,
+                    payment.amount_cents,
+                    payment.currency,
+                    payment.created_at,
+                ),
+            )
         conn.commit()
 
-    if status == "authorized":
-        PAYMENTS_PROCESSED.inc()
-    else:
-        PAYMENTS_FAILED.inc()
+    if existing is None:
+        if payment.status == "authorized":
+            PAYMENTS_PROCESSED.inc()
+        else:
+            PAYMENTS_FAILED.inc()
+
+    # A redelivery must publish the saved result again before RabbitMQ can ack it.
+    # Consumers use order_id/status idempotently; the payment row is created once.
 
     publish_event(
         app.state.producer,
         app.state.kafka_topic,
-        f"payment.{status}",
+        f"payment.{payment.status}",
         payment.model_dump(),
     )
     return payment
@@ -162,3 +168,8 @@ def create_payment(payload: PaymentCreate) -> Payment:
         return _create_payment(payload.order_id, payload.amount_cents, payload.currency)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except KafkaError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Payment saved; event delivery pending. Retry this order.",
+        ) from exc

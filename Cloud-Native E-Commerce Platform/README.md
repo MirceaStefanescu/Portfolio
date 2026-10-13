@@ -13,7 +13,7 @@ This project demonstrates a production-minded microservices baseline with REST A
 - Prometheus metrics and optional Grafana/Kibana observability stack
 
 ## Tech stack (and why)
-- Backend: Python FastAPI for fast iteration and clean RESTful APIs.
+- Backend: Python 3.15 and FastAPI for RESTful APIs.
 - Messaging: RabbitMQ for command queues, Kafka for durable event streams.
 - Infra: Docker Compose for local dev; Kubernetes manifests for deployment.
 - CI: Jenkins pipeline for lint, test, build, and container publishing.
@@ -123,14 +123,29 @@ Data flow: orders are created via REST, the order service publishes a payment re
 ## Tests
 ```
 make test
+make integration-test
 ```
+
+The integration test uses a unique disposable Compose project with loopback-only,
+random API ports. It exercises the real RabbitMQ/Kafka payment flow, duplicate
+payment requests, and recovery after stopping each broker. Only its own containers,
+networks and volumes are removed on completion.
+
+Payment requests are confirmed by RabbitMQ before success is reported. If order
+message delivery fails, the API returns HTTP 503 with the saved `order_id` and
+`retry_url`. Call `POST /orders/{order_id}/retry-delivery` after broker recovery;
+do not create another order. Payment consumers acknowledge RabbitMQ only after
+Kafka confirms the saved result. Redelivery republishes the same payment, and
+order status updates are idempotent. Direct payment retries reuse `order_id`;
+changed amount/currency is rejected with HTTP 409.
+
 
 ## Security
 Secrets: use `.env` (see `.env.example`). No secrets are committed. For production: enable auth (OAuth/JWT), use TLS for RabbitMQ/Kafka, restrict topics/queues, and apply network policies. This demo assumes a trusted internal network and does not include rate limiting or WAF rules.
 
 ## Roadmap / tradeoffs
 - Add API gateway with auth and rate limits.
-- Introduce saga orchestration and idempotent payment retries.
+- Introduce saga orchestration and a transactional outbox for fully automatic order dispatch recovery.
 - Replace local SQLite with per-service PostgreSQL.
 - Tradeoff: keeping services lightweight makes local runs easy but omits advanced resilience patterns.
 - Contributor tasks: `docs/contributor-tasks.md`.

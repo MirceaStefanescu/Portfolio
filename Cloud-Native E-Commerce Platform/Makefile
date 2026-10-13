@@ -1,6 +1,6 @@
-.PHONY: dev dev-observability lint test build
+.PHONY: dev dev-observability lint test integration-test build
 
-PYTHON_IMAGE := python:3.11-slim
+PYTHON_IMAGE := python:3.15-slim
 
 define run_python
 	docker run --rm -v "$(CURDIR)/$(1):/app" -w /app $(PYTHON_IMAGE) /bin/sh -c "pip install -q --no-cache-dir -r requirements.txt -r requirements-dev.txt && $(2)"
@@ -26,3 +26,7 @@ build:
 	docker build -t cn-product-service ./services/product-service
 	docker build -t cn-order-service ./services/order-service
 	docker build -t cn-payment-service ./services/payment-service
+
+# Uses a unique disposable Compose project, including a Kafka outage probe.
+integration-test:
+	python tests/test_broker_integration.py

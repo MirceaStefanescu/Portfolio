@@ -11,7 +11,7 @@ Secure retrieval-augmented generation (RAG) microservice for platform and knowle
 - New Relic monitoring and Helm-based deployment to multi-cloud Kubernetes clusters.
 
 ## Tech stack (and why)
-- Spring Boot (Java 17): REST API, dependency injection, and production-ready runtime.
+- Spring Boot (Java 25): REST API, dependency injection, and production-ready runtime.
 - Spring Security + JWT: authentication, authorization, and RBAC enforcement.
 - Qdrant (replicated across AZs): vector store for low-latency semantic retrieval and high availability.
 - LangChain4j: RAG orchestration and retrieval workflows in Java.
@@ -31,7 +31,7 @@ Secure retrieval-augmented generation (RAG) microservice for platform and knowle
 
 ## Quickstart (local)
 Prereqs:
-- Java 17+
+- Java 25+
 - Docker and Docker Compose
 - Python 3 (for the demo script)
 

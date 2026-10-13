@@ -56,3 +56,21 @@ See [Contributing](CONTRIBUTING.md) and [Security policy](SECURITY.md).
 Each project's LICENSE applies to that project.
 
 Local Docker Compose demos publish ports on `127.0.0.1` only. Keep this default for demo credentials; remote access requires an explicit, authenticated deployment configuration.
+
+## Verified language versions
+
+The October 2026 compatibility checks use these stable versions in CI and containers:
+
+| Components | Build and runtime |
+| --- | --- |
+| JavaScript/TypeScript applications | Node.js 26.11.1; Angular 22.2.2 uses TypeScript 6.0 |
+| Python services and evaluation tools | Python 3.15 |
+| Full Stack E-commerce backend (Spring Boot 4.1) | Java 26 |
+| Spring Boot 3.5 services | Java 25 |
+| Flink 1.17 job | Java 11, matching its runtime image and connector line |
+
+The latest upstream Java is 27. [Spring Boot 4.1 supports through Java 26](https://docs.spring.io/spring-boot/system-requirements.html)
+and [Spring Boot 3.5 supports through Java 25](https://docs.spring.io/spring-boot/3.5/system-requirements.html).
+Keep builder, compiler target and runtime compatible. Flink language upgrades require
+upgrading and testing the Flink runtime and its version-matched connectors together;
+a JDBC connector for Flink 1.20 is not an isolated update for the 1.17 runtime.

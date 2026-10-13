@@ -46,8 +46,9 @@ def publish_event(
     event = {"event_type": event_type, "payload": payload}
     try:
         producer.send(topic, event).get(timeout=5)
-    except KafkaError as exc:  # pragma: no cover - broker integration
+    except KafkaError as exc:
         LOGGER.warning("Failed to publish Kafka event: %s", exc)
+        raise
 
 
 def send_payment_request(message: dict[str, Any]) -> None:
@@ -63,8 +64,10 @@ def send_payment_request(message: dict[str, Any]) -> None:
         connection = pika.BlockingConnection(params)
         channel = connection.channel()
         channel.queue_declare(queue=queue, durable=True)
+        channel.confirm_delivery()
         channel.basic_publish(
             exchange="",
+            mandatory=True,
             routing_key=queue,
             body=json.dumps(message),
             properties=pika.BasicProperties(delivery_mode=2),
@@ -74,6 +77,7 @@ def send_payment_request(message: dict[str, Any]) -> None:
         OSError,
     ) as exc:  # pragma: no cover - broker integration
         LOGGER.warning("Failed to publish RabbitMQ message: %s", exc)
+        raise
     finally:
         if connection is not None and connection.is_open:
             connection.close()

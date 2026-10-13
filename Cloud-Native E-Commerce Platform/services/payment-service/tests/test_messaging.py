@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from kafka.errors import KafkaError
 
 from app import messaging
 
@@ -16,6 +17,7 @@ from app import messaging
         (b"[]", None, False, False),
         (b'{"order_id": "one"}', ValueError("invalid"), False, False),
         (b'{"order_id": "one"}', sqlite3.OperationalError("busy"), True, False),
+        (b'{"order_id": "one"}', KafkaError("offline"), True, False),
     ],
 )
 def test_consumer_acknowledgement_and_cleanup(
@@ -47,3 +49,13 @@ def test_consumer_acknowledgement_and_cleanup(
     else:
         channel.basic_ack.assert_not_called()
         channel.basic_nack.assert_called_once_with(delivery_tag=7, requeue=requeue)
+
+
+def test_publish_failure_is_reported_to_caller():
+    producer = Mock()
+    producer.send.return_value.get.side_effect = KafkaError("offline")
+    with pytest.raises(KafkaError):
+        messaging.publish_event(
+            producer, "payments", "payment.authorized", {"id": "one"}
+        )
+    producer.send.return_value.get.assert_called_once_with(timeout=5)

@@ -49,7 +49,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '26.10.0'
+          node-version: '26.11.1'
           cache: npm
           cache-dependency-path: ${{ matrix.directory }}/package-lock.json
       - run: npm ci
@@ -74,7 +74,7 @@ jobs:
           - directory: Event-Driven E-Commerce Platform/services/inventory-service
             java: '25'
           - directory: Full Stack E-commerce Application with Angular and Spring Boot/backend
-            java: '25'
+            java: '26'
           - directory: Real-Time Chat & Collaboration Platform/backend
             java: '25'
           - directory: Secure RAG Service & Knowledge API/api
@@ -109,13 +109,24 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: '3.14'
+          python-version: '3.15'
           cache: pip
           cache-dependency-path: Cloud-Native E-Commerce Platform/services/*/requirements*.txt
       - run: python -m pip install -r requirements.txt -r requirements-dev.txt
       - run: python -m ruff check app tests
       - run: python -m ruff format --check app tests
       - run: python -m pytest -q
+
+  broker-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.15'
+      - run: make integration-test
+        working-directory: Cloud-Native E-Commerce Platform
 
   launcher:
     runs-on: ubuntu-latest
@@ -124,7 +135,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: '3.14'
+          python-version: '3.15'
       - run: ./portfolio-launcher.sh --list
       - name: Prepare documented Chat environment example
         run: cp "Real-Time Chat & Collaboration Platform/.env.example" "Real-Time Chat & Collaboration Platform/.env"
@@ -190,7 +201,7 @@ jobs:
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '25'
           cache: maven
       - run: mvn --batch-mode --no-transfer-progress --strict-checksums -Dtest=ChatPostgresIntegrationTest test
 
@@ -307,7 +318,7 @@ jobs:
   status:
     name: Portfolio status
     if: ${{ always() }}
-    needs: [node, java, cloud-native-python, launcher, chat-postgres, container-validation, docker-build, terraform, helm, finops, gitops, prompt-quality, llmops]
+    needs: [node, java, cloud-native-python, broker-integration, launcher, chat-postgres, container-validation, docker-build, terraform, helm, finops, gitops, prompt-quality, llmops]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -318,5 +329,5 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: '3.14'
+          python-version: '3.15'
       - run: bash scripts/check-ci-status.sh

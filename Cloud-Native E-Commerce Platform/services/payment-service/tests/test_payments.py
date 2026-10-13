@@ -33,3 +33,27 @@ def test_reusing_order_with_changed_payment_is_conflict(client):
     payload["amount_cents"] = 1201
     assert client.post("/payments", json=payload).status_code == 409
     assert client.get("/payments").json()[0]["amount_cents"] == 1200
+
+
+def test_retry_after_kafka_failure_republishes_saved_payment(client, monkeypatch):
+    from unittest.mock import Mock
+
+    from kafka.errors import KafkaError
+
+    from app import main
+
+    publish = Mock(side_effect=[KafkaError("offline"), None])
+    monkeypatch.setattr(main, "publish_event", publish)
+    counter_before = main.PAYMENTS_PROCESSED._value.get()
+    payload = {"order_id": "retry-order", "amount_cents": 1200, "currency": "usd"}
+    assert client.post("/payments", json=payload).status_code == 503
+    saved = client.get("/payments").json()
+    assert len(saved) == 1
+    response = client.post("/payments", json=payload)
+    assert response.status_code == 201
+    assert response.json() == saved[0]
+    assert client.get("/payments").json() == saved
+    assert publish.call_count == 2
+    assert publish.call_args_list[0] == publish.call_args_list[1]
+    assert publish.call_args.args[2:] == ("payment.authorized", saved[0])
+    assert main.PAYMENTS_PROCESSED._value.get() == counter_before + 1
