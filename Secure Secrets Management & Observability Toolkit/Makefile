@@ -1,4 +1,4 @@
-.PHONY: dev down logs rotate-secret test
+.PHONY: dev down logs rotate-secret test unit-test integration-test
 
 dev:
 	docker compose up --build
@@ -12,5 +12,10 @@ logs:
 rotate-secret:
 	docker compose run --rm --entrypoint /init/rotate-secret.sh vault-init
 
-test:
+test: unit-test integration-test
+
+unit-test:
 	docker build --target test --progress=plain ./app
+
+integration-test:
+	bash tests/test-vault.sh

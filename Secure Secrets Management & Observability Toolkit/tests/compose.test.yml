@@ -1,0 +1,5 @@
+services:
+  vault:
+    ports: !reset []
+  app:
+    ports: !reset []
