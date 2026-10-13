@@ -10,6 +10,9 @@ VELERO_NAMESPACE ?= velero
 NEW_RELIC_NAMESPACE ?= newrelic
 
 KUBECOST_CLUSTER_ID ?= finops-local
+KUBECONFORM ?= kubeconform
+KUBERNETES_VERSION ?= 1.36.0
+CRD_SCHEMA_LOCATION := https://raw.githubusercontent.com/datreeio/CRDs-catalog/63669a570e231d4f1f8396d229a1de512bcf0a34/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
 
 MINIO_ACCESS_KEY ?= minioadmin
 MINIO_SECRET_KEY ?= minioadmin
@@ -102,11 +105,10 @@ test:
 	$(MAKE) lint
 
 lint:
-	kubectl apply --dry-run=client --validate=false -f k8s/namespace.yaml
-	kubectl apply --dry-run=client --validate=false -f k8s/workloads/cpu-demo.yaml
-	kubectl apply --dry-run=client --validate=false -f k8s/workloads/cpu-demo-hpa.yaml
-	kubectl apply --dry-run=client --validate=false -f k8s/workloads/load-generator.yaml
-	kubectl apply --dry-run=client --validate=false -f k8s/velero/backup.yaml
+	"$(KUBECONFORM)" -strict -summary -kubernetes-version "$(KUBERNETES_VERSION)" \
+		-schema-location default -schema-location '$(CRD_SCHEMA_LOCATION)' \
+		k8s/namespace.yaml k8s/workloads/cpu-demo.yaml k8s/workloads/cpu-demo-hpa.yaml \
+		k8s/workloads/load-generator.yaml k8s/velero/backup.yaml
 
 build:
 	tar -czf /tmp/finops-manifests.tgz k8s

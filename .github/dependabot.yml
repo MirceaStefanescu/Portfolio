@@ -118,3 +118,41 @@ updates:
       security-updates:
         applies-to: security-updates
         patterns: ['*']
+
+  - package-ecosystem: docker-compose
+    directories:
+      - "/Automated Infrastructure & Deployment Platform"
+      - "/CI/CD Pipeline Automation"
+      - "/Cloud-Native E-Commerce Platform"
+      - "/DevSecOps Pipeline with SBOM & SLSA"
+      - "/Event-Driven E-Commerce Platform"
+      - "/Full Stack E-commerce Application with Angular and Spring Boot"
+      - "/Observability - New Relic & Prometheus"
+      - "/Predictive Analytics Pipeline on Kubernetes"
+      - "/Real-Time Chat & Collaboration Platform/infra"
+      - "/Secure RAG Service & Knowledge API"
+      - "/Secure Secrets Management & Observability Toolkit"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      compatible-updates:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security-updates:
+        applies-to: security-updates
+        patterns: ['*']
+
+  # Other charts reference locally built application images, or contain no images.
+  - package-ecosystem: helm
+    directory: "/GitOps Platform - Argo CD & Helm/charts/platform-service"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      compatible-updates:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security-updates:
+        applies-to: security-updates
+        patterns: ['*']

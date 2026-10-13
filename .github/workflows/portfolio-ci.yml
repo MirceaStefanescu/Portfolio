@@ -210,6 +210,94 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: make test
 
+  terraform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - directory: Automated Infrastructure & Deployment Platform/terraform/environments/dev
+            lock-args: '-lockfile=readonly'
+          - directory: Automated Infrastructure & Deployment Platform/terraform/modules/platform
+            lock-args: ''
+          - directory: CI/CD Pipeline Automation/terraform/environments/aws-eks
+            lock-args: '-lockfile=readonly'
+          - directory: CI/CD Pipeline Automation/terraform/environments/local-kind
+            lock-args: '-lockfile=readonly'
+          - directory: CI/CD Pipeline Automation/terraform/modules/cicd-app
+            lock-args: ''
+          - directory: Cloud-Native E-Commerce Platform/infra/terraform
+            lock-args: '-lockfile=readonly'
+          - directory: GitOps Platform - Argo CD & Helm/terraform/aws
+            lock-args: '-lockfile=readonly'
+          - directory: GitOps Platform - Argo CD & Helm/terraform/azure
+            lock-args: '-lockfile=readonly'
+          - directory: GitOps Platform - Argo CD & Helm/terraform/gcp
+            lock-args: '-lockfile=readonly'
+          - directory: Real-Time Chat & Collaboration Platform/infra/terraform
+            lock-args: '-lockfile=readonly'
+          - directory: Secure Secrets Management & Observability Toolkit/terraform/examples/local-vault
+            lock-args: '-lockfile=readonly'
+          - directory: Secure Secrets Management & Observability Toolkit/terraform/modules/observability-stack
+            lock-args: ''
+          - directory: Secure Secrets Management & Observability Toolkit/terraform/modules/vault-policy
+            lock-args: ''
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    env:
+      TF_IN_AUTOMATION: 'true'
+      TF_LOCK_ARGS: ${{ matrix.lock-args }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.5
+          terraform_wrapper: false
+      - run: terraform fmt -check -diff
+      - run: terraform init -backend=false -input=false $TF_LOCK_ARGS
+      - run: terraform validate -no-color
+
+  helm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - Automated Infrastructure & Deployment Platform/helm/charts/platform-portal
+          - GitOps Platform - Argo CD & Helm/charts/platform-service
+          - Observability - New Relic & Prometheus/helm/reliability-pack
+          - Secure RAG Service & Knowledge API/helm/secure-rag
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v4.3.0
+      - name: Lint and render chart
+        env:
+          CHART: ${{ matrix.chart }}
+        run: |
+          helm lint --strict "$CHART"
+          helm template validation "$CHART" > "$RUNNER_TEMP/rendered.yaml"
+          test -s "$RUNNER_TEMP/rendered.yaml"
+
+  finops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install verified kubeconform release
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl --fail --silent --show-error --location --output kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
+          echo '9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883  kubeconform.tar.gz' | sha256sum --check --strict
+          tar -xzf kubeconform.tar.gz kubeconform
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - run: make test
+        working-directory: Kubernetes FinOps & Cost Optimization
+
   gitops:
     uses: ./.github/workflows/gitops-platform-ci.yml
   prompt-quality:
@@ -219,7 +307,7 @@ jobs:
   status:
     name: Portfolio status
     if: ${{ always() }}
-    needs: [node, java, cloud-native-python, launcher, chat-postgres, container-validation, docker-build, gitops, prompt-quality, llmops]
+    needs: [node, java, cloud-native-python, launcher, chat-postgres, container-validation, docker-build, terraform, helm, finops, gitops, prompt-quality, llmops]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

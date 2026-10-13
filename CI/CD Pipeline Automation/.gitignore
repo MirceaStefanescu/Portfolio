@@ -6,7 +6,6 @@ coverage/
 .DS_Store
 deploy/
 .terraform/
-.terraform.lock.hcl
 terraform.tfstate
 terraform.tfstate.*
 *.retry

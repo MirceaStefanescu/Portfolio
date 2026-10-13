@@ -42,6 +42,6 @@ variable "private_subnet_cidrs" {
 
 variable "eks_version" {
   type        = string
-  default     = "1.29"
+  default     = "1.36"
   description = "EKS cluster version."
 }

@@ -5,16 +5,16 @@ locals {
   }
 }
 
-resource "kubernetes_namespace" "app" {
+resource "kubernetes_namespace_v1" "app" {
   metadata {
     name = var.namespace
   }
 }
 
-resource "kubernetes_config_map" "env" {
+resource "kubernetes_config_map_v1" "env" {
   metadata {
     name      = "${var.app_name}-env"
-    namespace = kubernetes_namespace.app.metadata[0].name
+    namespace = kubernetes_namespace_v1.app.metadata[0].name
     labels    = local.common_labels
   }
 
@@ -26,12 +26,12 @@ resource "kubernetes_config_map" "env" {
   }
 }
 
-resource "kubernetes_deployment" "blue" {
+resource "kubernetes_deployment_v1" "blue" {
   count = var.deploy_mode == "blue-green" ? 1 : 0
 
   metadata {
     name      = "${var.app_name}-blue"
-    namespace = kubernetes_namespace.app.metadata[0].name
+    namespace = kubernetes_namespace_v1.app.metadata[0].name
     labels    = merge(local.common_labels, { color = "blue" })
   }
 
@@ -62,7 +62,7 @@ resource "kubernetes_deployment" "blue" {
 
           env_from {
             config_map_ref {
-              name = kubernetes_config_map.env.metadata[0].name
+              name = kubernetes_config_map_v1.env.metadata[0].name
             }
           }
 
@@ -94,12 +94,12 @@ resource "kubernetes_deployment" "blue" {
   }
 }
 
-resource "kubernetes_deployment" "green" {
+resource "kubernetes_deployment_v1" "green" {
   count = var.deploy_mode == "blue-green" ? 1 : 0
 
   metadata {
     name      = "${var.app_name}-green"
-    namespace = kubernetes_namespace.app.metadata[0].name
+    namespace = kubernetes_namespace_v1.app.metadata[0].name
     labels    = merge(local.common_labels, { color = "green" })
   }
 
@@ -130,7 +130,7 @@ resource "kubernetes_deployment" "green" {
 
           env_from {
             config_map_ref {
-              name = kubernetes_config_map.env.metadata[0].name
+              name = kubernetes_config_map_v1.env.metadata[0].name
             }
           }
 
@@ -162,12 +162,12 @@ resource "kubernetes_deployment" "green" {
   }
 }
 
-resource "kubernetes_deployment" "rolling" {
+resource "kubernetes_deployment_v1" "rolling" {
   count = var.deploy_mode == "rolling" ? 1 : 0
 
   metadata {
     name      = "${var.app_name}-rolling"
-    namespace = kubernetes_namespace.app.metadata[0].name
+    namespace = kubernetes_namespace_v1.app.metadata[0].name
     labels    = merge(local.common_labels, { track = "stable" })
   }
 
@@ -207,7 +207,7 @@ resource "kubernetes_deployment" "rolling" {
 
           env_from {
             config_map_ref {
-              name = kubernetes_config_map.env.metadata[0].name
+              name = kubernetes_config_map_v1.env.metadata[0].name
             }
           }
 
@@ -239,12 +239,12 @@ resource "kubernetes_deployment" "rolling" {
   }
 }
 
-resource "kubernetes_service" "blue_green" {
+resource "kubernetes_service_v1" "blue_green" {
   count = var.deploy_mode == "blue-green" ? 1 : 0
 
   metadata {
     name      = var.app_name
-    namespace = kubernetes_namespace.app.metadata[0].name
+    namespace = kubernetes_namespace_v1.app.metadata[0].name
     labels    = local.common_labels
   }
 
@@ -261,12 +261,12 @@ resource "kubernetes_service" "blue_green" {
   }
 }
 
-resource "kubernetes_service" "rolling" {
+resource "kubernetes_service_v1" "rolling" {
   count = var.deploy_mode == "rolling" ? 1 : 0
 
   metadata {
     name      = var.app_name
-    namespace = kubernetes_namespace.app.metadata[0].name
+    namespace = kubernetes_namespace_v1.app.metadata[0].name
     labels    = local.common_labels
   }
 

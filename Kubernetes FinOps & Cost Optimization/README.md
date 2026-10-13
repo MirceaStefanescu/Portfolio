@@ -153,3 +153,16 @@ monitoring, cost, kubernetes, autoscaling, grafana, prometheus, cost optimizatio
 Tools and software: docker, kubernetes, grafana, helm, prometheus, new relic, hpa, cluster autoscaler, velero, kubecost, opencost.
 
 Skills: kubernetes, devops.
+
+## Validation without a cluster
+
+`make test` uses kubeconform 0.8.0 to check every deployable manifest against
+Kubernetes 1.36 and the pinned Velero Backup schema. Missing schemas and invalid
+fields fail the check. Install kubeconform from its official release, or set
+`KUBECONFORM` to an existing executable. Schema downloads need network access;
+no kubeconfig, cluster creation, cloud credentials or deployment are needed.
+The CRD schema registry commit is pinned in the Makefile and follows the
+[custom resource workflow documented by kubeconform](https://github.com/yannh/kubeconform#customresourcedefinition-crd-support).
+
+Schema validation does not exercise controllers, scheduling, metrics, backups or
+restores. Verify those behaviors in the intended cluster before relying on a deployment.
