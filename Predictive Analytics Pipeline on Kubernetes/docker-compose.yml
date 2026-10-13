@@ -12,7 +12,7 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9094:9092"
+      - "127.0.0.1:9094:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -33,7 +33,7 @@ services:
   postgres:
     image: postgres:15
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_DB: analytics
       POSTGRES_USER: analytics
@@ -45,7 +45,7 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200"
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
@@ -57,7 +57,7 @@ services:
     image: flink:1.17.2-scala_2.12-java11
     command: jobmanager
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
@@ -98,7 +98,7 @@ services:
       - postgres
       - elasticsearch
     ports:
-      - "8082:8080"
+      - "127.0.0.1:8082:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/analytics
       SPRING_DATASOURCE_USERNAME: analytics
@@ -110,7 +110,7 @@ services:
   grafana:
     image: grafana/grafana:10.2.0
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     depends_on:
       - postgres
       - grafana-renderer

@@ -37,14 +37,6 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-  security:
-    oauth2:
-      client:
-        registration:
-          github:
-            client-id: ${GITHUB_CLIENT_ID:}
-            client-secret: ${GITHUB_CLIENT_SECRET:}
-            scope: read:user, user:email
 
 management:
   endpoints:

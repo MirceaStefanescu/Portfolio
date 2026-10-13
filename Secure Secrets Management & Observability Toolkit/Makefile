@@ -13,4 +13,4 @@ rotate-secret:
 	docker compose run --rm --entrypoint /init/rotate-secret.sh vault-init
 
 test:
-	docker compose run --rm --entrypoint npm app test
+	docker build --target test --progress=plain ./app

@@ -2,7 +2,7 @@
 set -euo pipefail
 python - <<'PY'
 import json, os, sys
-expected = {"node", "java", "cloud-native-python", "launcher", "gitops", "prompt-quality", "llmops"}
+expected = {"node", "java", "cloud-native-python", "launcher", "chat-postgres", "container-validation", "docker-build", "gitops", "prompt-quality", "llmops"}
 try:
     results = json.loads(os.environ["NEEDS_JSON"])
     valid = isinstance(results, dict) and set(results) == expected
