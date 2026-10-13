@@ -9,7 +9,7 @@ services:
       GIT_SHA: dev
       DEPLOY_MODE: blue-green
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
   prometheus:
     image: prom/prometheus:v2.49.1
@@ -19,7 +19,7 @@ services:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/prometheus/rules.yml:/etc/prometheus/rules.yml:ro
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     depends_on:
       - app
 
@@ -32,6 +32,6 @@ services:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - prometheus

@@ -125,11 +125,88 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14'
+      - run: ./portfolio-launcher.sh --list
+      - run: python tests/test-compose-ports.py
       - run: bash tests/test-portfolio-launcher.sh
       - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promote.sh"
       - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promotion-pr.sh"
       - run: bash tests/test-ci-status.sh
       - run: bash "DevSecOps Pipeline with SBOM & SLSA/scripts/test-pipeline.sh"
+
+  docker-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        directory:
+          - Automated Infrastructure & Deployment Platform/portal
+          - CI/CD Pipeline Automation
+          - Cloud-Native E-Commerce Platform/services/order-service
+          - Cloud-Native E-Commerce Platform/services/payment-service
+          - Cloud-Native E-Commerce Platform/services/product-service
+          - DevSecOps Pipeline with SBOM & SLSA/app
+          - Event-Driven E-Commerce Platform/services/inventory-service
+          - Event-Driven E-Commerce Platform/services/order-service
+          - Full Stack E-commerce Application with Angular and Spring Boot/backend
+          - Full Stack E-commerce Application with Angular and Spring Boot/frontend
+          - Predictive Analytics Pipeline on Kubernetes/api
+          - Predictive Analytics Pipeline on Kubernetes/flink
+          - Real-Time Chat & Collaboration Platform/backend
+          - Real-Time Chat & Collaboration Platform/frontend
+          - Secure RAG Service & Knowledge API/api
+          - Secure Secrets Management & Observability Toolkit/app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build deployable image
+        working-directory: ${{ matrix.directory }}
+        run: docker build --progress=plain --tag portfolio-validation:ci .
+
+  chat-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: chat_test
+          POSTGRES_USER: chat_test
+          POSTGRES_PASSWORD: integration-only
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U chat_test -d chat_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    defaults:
+      run:
+        working-directory: Real-Time Chat & Collaboration Platform/backend
+    env:
+      CHAT_TEST_DB_URL: jdbc:postgresql://localhost:5432/chat_test
+      CHAT_TEST_DB_USER: chat_test
+      CHAT_TEST_DB_PASSWORD: integration-only
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: mvn --batch-mode --no-transfer-progress --strict-checksums -Dtest=ChatPostgresIntegrationTest test
+
+  container-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        directory:
+          - Secure Secrets Management & Observability Toolkit
+          - Observability - New Relic & Prometheus
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: make test
 
   gitops:
     uses: ./.github/workflows/gitops-platform-ci.yml
@@ -140,7 +217,7 @@ jobs:
   status:
     name: Portfolio status
     if: ${{ always() }}
-    needs: [node, java, cloud-native-python, launcher, gitops, prompt-quality, llmops]
+    needs: [node, java, cloud-native-python, launcher, chat-postgres, container-validation, docker-build, gitops, prompt-quality, llmops]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

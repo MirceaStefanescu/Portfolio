@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --test"
+    "test": "node --test \"test/*.test.js\"",
+    "pretest": "node -e \"require('node:assert/strict').ok(require('node:fs').globSync('test/*.test.js').length, 'No test files found')\""
   },
   "dependencies": {
     "express": "^4.19.2",

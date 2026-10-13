@@ -54,3 +54,5 @@ standalone projects.
 
 See [Contributing](CONTRIBUTING.md) and [Security policy](SECURITY.md).
 Each project's LICENSE applies to that project.
+
+Local Docker Compose demos publish ports on `127.0.0.1` only. Keep this default for demo credentials; remote access requires an explicit, authenticated deployment configuration.

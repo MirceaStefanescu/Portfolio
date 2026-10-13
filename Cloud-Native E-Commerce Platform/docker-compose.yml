@@ -12,7 +12,7 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "29092:29092"
+      - "127.0.0.1:29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -26,13 +26,13 @@ services:
   rabbitmq:
     image: rabbitmq:3.12-management
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
 
   product-service:
     build: ./services/product-service
     ports:
-      - "8010:8000"
+      - "127.0.0.1:8010:8000"
     environment:
       DB_PATH: /data/products.db
       KAFKA_BOOTSTRAP: kafka:9092
@@ -45,7 +45,7 @@ services:
   order-service:
     build: ./services/order-service
     ports:
-      - "8020:8000"
+      - "127.0.0.1:8020:8000"
     environment:
       DB_PATH: /data/orders.db
       PRODUCT_SERVICE_URL: http://product-service:8000
@@ -64,7 +64,7 @@ services:
   payment-service:
     build: ./services/payment-service
     ports:
-      - "8030:8000"
+      - "127.0.0.1:8030:8000"
     environment:
       DB_PATH: /data/payments.db
       KAFKA_BOOTSTRAP: kafka:9092
