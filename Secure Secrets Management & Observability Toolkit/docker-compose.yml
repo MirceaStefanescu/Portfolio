@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   vault:
-    image: hashicorp/vault:1.15.6
+    image: hashicorp/vault:2.1.2
     container_name: vault
     ports:
       - "127.0.0.1:8200:8200"
@@ -17,10 +17,10 @@ services:
       - -dev-root-token-id=${VAULT_DEV_ROOT_TOKEN_ID:-dev-root-token}
       - -dev-listen-address=0.0.0.0:8200
     volumes:
-      - vault-audit:/vault/audit
+      - vault-audit:/vault/logs
 
   vault-init:
-    image: hashicorp/vault:1.15.6
+    image: hashicorp/vault:2.1.2
     depends_on:
       - vault
     environment:
@@ -29,8 +29,8 @@ services:
     volumes:
       - ./vault/init:/init:ro
       - ./vault/policies:/policies:ro
-      - vault-approle:/approle
-      - vault-audit:/vault/audit
+      - vault-approle:/vault/file
+      - vault-audit:/vault/logs
     entrypoint:
       - /bin/sh
       - /init/init.sh
@@ -100,7 +100,7 @@ services:
       - "127.0.0.1:9090:9090"
 
   grafana:
-    image: grafana/grafana:10.4.2
+    image: grafana/grafana:13.2.3
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin

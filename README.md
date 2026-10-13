@@ -74,3 +74,24 @@ and [Spring Boot 3.5 supports through Java 25](https://docs.spring.io/spring-boo
 Keep builder, compiler target and runtime compatible. Flink language upgrades require
 upgrading and testing the Flink runtime and its version-matched connectors together;
 a JDBC connector for Flink 1.20 is not an isolated update for the 1.17 runtime.
+
+### Compose dependency compatibility
+
+The Compose demos use Confluent Kafka and ZooKeeper 7.9.10 together, Vault 2.1.2,
+Qdrant 1.19.2 and Grafana 13.2.3 where compatible. Confluent 7.9 is the last series
+that supports the existing ZooKeeper topology; upgrading to 8 requires a KRaft
+migration. Predictive Analytics retains Grafana 10.2.0 because its existing image
+renderer needs a coordinated authentication upgrade before Grafana 13 can start.
+A tag-only update of that stack is not supported.
+
+The OpenTelemetry Collector uses the `debug` exporter and explicit container
+receiver endpoints. `make test` in Observability validates the images selected by
+Compose, so an image update also updates its configuration validators.
+
+Back up existing persistent data before changing major service versions and follow
+the vendor migration guides. The compatibility probes use isolated demo data;
+they do not migrate existing Grafana, Vault or Qdrant volumes.
+
+References: [Confluent compatibility](https://docs.confluent.io/platform/7.9/installation/versions-interoperability.html),
+[Grafana upgrades](https://grafana.com/docs/grafana/latest/upgrade-guide/upgrade-v13.0/),
+[OpenTelemetry exporter migration](https://github.com/open-telemetry/opentelemetry-collector/issues/11337).

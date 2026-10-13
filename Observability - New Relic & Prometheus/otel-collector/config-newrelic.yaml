@@ -2,7 +2,9 @@ receivers:
   otlp:
     protocols:
       grpc:
+        endpoint: "0.0.0.0:4317"
       http:
+        endpoint: "0.0.0.0:4318"
 
 processors:
   batch:
@@ -16,15 +18,15 @@ exporters:
     endpoint: "https://otlp.nr-data.net"
     headers:
       api-key: ${NEW_RELIC_LICENSE_KEY}
-  logging:
-    loglevel: info
+  debug:
+    verbosity: normal
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, otlphttp/newrelic]
+      exporters: [debug, otlphttp/newrelic]
     metrics:
       receivers: [otlp]
       processors: [batch]

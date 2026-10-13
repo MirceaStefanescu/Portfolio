@@ -121,3 +121,16 @@ Secrets: use `.env` (see `.env.example`). Vault runs in dev mode for local demos
 - Grafana
 
 Role: AI Platform Engineer.
+
+### Vault container compatibility checks
+
+`make test` runs both the six Node tests and an isolated Vault/AppRole integration
+probe. The probe creates a unique Compose project, publishes no ports, checks the
+application can read its secret and verifies the audit file, then removes only its
+temporary containers and volumes.
+
+Vault uses its image-owned `/vault/logs` directory for the audit volume and
+`/vault/file` for the bootstrap output. The application and Filebeat keep their
+existing read-only mounts of those named volumes. Back up retained volumes and
+verify their ownership before migrating an existing installation; the tests use
+new volumes and do not change existing data or permissions.

@@ -25,7 +25,7 @@ services:
       - jenkins_home:/var/jenkins_home
 
   vault:
-    image: hashicorp/vault:1.14
+    image: hashicorp/vault:2.1.2
     ports:
       - "127.0.0.1:8200:8200"
     environment:
@@ -42,7 +42,7 @@ services:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.2.3
     ports:
       - "127.0.0.1:3000:3000"
     environment:
