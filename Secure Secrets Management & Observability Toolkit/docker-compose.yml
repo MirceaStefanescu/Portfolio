@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   vault:
-    image: hashicorp/vault:1.15.6
+    image: hashicorp/vault:2.1.2
     container_name: vault
     ports:
       - "127.0.0.1:8200:8200"
@@ -20,7 +20,7 @@ services:
       - vault-audit:/vault/audit
 
   vault-init:
-    image: hashicorp/vault:1.15.6
+    image: hashicorp/vault:2.1.2
     depends_on:
       - vault
     environment:
