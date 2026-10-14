@@ -93,7 +93,7 @@ services:
       - --strict.perms=false
 
   prometheus:
-    image: prom/prometheus:v2.50.1
+    image: prom/prometheus:v3.15.0
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
