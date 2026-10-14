@@ -29,7 +29,7 @@
 	<properties>
 		<java.version>26</java.version>
 		<jjwt.version>0.13.0</jjwt.version>
-		<stripe.version>31.1.0</stripe.version>
+		<stripe.version>34.0.0</stripe.version>
 	</properties>
 	<dependencies>
         <dependency>
