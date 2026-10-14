@@ -9,7 +9,7 @@
     "pretest": "node -e \"require('node:assert/strict').ok(require('node:fs').globSync('test/*.test.js').length, 'No test files found')\""
   },
   "dependencies": {
-    "express": "^4.19.2",
+    "express": "^5.3.0",
     "node-vault": "^0.13.0",
     "prom-client": "^15.1.0",
     "winston": "^3.13.0"
