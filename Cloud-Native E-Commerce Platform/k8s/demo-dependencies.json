@@ -628,8 +628,35 @@
             "securityContext": {
               "runAsUser": 999,
               "runAsGroup": 999,
-              "fsGroup": 999
-            }
+              "fsGroup": 999,
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "hostname": "rabbitmq",
+            "initContainers": [
+              {
+                "name": "cookie-permissions",
+                "image": "rabbitmq:3.12-management",
+                "command": [
+                  "/bin/sh",
+                  "-ec",
+                  "if [ -f /var/lib/rabbitmq/.erlang.cookie ]; then chmod 600 /var/lib/rabbitmq/.erlang.cookie; fi"
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "data",
+                    "mountPath": "/var/lib/rabbitmq"
+                  }
+                ]
+              }
+            ]
           }
         }
       }

@@ -251,3 +251,7 @@ only the same workload while it is still at zero replicas. Keep it until recover
 is verified. No scheduler or cloud resource is activated by generating a report.
 
 API contract: [OpenCost allocation API](https://opencost.io/docs/integrations/api/).
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

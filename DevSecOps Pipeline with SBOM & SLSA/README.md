@@ -171,3 +171,7 @@ and [SLSA v1 provenance specification](https://slsa.dev/spec/v1.0/provenance).
 Use `SCANNER_CACHE_DIR` to select an existing managed cache and `ENV_FILE` to select
 a dedicated environment file. Relative artifact/storage/key paths in `.env` are
 resolved against this project. Keys and signing passwords remain local and ignored.
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

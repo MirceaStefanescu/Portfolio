@@ -136,3 +136,7 @@ References: [BullMQ job identities](https://docs.bullmq.io/guide/jobs/job-ids),
 Habits, reminders, groups and simulated subscription. Captured from the running local application on 16 October 2026.
 
 ![Habits, reminders, groups and simulated subscription](screenshots/habit-complete-demo.png)
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
