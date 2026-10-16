@@ -283,3 +283,7 @@ self-healing from five replicas back to the desired two, and a second Git revisi
 promoted after health analysis. Velero/Kopia restored 60,000 bytes into a different
 PVC and namespace with an identical SHA-256; both volume jobs and the restore were
 Completed. A successful object-only backup is not accepted as a data-restore test.
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

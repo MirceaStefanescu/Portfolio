@@ -143,3 +143,7 @@ cleanup command, and fails if the demonstrated behavior is missing. The isolated
 Paid simulated order after browser reload. Captured from the running local application on 16 October 2026.
 
 ![Paid simulated order after browser reload](screenshots/orders-functional.png)
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

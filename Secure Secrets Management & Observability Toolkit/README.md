@@ -176,3 +176,7 @@ a failed refresh, and recovers after Vault becomes available. Provisioned Grafan
 rules send firing and resolved events to the local `/alerts` inbox for failed
 refreshes and overdue rotation. The complete demo checks these transitions; it
 does not send email or contact external paging services.
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

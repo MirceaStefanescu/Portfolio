@@ -163,3 +163,7 @@ python scripts/release-environment.py remove --mode preview --id portal-pr-123 -
 OIDC login, role checks and generated templates. Captured from the running local application on 16 October 2026.
 
 ![OIDC login, role checks and generated templates](screenshots/sso-and-generators-functional.png)
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

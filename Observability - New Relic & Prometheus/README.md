@@ -157,3 +157,7 @@ python scripts/demo-check.py observability --keep
 The verifier uses fresh data and random loopback ports, prints the exact URLs and cleanup command, and fails if behavior is missing. It verifies real OTLP/HTTP metrics, Loki logs, provisioned dashboards, two Mimir cluster sources and persistence with both writers stopped. It stops only its own demo API, observes failed synthetic checks and ServiceDown, requires delivery through both local paging protocols after a controlled 503, then verifies resolution and inbox persistence after restart.
 
 Official references: [Mimir local mode](https://grafana.com/docs/mimir/latest/get-started/), [Alertmanager integration configuration](https://prometheus.io/docs/alerting/latest/configuration/), [Blackbox Exporter 0.29](https://github.com/prometheus/blackbox_exporter/releases/tag/v0.29.0).
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

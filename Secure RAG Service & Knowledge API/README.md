@@ -205,3 +205,7 @@ observed two API replicas scaling to three and back to two, 17,250 successful
 requests with zero errors in the bounded persistent-connection load, and retained
 retrieval after replacing both API and Qdrant pods. Removing the namespace deletes
 the disposable application's resources; preserve real PVC data separately.
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

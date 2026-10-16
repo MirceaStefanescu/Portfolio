@@ -84,3 +84,7 @@ dataset with the chosen real model; deterministic fixtures verify the integratio
 ## Decisions and rationale
 - JSONL datasets keep eval data easy to diff and audit.
 - Guardrails are explicit and testable for recruiter-friendly review.
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

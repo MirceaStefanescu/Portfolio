@@ -118,3 +118,7 @@ cleanup command, and fails if the demonstrated behavior is missing. It requires 
 Two-session conversation and persisted messages. Captured from the running local application on 16 October 2026.
 
 ![Two-session conversation and persisted messages](screenshots/conversation-functional.png)
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

@@ -95,3 +95,7 @@ keep it private and delete that exact file to clear the cache. Concurrent misses
 ## Decisions and rationale
 - JSONL tasks keep data human-readable and easy to diff.
 - Run artifacts are stored as JSONL for straightforward audit and downstream processing.
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

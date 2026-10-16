@@ -103,3 +103,7 @@ There are no real charges (`chargedCents=0`), courier bookings or external messa
 Failed shipping with completed refund and local notification. Captured from the running local application on 16 October 2026.
 
 ![Failed shipping with completed refund and local notification](screenshots/compensation-functional.png)
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

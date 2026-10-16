@@ -179,6 +179,12 @@ access and Kubernetes network policies. Local database defaults and RabbitMQ gue
 ## Notes / limitations
 - Use independently managed PostgreSQL credentials and backups outside the local demonstration.
 - Observability stack is optional; Kibana requires a log shipper (see `monitoring/filebeat/`).
+- The local RabbitMQ manifest keeps a stable hostname across pod replacements. Its non-root
+  init container restricts the existing Erlang cookie to mode `0600`; `OnRootMismatch` prevents
+  unnecessary recursive group-permission changes on an already prepared volume. This preserves
+  RabbitMQ's owner-only cookie requirement after a cluster restart. Existing deployments that used
+  pod-derived RabbitMQ node names need an explicit data migration before adopting a different node
+  identity; the demonstration does not migrate or delete those older directories automatically.
 
 ## Decisions and rationale
 - Split by business capability to keep services independently deployable.
@@ -201,3 +207,7 @@ Local benchmark harness:
   - p95 latency: 73.23 ms
   - Throughput: 19.04 req/s
   - Errors: 0.00%
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

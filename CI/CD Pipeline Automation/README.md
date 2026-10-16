@@ -238,3 +238,7 @@ python ../../scripts/release-environment.py remove --mode canary --id cicd-demo 
 The first deployment tests readiness; later revisions exercise progressive
 analysis. See the [shared deployment demonstration](../../GitOps%20Platform%20-%20Argo%20CD%20%26%20Helm/README.md)
 for preview ownership, approximate replica weights and cleanup.
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.

@@ -181,3 +181,7 @@ python scripts/demo-check.py predictive --keep
 
 The verifier uses fresh data and random loopback ports, prints the exact URLs and
 cleanup command, and fails if the demonstrated behavior is missing. The check streams 200 events across event-time windows and compares PostgreSQL results with Elasticsearch. `demo/send-events.sh` uses the same longer stream; the final incomplete window needs newer events, not just wall-clock waiting.
+
+## Verified screenshots
+
+See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
