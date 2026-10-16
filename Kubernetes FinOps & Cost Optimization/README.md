@@ -1,8 +1,21 @@
 # Kubernetes FinOps & Cost Optimization
 
-Multi-cloud FinOps framework for platform teams to reduce Kubernetes spend with Kubecost/OpenCost, autoscaling, and unified cost/performance dashboards.
+## Kubernetes cost visibility
 
-This project standardizes cost allocation, right-sizing, and telemetry so teams can spot waste, tune autoscaling, and keep cost monitoring resilient.
+Identify which workloads consume resources and evaluate where an optimization is worth testing.
+
+**What I can deliver:** Allocation reports, anomaly and budget checks, right-sizing suggestions and guarded idle-workload shutdown/restoration.
+
+**Skills demonstrated:** Kubernetes, OpenCost/Kubecost, Python, HPA, cost reporting.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Cost allocation report generated from the demonstration dataset](screenshots/action-finops-chargeback.png)
+
+*Actual demonstration capture. Reports use synthetic inputs and local estimates; no measured customer savings or live cloud bill is claimed.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Features
 - Kubecost/OpenCost deployed across AWS, Azure, and GCP for cost visibility and allocation.
@@ -255,3 +268,5 @@ API contract: [OpenCost allocation API](https://opencost.io/docs/integrations/ap
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

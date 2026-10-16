@@ -1,6 +1,21 @@
 # LLMOps Evaluation Harness
 
-Open-source evaluation harness for teams that need repeatable LLM quality checks with scored metrics and CI-friendly runs.
+## Repeatable LLM evaluation
+
+Compare changes to an AI feature against explicit examples and acceptance criteria.
+
+**What I can deliver:** Dataset-based evaluations, response and tool-call checks, cached runs and persisted reports that can run in CI.
+
+**Skills demonstrated:** Python, evaluation datasets, graders, SQLite, CI.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Evaluation metrics from an executed local run](screenshots/action-llmops-summary.png)
+
+*Actual demonstration capture. Local mock and HTTP fixtures verify the harness; a target model must be evaluated separately on representative data.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Demo
 - Live: local demonstration; use the commands below.
@@ -99,3 +114,5 @@ keep it private and delete that exact file to clear the cache. Concurrent misses
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

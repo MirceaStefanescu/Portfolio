@@ -1,6 +1,21 @@
 # Real-Time Chat & Collaboration Platform
 
-Real-time chat and collaboration platform for product teams that need low-latency messaging with reliable history and observability.
+## Real-time collaboration features
+
+Add live conversations and useful presence indicators while retaining searchable message history.
+
+**What I can deliver:** Room-based chat, two-way message delivery, typing/presence, rate limits and persisted history with recovery checks.
+
+**Skills demonstrated:** Java, Spring Boot, WebSocket/STOMP, Angular, Kafka, PostgreSQL, Redis.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Two-way conversation in the running chat application](screenshots/action-bidirectional.png)
+
+*Actual demonstration capture. The demonstration uses local identities and services; an external OAuth provider is configured separately.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Features
 - WebSocket/STOMP messaging with room subscriptions
@@ -122,3 +137,5 @@ Two-session conversation and persisted messages. Captured from the running local
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

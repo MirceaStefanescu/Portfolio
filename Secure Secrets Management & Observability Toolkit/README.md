@@ -1,6 +1,21 @@
 # Secure Secrets Management & Observability Toolkit
 
-Secure secrets management and observability toolkit for platform teams that need automated secrets rotation and compliance-ready telemetry on Kubernetes.
+## Application secrets and operational visibility
+
+Replace scattered application credentials with controlled access, rotation and auditable use.
+
+**What I can deliver:** Vault integration, scoped policies, rotation checks, audit logs, dashboards and local KMS/failover demonstrations.
+
+**Skills demonstrated:** Vault, AppRole, Terraform, Prometheus, Grafana, Elasticsearch.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Secrets toolkit monitoring dashboard](screenshots/action-dashboard-secrets-toolkit.png)
+
+*Actual demonstration capture. The KMS and regional failover examples are local; they do not certify a cloud account or regulatory compliance.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Features
 - HashiCorp Vault with AppRole auth, policies, and audit logs
@@ -180,3 +195,5 @@ does not send email or contact external paging services.
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

@@ -1,6 +1,21 @@
 # Event-Driven E-Commerce Platform
 
-A complete local commerce demonstration built with Java 25, Spring Boot and Kafka. Catalog, cart, checkout, payment, shipment, notifications and cancellation can be exercised from the browser or API. Every payment and delivery is simulated; no provider account, email service or cloud subscription is required.
+## Java integrations and order workflows
+
+Coordinate checkout, inventory, payments and delivery across asynchronous services.
+
+**What I can deliver:** Spring Boot APIs and Kafka workflows with order history, compensation, simulated refunds and an operator-visible event trail.
+
+**Skills demonstrated:** Java, Spring Boot, Kafka, PostgreSQL, Schema Registry, Terraform.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Completed order workflow with its recorded saga events](screenshots/action-saga-success.png)
+
+*Actual demonstration capture. Payment, delivery and notification providers are simulated locally; workflow persistence and failure recovery are exercised.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Run the demonstration
 
@@ -107,3 +122,5 @@ Failed shipping with completed refund and local notification. Captured from the 
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

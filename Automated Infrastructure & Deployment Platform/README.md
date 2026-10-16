@@ -1,9 +1,21 @@
 # Automated Infrastructure & Deployment Platform
 
-Automated Infrastructure & Deployment Platform is an internal developer platform for platform engineers and product teams to self-service infrastructure and CI/CD in minutes. Think "Platform Engineering in a box": the portal renders Terraform and Jenkins/GitHub Actions templates on demand (e.g., provision a full CI/CD stack with one click).
+## Developer self-service portal
 
-[![CI](https://github.com/MirceaStefanescu/Portfolio/actions/workflows/portfolio-ci.yml/badge.svg)](https://github.com/MirceaStefanescu/Portfolio/actions/workflows/portfolio-ci.yml)
-[![CodeQL](https://github.com/MirceaStefanescu/Portfolio/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/MirceaStefanescu/Portfolio/actions/workflows/github-code-scanning/codeql)
+Standardize how your team prepares applications and deployment configurations.
+
+**What I can deliver:** A developer portal that generates pipeline and infrastructure templates, checks service health and applies role-based access.
+
+**Skills demonstrated:** Portal UI, template generation, OIDC/RBAC, Jenkins, Terraform, Helm.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Generated GitHub Actions pipeline in the working portal](screenshots/action-github-pipeline.png)
+
+*Actual demonstration capture. Templates and local integrations are demonstrated; generating a template does not provision a cloud account.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Demo
 - Live: local demonstration; use the commands below.
@@ -167,3 +179,5 @@ OIDC login, role checks and generated templates. Captured from the running local
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

@@ -1,9 +1,21 @@
 # Predictive Analytics Pipeline on Kubernetes
 
-Real-time predictive analytics pipeline for data and platform teams that need fast insights from streaming IoT telemetry.
-15-second pitch: A real-time pipeline that ingests Kafka streams, processes them with Flink for streaming ETL and prediction scoring, writes results to PostgreSQL/Elasticsearch, and visualizes metrics in Grafana. Deployed on Kubernetes to demonstrate end-to-end data engineering and MLOps.
+## Streaming data and analytics APIs
 
-Use case: An IoT sensor network emits temperature events; Flink aggregates and scores anomalies per 30-second window; ops teams monitor results in Grafana.
+Process incoming events continuously and expose searchable results to an application or operations team.
+
+**What I can deliver:** Kafka ingestion, Flink windows and scoring, persisted results, API access, monitoring and checkpoint recovery.
+
+**Skills demonstrated:** Java, Kafka, Flink, Spring Boot, PostgreSQL, Elasticsearch, KEDA.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Running Flink streaming job](screenshots/action-flink-job.png)
+
+*Actual demonstration capture. The example uses synthetic sensor events; prediction quality on customer data needs its own evaluation.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Features
 - Kafka ingestion for durable event streams and backpressure handling
@@ -185,3 +197,5 @@ cleanup command, and fails if the demonstrated behavior is missing. The check st
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>
