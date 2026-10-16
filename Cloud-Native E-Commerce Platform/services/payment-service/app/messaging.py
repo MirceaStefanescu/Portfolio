@@ -7,6 +7,7 @@ from collections.abc import Callable
 from typing import Any
 
 import pika
+import psycopg
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
@@ -31,6 +32,8 @@ def build_producer() -> KafkaProducer | None:
         bootstrap_servers=bootstrap,
         value_serializer=lambda value: json.dumps(value).encode("utf-8"),
         retries=3,
+        api_version=(3, 0, 0),
+        max_block_ms=5000,
     )
 
 
@@ -77,6 +80,10 @@ def _rabbit_loop(
         connection = None
         try:
             params = pika.URLParameters(url)
+            params.socket_timeout = 5
+            params.stack_timeout = 7
+            params.blocked_connection_timeout = 5
+            params.connection_attempts = 1
             connection = pika.BlockingConnection(params)
             channel = connection.channel()
             channel.queue_declare(queue=queue, durable=True)
@@ -91,7 +98,7 @@ def _rabbit_loop(
                 except (ValueError, TypeError) as exc:
                     LOGGER.warning("Invalid payment request: %s", exc)
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-                except (sqlite3.Error, KafkaError):
+                except (sqlite3.Error, psycopg.Error, KafkaError):
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
                     raise
                 else:
@@ -100,7 +107,13 @@ def _rabbit_loop(
             channel.basic_consume(queue=queue, on_message_callback=callback)
             while not stop_event.is_set():
                 connection.process_data_events(time_limit=1)
-        except (pika.exceptions.AMQPError, OSError, sqlite3.Error, KafkaError) as exc:
+        except (
+            pika.exceptions.AMQPError,
+            OSError,
+            sqlite3.Error,
+            psycopg.Error,
+            KafkaError,
+        ) as exc:
             LOGGER.warning("RabbitMQ consumer error: %s", exc)
         finally:
             if connection is not None and connection.is_open:

@@ -13,9 +13,16 @@
 **/.vscode/
 **/coverage/
 **/.terraform/
+**/*.tfplan
+**/*.tfstate
+**/*.tfstate.*
+**/terraform-plan.json
 **/.env
 **/.env.local
 **/runs/
 
 # Private credentials for isolated local Kubernetes demos
 **/.kube/
+
+# Habit demonstration's persistent local data (may contain personal input).
+Habit Tracker & Routine Coach SaaS/backend/data/

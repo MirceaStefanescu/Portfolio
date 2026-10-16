@@ -1,0 +1,10 @@
+**/node_modules
+**/.devtools
+**/data
+**/dist
+**/.env
+**/DevTools.ps1
+**/DevTools.cmd
+.git
+screenshots
+docs

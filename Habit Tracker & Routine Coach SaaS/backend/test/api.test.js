@@ -8,8 +8,10 @@ async function api(t) {
   await once(server, "listening");
   t.after(() => new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve())));
   const base = "http://127.0.0.1:" + server.address().port;
+  const login = await fetch(base + "/api/auth/demo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identity: "alice" }) });
+  const { token } = await login.json();
   return (path, method = "GET", body) => fetch(base + path, {
-    method, headers: { "Content-Type": "application/json" },
+    method, headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
     ...(body === undefined ? {} : { body: JSON.stringify(body) })
   });
 }

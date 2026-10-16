@@ -2,6 +2,8 @@ import argparse
 import os
 from pathlib import Path
 
+from eval_harness.cache import CachedModel
+from eval_harness.graders import SemanticGrader
 from eval_harness.models.http import HttpModel
 from eval_harness.models.mock import MockModel
 from eval_harness.runner import (
@@ -32,6 +34,14 @@ def parse_args() -> argparse.Namespace:
         "--http-model", type=str, help="Model name for OpenAI-compatible endpoints."
     )
     parser.add_argument("--http-api-key", type=str, help="API key for HTTP model.")
+    parser.add_argument(
+        "--cache", type=Path, help="Opt-in SQLite response cache; contains model outputs."
+    )
+    parser.add_argument(
+        "--cache-namespace", help="Identity/version of model, settings and account."
+    )
+    parser.add_argument("--embedding-endpoint", help="Explicit OpenAI-compatible embeddings URL.")
+    parser.add_argument("--embedding-model", help="Embedding model name.")
     return parser.parse_args()
 
 
@@ -73,10 +83,25 @@ def main() -> None:
     args = parse_args()
     task = build_task(args)
     model = build_model(args)
+    if args.cache:
+        if not args.cache_namespace:
+            raise SystemExit(
+                "--cache requires --cache-namespace; change it when model settings change."
+            )
+        model = CachedModel(model, args.cache, args.cache_namespace)
+    semantic = None
+    if "semantic_similarity" in task.metrics:
+        if not args.embedding_endpoint or not args.embedding_model:
+            raise SystemExit(
+                "Semantic grading requires --embedding-endpoint and --embedding-model."
+            )
+        semantic = SemanticGrader(
+            args.embedding_endpoint, args.embedding_model, os.getenv("EMBEDDING_API_KEY")
+        )
     output_dir = Path(args.output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    result = run_evaluation(task, model, output_dir, args.run_name)
+    result = run_evaluation(task, model, output_dir, args.run_name, semantic_grader=semantic)
     summary = result["summary"]
     print("Run complete")
     print(f"Run directory: {result['run_dir']}")

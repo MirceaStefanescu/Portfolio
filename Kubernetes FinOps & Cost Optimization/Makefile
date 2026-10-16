@@ -117,6 +117,10 @@ destroy:
 
 test:
 	$(MAKE) lint
+	python scripts/test-finops.py
+
+cost-report:
+	python scripts/finops.py report --html /tmp/finops-report.html
 
 lint:
 	"$(KUBECONFORM)" -strict -summary -kubernetes-version "$(KUBERNETES_VERSION)" \

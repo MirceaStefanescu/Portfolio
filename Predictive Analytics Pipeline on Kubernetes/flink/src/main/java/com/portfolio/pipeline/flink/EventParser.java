@@ -17,16 +17,14 @@ final class EventParser {
       return null;
     }
     try {
+      EventContract.validate(payload);
       Event event = MAPPER.readValue(payload, Event.class);
-      if (event.timestamp == 0L) {
-        event.timestamp = System.currentTimeMillis();
-      }
       if (event.eventType == null || event.eventType.isBlank()) {
         return null;
       }
       return event;
     } catch (Exception e) {
-      LOG.warn("Failed to parse event payload", e);
+      LOG.warn("Event failed the bundled schema; routed to events.invalid");
       return null;
     }
   }

@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap");
-
 :root {
   color-scheme: light;
   --bg: #0b1220;
@@ -23,7 +21,7 @@
 
 body {
   margin: 0;
-  font-family: "Space Grotesk", "Segoe UI", Tahoma, sans-serif;
+  font-family: "Segoe UI", Tahoma, sans-serif;
   background: radial-gradient(circle at top left, #182441, #0b1220 60%);
   color: var(--text);
   min-height: 100vh;

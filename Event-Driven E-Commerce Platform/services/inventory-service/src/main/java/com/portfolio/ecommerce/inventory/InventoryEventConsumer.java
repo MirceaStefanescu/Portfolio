@@ -20,15 +20,14 @@ public class InventoryEventConsumer {
 
   @KafkaListener(topics = "${app.topics.order-created}")
   public void handleOrderCreated(String payload) {
+    OrderContract.validate(payload);
+    OrderCreatedEvent event;
     try {
-      OrderCreatedEvent event = objectMapper.readValue(payload, OrderCreatedEvent.class);
-      if (event.items() != null) {
-        event.items().forEach(item -> inventoryStore.reserve(item.sku(), item.quantity()));
-      }
-      logger.info("Reserved inventory for orderId={} items={}", event.orderId(),
-          event.items() == null ? 0 : event.items().size());
-    } catch (Exception ex) {
-      logger.error("Failed to process order.created event", ex);
+      event = objectMapper.readValue(payload, OrderCreatedEvent.class);
+    } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+      throw new IllegalArgumentException("Invalid order.created event", ex);
     }
+    InventoryStore.Reservation result = inventoryStore.reserve(event);
+    logger.info("Inventory orderId={} status={}", result.orderId(), result.status());
   }
 }

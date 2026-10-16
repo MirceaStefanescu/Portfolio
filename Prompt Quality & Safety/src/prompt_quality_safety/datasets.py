@@ -17,6 +17,8 @@ class EvalCase:
     should_refuse: bool | None = None
     category: str | None = None
     source: str | None = None
+    expected_tool_calls: list[dict[str, Any]] | None = None
+    tools: list[dict[str, Any]] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EvalCase:
@@ -30,6 +32,8 @@ class EvalCase:
             should_refuse=data.get("should_refuse"),
             category=data.get("category"),
             source=data.get("source"),
+            expected_tool_calls=data.get("expected_tool_calls"),
+            tools=data.get("tools", []),
         )
 
 

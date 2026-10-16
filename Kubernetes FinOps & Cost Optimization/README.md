@@ -22,8 +22,7 @@ This project standardizes cost allocation, right-sizing, and telemetry so teams 
 - MinIO (local demo): S3-compatible object storage for Velero backups.
 
 ## Demo
-- Live: TBD
-- Video or GIF: TBD
+- Live: local demonstration; use the commands below.
 - Screenshots:
   - `screenshots/20251228_1743_Kubernetes Cost Optimization_simple_compose_01kdjsz8vmf14a1mztyazge207.png`
   - `screenshots/20251228_1743_Kubernetes Cost Optimization_simple_compose_01kdjsz8vnew58xj469rs3v9eq.png`
@@ -129,9 +128,9 @@ Validates manifests with client-side dry-run.
 Secrets: use `.env` (see `.env.example`). Store New Relic license keys in Kubernetes secrets, rotate MinIO demo credentials in real deployments, restrict Kubecost access with RBAC, and apply network policies between cost services and workloads. Enable encryption at rest for persistent volumes and lock down cloud IAM roles.
 
 ## Roadmap / tradeoffs
-- Add rightsizing recommendations and cost anomaly alerts.
-- Add multi-tenant chargeback reports by namespace and team.
-- Integrate budget policies and auto-remediation for idle workloads.
+- Rightsizing recommendations use observed p95 plus 25% headroom, with explicit CPU/memory minimums. Cost anomalies compare daily cost with a median/MAD historical baseline.
+- Chargeback aggregates by namespace and team across clusters; daily budget violations are included in the report.
+- Idle remediation has an explicit workload opt-in, fresh complete telemetry, HPA exclusion, atomic concurrency checks and a recovery receipt. The default is a dry run; only `--apply` changes replicas.
 - Tradeoff: richer telemetry improves visibility but adds runtime overhead and storage cost.
 
 ## Project structure
@@ -206,3 +205,49 @@ replacement; Kubecost 3 requires a separate migration. Allow the chart's documen
 25-minute collection window before judging allocation charts. Namespace costs are
 estimates for this local cluster. `make port-forward-grafana` targets
 `kubecost-grafana`; `make load` and `make unload` exercise the existing HPA.
+
+## Complete local FinOps demonstration
+
+Run from this project directory (Python 3.12+):
+
+```bash
+python scripts/finops.py report --html /tmp/finops-report.html
+python scripts/test-finops.py
+```
+
+The supplied dataset explicitly represents synthetic AWS/Azure/GCP clusters. It
+produces rightsizing recommendations, one cost anomaly, namespace/team chargeback
+and budget alerts. Namespace and team totals are two views of the same costs;
+do not add the two views together. Recommendations do not automatically change
+requests and do not claim measured savings.
+
+To import a running OpenCost instance through its local port-forward:
+
+```bash
+python scripts/finops.py collect --url http://127.0.0.1:9003 --output /tmp/allocation.json
+python scripts/finops.py report --input /tmp/allocation.json
+```
+
+The importer preserves full-day windows and leaves idle/P95 metrics missing when
+OpenCost supplies only averages. Supply independently measured `cpu_p95_m`,
+`memory_p95_mib`, `idle_hours`, `requests_last_24h` and the exact Kubernetes
+`context` to enable the corresponding recommendation or idle decision. Old demo
+timestamps deliberately cannot authorize live scaling.
+
+For a disposable Deployment, label it
+`finops.demo/allow-idle-scale-down=true`. A snapshot no older than five minutes
+must show a full idle day, zero requests and CPU p95 at most 5 millicores.
+Select the cluster and workload explicitly:
+
+```bash
+python scripts/finops.py idle --input /tmp/fresh-allocation.json --context kind-finops-platform --namespace finops-demo --deployment idle-demo --receipt /tmp/idle-recovery.json
+# Add --apply only for the intended disposable workload; otherwise this is a dry run.
+python scripts/finops.py restore --context kind-finops-platform --receipt /tmp/idle-recovery.json --apply
+```
+
+An HPA blocks manual remediation. UID, resource version and replica preconditions
+protect concurrent changes; the receipt is written before scaling and restores
+only the same workload while it is still at zero replicas. Keep it until recovery
+is verified. No scheduler or cloud resource is activated by generating a report.
+
+API contract: [OpenCost allocation API](https://opencost.io/docs/integrations/api/).

@@ -28,6 +28,16 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          startupProbe:
+            httpGet: {path: /api/health, port: http}
+            periodSeconds: 2
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /api/health, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /api/health, port: http}
+            periodSeconds: 10
           env:
             - name: QDRANT_URL
               value: {{ .Values.env.qdrantUrl | quote }}

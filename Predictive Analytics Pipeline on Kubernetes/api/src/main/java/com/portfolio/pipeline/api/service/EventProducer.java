@@ -11,12 +11,20 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
 
 @Service
 public class EventProducer {
   private final KafkaTemplate<String, String> kafkaTemplate;
   private final ObjectMapper objectMapper;
   private final String topic;
+  private OpenTelemetry telemetry = OpenTelemetry.noop();
+
+  @Autowired
+  public void setTelemetry(OpenTelemetry telemetry) { this.telemetry = telemetry; }
 
   public EventProducer(
       KafkaTemplate<String, String> kafkaTemplate,
@@ -33,7 +41,8 @@ public class EventProducer {
       throw new IllegalArgumentException("eventType is required");
     }
 
-    double value = request.value() == null ? 0.0 : request.value();
+    if (request.value() == null) throw new IllegalArgumentException("value is required");
+    double value = request.value();
     if (!Double.isFinite(value)) {
       throw new IllegalArgumentException("value must be finite");
     }
@@ -44,14 +53,29 @@ public class EventProducer {
     payload.put("value", value);
     payload.put("timestamp", timestamp.toEpochMilli());
 
+    String json;
     try {
-      String json = objectMapper.writeValueAsString(payload);
+      json = objectMapper.writeValueAsString(payload);
+    } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+      throw new IllegalArgumentException("Event cannot be encoded", ex);
+    }
+    EventContract.validate(json);
+    var span = telemetry.getTracer("predictive-ingestion").spanBuilder("events.publish")
+        .setSpanKind(SpanKind.PRODUCER).setAttribute("messaging.destination.name", topic)
+        .setAttribute("event.type", request.eventType()).startSpan();
+    try {
       return kafkaTemplate.send(topic, request.eventType(), json)
+          .whenComplete((result, error) -> {
+            if (error != null) { span.recordException(error); span.setStatus(StatusCode.ERROR); }
+            else span.setStatus(StatusCode.OK);
+            span.end();
+          })
           .<Void>thenApply(result -> null)
           .exceptionally(error -> {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Event broker unavailable", error);
           });
     } catch (Exception e) {
+      span.recordException(e); span.setStatus(StatusCode.ERROR); span.end();
       throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Event could not be published", e);
     }
   }

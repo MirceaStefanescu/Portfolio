@@ -1,4 +1,11 @@
 services:
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
   postgres:
     image: postgres:15-alpine
     environment:
@@ -50,6 +57,7 @@ services:
       - ${CHAT_ENV_FILE:-../.env}
     environment:
       DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/chat}
+      REDIS_HOST: redis
       DB_USERNAME: ${DB_USERNAME:-chat}
       DB_PASSWORD: ${DB_PASSWORD:-chat}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
@@ -58,6 +66,8 @@ services:
       DEMO_AUTH: ${DEMO_AUTH:-false}
       DEMO_USER: ${DEMO_USER:-demo}
     depends_on:
+      redis:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       kafka:

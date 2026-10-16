@@ -2,7 +2,7 @@ environment: staging
 replicaCount: 2
 
 image:
-  tag: "6.15.0"
+  tag: "6.15.0-security1"
 
 rollout:
   enabled: true

@@ -6,6 +6,8 @@ Real-time chat and collaboration platform for product teams that need low-latenc
 - WebSocket/STOMP messaging with room subscriptions
 - Kafka-backed fan-out for horizontal scaling
 - PostgreSQL persistence for room and message history
+- Room-scoped message search, Redis presence and expiring typing indicators
+- Redis rate limits and durable, deduplicated message submission
 - OAuth2 (GitHub) login with session-based access
 - Prometheus metrics and Grafana dashboards
 - Docker Compose for local dev and Terraform for Kubernetes deploys
@@ -19,8 +21,7 @@ Real-time chat and collaboration platform for product teams that need low-latenc
 - Infra: Docker Compose for local, Terraform for Kubernetes.
 
 ## Demo
-- Live: TBD
-- Video or GIF: TBD
+- Live: local demonstration; use the commands below.
 - Screenshots:
   - `screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact1eb99x46tmvcat4wr.png`
   - `screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact2e4wv1gne7zp7nser.png`
@@ -91,19 +92,29 @@ are rejected. Logout uses Spring's CSRF-protected confirmation page.
 - Kafka fan-out is configured for local single-broker usage.
 
 ## Roadmap / tradeoffs
-- Add presence, typing indicators, and message search.
-- Introduce Redis for presence and rate limiting.
+- Presence and typing use Redis hashes with expiry and Pub/Sub updates across backend instances. Clients refresh presence every 15 seconds; disconnected members expire after 45 seconds and typing after 3 seconds. Explicit leave/disconnect removes the participant immediately when Redis is available.
+- Search is case-insensitive and confined to the selected room, with a maximum of 100 results. All signed-in users currently have access to all rooms; private-room membership is not part of this application.
+- Message submissions are limited to 60 per minute per authenticated identity (per session in explicit demo mode). Presence updates are limited to 120 per minute per session. Redis failure rejects submission rather than silently disabling limits.
+- PostgreSQL saves a pending message before Kafka publication. A worker retries failed publication; client request IDs prevent duplicate history after reconnect. Delivery is at least once and the UI deduplicates event IDs. A receipt confirms durable storage, not that every recipient has read the message. Pending client submissions survive transport reconnect in the open page; closing an unacknowledged page does not persist its unsent draft.
 - Tradeoff: session-based auth keeps the UI simple but complicates API use from external clients.
+- Use a distinct Kafka consumer group per backend instance, the shared PostgreSQL/Redis services, and sticky sessions at the ingress for OAuth/SockJS. The default group includes the container hostname. Independent replicas may retry the same pending publication; event IDs remain stable.
 
 ## Isolated functional demonstration
 
 From the repository root:
 
 ```bash
+npm ci --prefix "Real-Time Chat & Collaboration Platform/frontend"
 python scripts/demo-check.py chat
 # Retain a successful stack for inspection:
 python scripts/demo-check.py chat --keep
 ```
 
 The verifier uses fresh data and random loopback ports, prints the exact URLs and
-cleanup command, and fails if the demonstrated behavior is missing. With `--keep`, open the printed frontend URL in two tabs, create a room, exchange messages and reload to inspect persisted history. Demo authentication is enabled only in this isolated stack.
+cleanup command, and fails if the demonstrated behavior is missing. It requires Node.js 26 and checks two real STOMP sessions, presence, typing, search, duplicate requests, rate limits and PostgreSQL-backed delivery through a Kafka outage. With `--keep`, open the printed frontend URL in two tabs for a visual walkthrough. Demo authentication is enabled only in this isolated stack.
+
+## Captured functional demonstration
+
+Two-session conversation and persisted messages. Captured from the running local application on 16 October 2026.
+
+![Two-session conversation and persisted messages](screenshots/conversation-functional.png)

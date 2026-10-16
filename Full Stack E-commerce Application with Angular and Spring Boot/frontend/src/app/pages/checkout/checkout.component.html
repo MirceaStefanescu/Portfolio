@@ -1,7 +1,7 @@
 <section class="checkout">
   <header>
     <h2>Checkout</h2>
-    <p>Complete your payment securely via Stripe.</p>
+    <p>{{ demoMode ? 'Demonstration checkout — no money is charged.' : 'Complete your payment securely via Stripe.' }}</p>
   </header>
 
   <ng-container *ngIf="!fatalError(); else errorState">

@@ -25,21 +25,21 @@ public class DataSeeder implements CommandLineRunner {
 						"Starter Hoodie",
 						"Everyday hoodie with soft lining and relaxed fit.",
 						new BigDecimal("59.00"),
-						"https://picsum.photos/seed/hoodie/640/480",
+						"/products/hoodie.svg",
 						"Apparel"
 				),
 				new Product(
 						"Desk Essentials Kit",
 						"Compact kit with notebook, pen, and cable organizers.",
 						new BigDecimal("24.50"),
-						"https://picsum.photos/seed/desk/640/480",
+						"/products/desk.svg",
 						"Accessories"
 				),
 				new Product(
 						"Wireless Earbuds",
 						"Noise-isolating earbuds with charging case.",
 						new BigDecimal("129.99"),
-						"https://picsum.photos/seed/earbuds/640/480",
+						"/products/earbuds.svg",
 						"Electronics"
 				)
 		);

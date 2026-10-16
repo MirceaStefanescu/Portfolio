@@ -8,3 +8,8 @@ coverage
 *.log
 .devtools
 .vscode
+.env.*
+target
+__pycache__
+.venv
+DevTools.ps1

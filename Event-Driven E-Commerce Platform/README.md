@@ -1,138 +1,105 @@
 # Event-Driven E-Commerce Platform
 
-Event-driven e-commerce platform for high-traffic retail teams that need scalable, fault-tolerant order processing. The goal is to decouple order processing, payments, inventory, and shipping while preserving traceability and recovery from partial failures. Role: Java Engineer. Skills and deliverables: Spring Boot, Apache Kafka, Amazon Web Services, Terraform, Jenkins.
+A complete local commerce demonstration built with Java 25, Spring Boot and Kafka. Catalog, cart, checkout, payment, shipment, notifications and cancellation can be exercised from the browser or API. Every payment and delivery is simulated; no provider account, email service or cloud subscription is required.
 
-## Features
-- Microservices for catalog, cart, order, payment, inventory, shipping, and notifications
-- Kafka-based event choreography with retries and dead-letter topics for resiliency
-- Amazon EKS deployment with rolling updates and autoscaling
-- Terraform IaC for VPC, MSK, EKS, and supporting services
-- Jenkins pipeline for build, test, container publish, and deploy stages
-- Prometheus metrics and Grafana dashboards for service and business KPIs
+## Run the demonstration
 
-## Tech stack (and why)
-- Backend: Spring Boot (Java 25) microservices with Actuator metrics for production readiness.
-- Eventing: Apache Kafka on AWS MSK for durable, replayable streams.
-- Infra: Amazon EKS + Docker for orchestration and horizontal scaling.
-- CI: Jenkins pipelines for build, test, image publish, and deploy.
-- Observability: Prometheus metrics and Grafana dashboards for SLIs and business KPIs.
+```sh
+docker compose up --build -d
+```
 
-## Demo
-- Live: TBD
-- Video or GIF: TBD
-- Screenshots:
-  - `screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz6e53rqfyhcxcva2v5.png`
-  - `screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz7exyr3dtcvf2ds3cb.png`
-  - `screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz8er9t65yx5vh4btk8.png`
-  - `screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz9fnbr3ggv204mhjyp.png`
+Open [the commerce demo](http://localhost:18081). Choose a synthetic customer, save a cart and select a successful, declined-payment or failed-shipping scenario. The order shows its durable saga history. Notifications appear in the local inbox. Cancellation is asynchronous: a 202 response means compensation is queued; poll until `COMPENSATED`.
+
+| Component | Address |
+| --- | --- |
+| Commerce UI/API | http://localhost:18081 |
+| Inventory | http://localhost:18082/api/inventory/SKU-123 |
+| Schema Registry | http://localhost:18083/subjects |
+| Prometheus | http://localhost:9091 |
+| Grafana | http://localhost:13000 — local demo login admin/admin |
+
+The ports bind only to loopback. These APIs use synthetic customer IDs, without production authentication; do not expose the stack publicly or use personal data. Named volumes retain both service databases and Kafka data. `docker compose down` stops the demonstration; `docker compose down -v` also deletes **this stack's demo data**.
+
+For the automated exercise, from the repository root:
+
+```sh
+python scripts/demo-check.py event-driven
+# Add --keep to retain a successful isolated instance for a walkthrough.
+```
+
+The checker creates a separate stack, fresh volumes and random loopback ports. It verifies contracts, dead letters, duplicate events, atomic stock reservation, success/decline/shipping failure, notifications, broker outage/recovery, restart persistence and idempotent cancellation. It removes its own stack afterward.
+
+## Implemented behavior
+
+- Three catalog products with server-owned integer-cent prices; customer-specific persisted carts and checkout idempotency keys.
+- H2 file database per service. Inventory transactions lock the state row, atomically reserve all items and reject overselling, including concurrent database clients.
+- Durable checkout outbox. Kafka publication and inventory HTTP calls run **outside database transactions**, so an unavailable dependency does not block reads or new checkouts.
+- Saga orchestration: reserve → simulated payment → simulated delivery → local notification. A declined payment releases stock; failed shipping refunds the simulated payment and releases stock. Interrupted compensation stays visible and resumes.
+- Idempotent reservations and compensation tombstones: delayed Kafka delivery cannot reserve stock after cancellation. Conflicting reuse of an order ID is rejected.
+- Both services validate the same bundled JSON Schema. Confluent Schema Registry stores `order.created-value` with BACKWARD compatibility; an incompatible change fails registration.
+- Explicit `order.created.DLT` handling, bounded consumer retries and producer acknowledgement errors.
+- Real Prometheus HTTP metrics, order counts by saga status and a zero-charge gauge in the Grafana dashboard; no external telemetry account.
+
+The demo intentionally consolidates catalog/cart/payment/shipping/notification modules in the Order process. Inventory remains an independently deployed service with its own database. This demonstrates the full workflow and failure recovery without pretending that seven independent production services or a real payment/courier integration exist.
+
+```mermaid
+flowchart LR
+  UI[Browser demo] --> Commerce[Order and commerce modules]
+  Commerce --> OrderDB[(Order H2 database)]
+  Commerce --> Outbox[Durable outbox]
+  Outbox --> Kafka
+  Kafka --> Inventory
+  Kafka --> Saga[Saga orchestrator]
+  Inventory --> StockDB[(Inventory H2 database)]
+  Saga --> Inventory
+  Saga --> Demo[Simulated payment and delivery]
+  Saga --> Inbox[Local notification inbox]
+  Registry[Schema Registry] --- Kafka
+  Commerce --> Prometheus
+  Inventory --> Prometheus
+  Prometheus --> Grafana
+```
+
+## Terraform and Jenkins
+
+`infra/terraform` provisions the actual local Docker network, Kafka, Schema Registry, service images and five persistent volumes through the pinned Docker provider. It uses the local engine as the demonstrative infrastructure target; it does not create AWS VPC/MSK/EKS/ECR resources or incur cloud costs.
+
+```sh
+cd infra/terraform
+terraform init
+terraform plan -out=demo.tfplan
+terraform apply demo.tfplan
+# Once finished, review and apply destruction of this dedicated demo:
+terraform plan -destroy -out=destroy.tfplan
+terraform apply destroy.tfplan
+```
+
+Default API ports are 28081/28082. Set `docker_host` only when the provider needs an explicit engine endpoint; preserve the engine used by other projects. Use a distinct `name` and ports for concurrent demos. Destruction removes only resources recorded in this Terraform state, including its synthetic data volumes.
+
+The root-project `Jenkinsfile` runs Java tests, the isolated integration exercise and Terraform validation. Its optional KEEP_DEMO stage publishes images to the **local Docker engine** and retains the verified demo with an exact cleanup command. The agent needs Java 25, Maven, Python, Terraform and Docker. AWS remains an architectural mapping (network ↔ VPC, Kafka ↔ MSK, containers ↔ EKS, local image store ↔ ECR), not an untested cloud deployment claim.
+
+## Tests and contracts
+
+`make test` runs both Java suites. Tests cover schema violations, real H2 transactions/restarts, concurrent reservations, outbox retries, compensation and cancellation while publication is blocked. The integration checker also sends an incompatible schema to the real registry and requires HTTP 409.
+
+- [API](docs/api.md)
+- [Event contract and recovery](docs/events.md)
+- [JSON Schema](services/order-service/src/main/resources/order-created.schema.json)
+- [Terraform Docker provider](https://registry.terraform.io/providers/kreuzwerker/docker/4.6.0/docs)
+- [Schema Registry API](https://docs.confluent.io/platform/current/schema-registry/develop/api.html)
+- [NetworkNT validator 2.0.8](https://github.com/networknt/json-schema-validator/tree/2.0.8) — compatible with this Spring Boot application's Jackson 2.
+
+## Demonstration boundaries
+
+There are no real charges (`chargedCents=0`), courier bookings or external messages. The displayed order total is a simulated price, not money collected. H2 and the single document per service favor a reproducible demo over large-scale throughput; no production scalability guarantee is made. The checked-in screenshots are illustrative architecture material; the executable browser flow is served by Order.
 
 ![Scalable E-Commerce 01](<screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz6e53rqfyhcxcva2v5.png>)
 ![Scalable E-Commerce 02](<screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz7exyr3dtcvf2ds3cb.png>)
 ![Scalable E-Commerce 03](<screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz8er9t65yx5vh4btk8.png>)
 ![Scalable E-Commerce 04](<screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz9fnbr3ggv204mhjyp.png>)
 
-## Quickstart (local)
-Prereqs:
-- Docker and Docker Compose
-- Java 25+ and Maven (optional for running tests)
+## Captured functional demonstration
 
-Run:
-```
-make dev
-```
+Failed shipping with completed refund and local notification. Captured from the running local application on 16 October 2026.
 
-Send an order:
-```
-curl -X POST http://localhost:18081/api/orders \\
-  -H \"Content-Type: application/json\" \\
-  -d '{\"customerId\":\"cust-123\",\"items\":[{\"sku\":\"SKU-123\",\"quantity\":2}]}'
-```
-
-Check inventory:
-```
-curl http://localhost:18082/api/inventory/SKU-123
-```
-
-Dashboards:
-- Prometheus: http://localhost:9091
-- Grafana: http://localhost:13000 (admin / admin)
-
-Docs:
-- API: `docs/api.md`
-- Event contracts: `docs/events.md`
-
-## Architecture
-```mermaid
-flowchart LR
-  Users[Web and Mobile Clients] --> ALB[ALB Ingress]
-  ALB --> Edge[API Gateway / Edge Service]
-  subgraph EKS[Amazon EKS]
-    Edge --> Catalog[Catalog Service]
-    Edge --> Cart[Cart Service]
-    Edge --> Order[Order Service]
-    Edge --> Payment[Payment Service]
-    Edge --> Inventory[Inventory Service]
-    Edge --> Shipping[Shipping Service]
-    Edge --> Notify[Notification Service]
-  end
-
-  Order --> OrderDB[(Order DB)]
-  Payment --> PaymentDB[(Payment DB)]
-  Inventory --> InventoryDB[(Inventory DB)]
-  Catalog --> CatalogDB[(Catalog DB)]
-
-  subgraph MSK[AWS MSK / Kafka]
-    Kafka[(Event Bus)]
-  end
-
-  Order --> Kafka
-  Payment --> Kafka
-  Inventory --> Kafka
-  Shipping --> Kafka
-  Notify --> Kafka
-  Kafka --> Order
-  Kafka --> Payment
-  Kafka --> Inventory
-  Kafka --> Shipping
-  Kafka --> Notify
-
-  Jenkins[Jenkins CI/CD] --> ECR[Amazon ECR]
-  ECR --> EKS
-  Terraform[Terraform] --> AWS[AWS Resources]
-
-  Prometheus[Prometheus] --> Grafana[Grafana]
-  EKS --> Prometheus
-  MSK --> Prometheus
-```
-
-Event-driven flow: services publish domain events (order.created, payment.authorized, inventory.reserved) to Kafka on MSK. Downstream services react asynchronously to maintain loose coupling, with retries and DLQs for fault handling. Jenkins builds and pushes container images to ECR, then deploys to EKS. Prometheus scrapes service metrics and MSK brokers, while Grafana visualizes SLIs and business KPIs.
-
-## Tests
-```
-make test
-```
-
-## Security
-Secrets: use `.env` (see `.env.example`). Prefer IAM roles for service-to-service AWS access, encrypt MSK and databases at rest, and restrict topics with ACLs. The local scaffold is unauthenticated; add OAuth/JWT and network policies for production. Enable secret scanning in GitHub.
-
-## Roadmap / tradeoffs
-- Add saga orchestration for long-running workflows.
-- Introduce schema registry and contract testing for event evolution.
-- Tradeoff: event choreography improves decoupling but increases observability complexity.
-
-## Notes / limitations
-- Status: MVP with Order and Inventory services runnable locally.
-- Additional services are described in the architecture section.
-- AWS/Terraform/Jenkins definitions are documented but not yet checked in for this local demo.
-
-## Decisions and rationale
-- Chose event-driven choreography to reduce coupling and allow independent scaling.
-- Kept per-service databases to avoid shared schema bottlenecks.
-- Standardized on AWS managed services (EKS, MSK) to reduce operational overhead.
-- Centralized metrics on Prometheus/Grafana to surface SLIs and business KPIs.
-
-### Mirroring to GitHub
-- Keep local-only files in local Git excludes (e.g., `.git/info/exclude` or a global gitignore).
-- Commit in logical chunks with clear messages.
-- Push after README/CI/quickstart remain accurate.
-- Keep Actions, Dependabot, and secret scanning enabled.
+![Failed shipping with completed refund and local notification](screenshots/compensation-functional.png)

@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Event-driven commerce demo</title>
+<style>body{font:17px system-ui;max-width:960px;margin:3rem auto;padding:0 1rem;background:#f3f6fa;color:#162337}section{background:white;padding:1.4rem;margin:1rem 0;border-radius:12px}button,select,input{font:inherit;padding:.5rem;margin:.25rem}button{background:#1845a4;color:white;border:0;border-radius:5px}pre{white-space:pre-wrap;overflow-wrap:anywhere}label{display:inline-block}#notice{color:#743b00}button:disabled{opacity:.5}</style>
+<h1>Event-driven commerce</h1>
+<p id="notice">Local demonstration. Customers are synthetic and unauthenticated. Payments, deliveries and notifications are simulated; no money or messages leave this stack.</p>
+<section><h2>1. Build a cart</h2><label>Customer <select id="customer"><option>alice</option><option>bob</option><option>carol</option></select></label>
+<label>Product <select id="product"></select></label><label>Quantity <input id="qty" type="number" min="1" max="1000" value="1"></label><button id="save">Save cart</button><pre id="cart">Loading…</pre></section>
+<section><h2>2. Exercise the saga</h2><label>Scenario <select id="scenario"><option value="success">Successful delivery</option><option value="payment_declined">Payment declined</option><option value="shipping_failed">Shipping failed</option></select></label><button id="checkout">Checkout</button><button id="cancel" disabled>Cancel / refund</button><pre id="order">No order yet.</pre></section>
+<section><h2>3. Local notification inbox</h2><pre id="inbox"></pre></section><p id="error" role="alert"></p>
+<script src="/demo.js"></script></html>

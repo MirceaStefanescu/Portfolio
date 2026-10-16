@@ -38,7 +38,7 @@ function requestLogger(req, res, next) {
   log("info", "request.start", {
     requestId,
     method: req.method,
-    path: req.originalUrl
+    path: req.path
   });
 
   res.on("finish", () => {
@@ -46,7 +46,7 @@ function requestLogger(req, res, next) {
     log("info", "request.end", {
       requestId,
       method: req.method,
-      path: req.originalUrl,
+      path: req.path,
       status: res.statusCode,
       durationMs: Math.round(durationMs)
     });

@@ -5,7 +5,7 @@ portfolio_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
 projects=(
 "Automated Infrastructure & Deployment Platform|Automated Infrastructure & Deployment Platform|make dev|Portal: http://localhost:8080"
-"Cloud-Native E-Commerce Platform|Cloud-Native E-Commerce Platform|make dev|Product service: http://localhost:8010"
+"Cloud-Native E-Commerce Platform|Cloud-Native E-Commerce Platform|make dev|JWT gateway: http://localhost:8088"
 "DevSecOps Pipeline with SBOM & SLSA|DevSecOps Pipeline with SBOM & SLSA|make dev|Optional: cp .env.example .env"
 "Event-Driven E-Commerce Platform|Event-Driven E-Commerce Platform|make dev|Order API: http://localhost:18081"
 "Full Stack E-commerce Application with Angular and Spring Boot|Full Stack E-commerce Application with Angular and Spring Boot|docker compose up --build|Frontend: http://localhost:4200"

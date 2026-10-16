@@ -1,0 +1,16 @@
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "canary") }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "%s-stable" (include "platform-service.fullname" .) }}
+  labels:
+    {{- include "platform-service.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+  selector:
+    {{- include "platform-service.selectorLabels" . | nindent 4 }}
+{{- end }}

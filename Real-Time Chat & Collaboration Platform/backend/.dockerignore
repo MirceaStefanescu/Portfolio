@@ -1,2 +1,11 @@
 target
 .git
+.devtools
+.env
+.env.*
+node_modules
+__pycache__
+.venv
+.angular
+*.log
+DevTools.ps1

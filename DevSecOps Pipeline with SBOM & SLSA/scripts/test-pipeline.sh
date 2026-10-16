@@ -12,13 +12,23 @@ cp "$source_dir/pipeline.sh" "$work/project/scripts/pipeline.sh"
 export ARTIFACTS_DIR="$work/artifacts" STORAGE_DIR="$work/storage"
 export SCANNER_CACHE_DIR="$work/cache" ENV_FILE="$work/no-env"
 export IMAGE="localhost:5000/demo@sha256:fixture"
+export REGISTRY=localhost:5000 USE_LOCAL_REGISTRY=1 LOCAL_DEMO=1
 export BACKUP_DIR="$work/backups" KEYS_DIR="$work/keys" CALLS="$work/calls"
+mkdir -p "$KEYS_DIR" "$ARTIFACTS_DIR"
 cat > "$work/bin/docker" <<'STUB'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$CALLS"
 if [[ "$*" == *'ps -q registry'* ]]; then printf 'test-registry'; fi
 STUB
 chmod +x "$work/bin/docker"
+cat > "$work/bin/python3" <<'STUB'
+#!/usr/bin/env bash
+# This suite tests orchestration; policy logic is exercised by the native release tests.
+printf '%s\n' "$*" >> "$CALLS"
+[[ "$1" == */scripts/release-policy.py ]]
+STUB
+chmod +x "$work/bin/python3"
+export PYTHON="$work/bin/python3"
 export PATH="$work/bin:$PATH"
 unset COSIGN_PASSWORD
 if bash "$work/project/scripts/pipeline.sh" verify > "$work/missing.log" 2>&1; then

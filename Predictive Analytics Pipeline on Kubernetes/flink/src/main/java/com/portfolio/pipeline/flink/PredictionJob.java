@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.connector.elasticsearch.sink.Elasticsearch7SinkBuilder;
@@ -15,6 +14,9 @@ import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
+import org.apache.flink.connector.kafka.sink.KafkaSink;
+import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
+import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
@@ -35,22 +37,29 @@ public class PredictionJob {
 
     StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
     env.getConfig().setAutoWatermarkInterval(1000L);
+    env.enableCheckpointing(10000L);
 
     KafkaSource<String> source = KafkaSource.<String>builder()
         .setBootstrapServers(kafkaBootstrap)
         .setTopics(kafkaTopic)
         .setGroupId("predictive-analytics")
-        .setStartingOffsets(OffsetsInitializer.latest())
+        .setStartingOffsets(OffsetsInitializer.earliest())
         .setValueOnlyDeserializer(new SimpleStringSchema())
         .build();
 
-    DataStream<Event> events = env
+    var validated = env
         .fromSource(source, WatermarkStrategy.noWatermarks(), "kafka-source")
-        .map(EventParser::parse)
-        .filter(Objects::nonNull)
+        .process(new QualityFilter()).name("data-quality");
+    validated.getSideOutput(QualityFilter.REJECTED).sinkTo(KafkaSink.<String>builder()
+        .setBootstrapServers(kafkaBootstrap)
+        .setRecordSerializer(KafkaRecordSerializationSchema.builder()
+            .setTopic(kafkaTopic + ".invalid").setValueSerializationSchema(new SimpleStringSchema()).build())
+        .setDeliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE).build()).name("invalid-events");
+    DataStream<Event> events = validated
         .assignTimestampsAndWatermarks(
             WatermarkStrategy.<Event>forBoundedOutOfOrderness(Duration.ofSeconds(5))
                 .withTimestampAssigner((event, timestamp) -> event.timestamp)
+                .withIdleness(Duration.ofSeconds(10))
         );
 
     DataStream<Prediction> predictions = events
@@ -78,7 +87,8 @@ public class PredictionJob {
       String password
   ) {
     return JdbcSink.sink(
-        "INSERT INTO predictions (event_type, window_start, window_end, event_count, avg_value, prediction_score) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO predictions (event_type, window_start, window_end, event_count, avg_value, prediction_score) VALUES (?, ?, ?, ?, ?, ?) "
+            + "ON CONFLICT (event_type, window_start, window_end) DO UPDATE SET event_count=EXCLUDED.event_count, avg_value=EXCLUDED.avg_value, prediction_score=EXCLUDED.prediction_score",
         (statement, prediction) -> {
           statement.setString(1, prediction.eventType);
           statement.setTimestamp(2, Timestamp.from(Instant.ofEpochMilli(prediction.windowStart)));
@@ -121,6 +131,7 @@ public class PredictionJob {
 
     IndexRequest request = Requests.indexRequest()
         .index("predictions")
+        .id(prediction.eventType + ":" + prediction.windowStart + ":" + prediction.windowEnd)
         .source(source);
     indexer.add(request);
   }

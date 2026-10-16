@@ -46,7 +46,7 @@ async function fetchVaultSecret({
   roleIdFile,
   secretIdFile
 }) {
-  const client = vault({ endpoint: addr });
+  const client = vault({ endpoint: addr, requestOptions: { timeout: 5000 } });
   const { roleId, secretId } = loadAppRoleCredentials(roleIdFile, secretIdFile);
 
   const login = await client.approleLogin({

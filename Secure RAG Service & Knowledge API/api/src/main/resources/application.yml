@@ -16,6 +16,11 @@ management:
         enabled: true
 
 rag:
+  provider: ${RAG_PROVIDER:local}
+  provider-base-url: ${RAG_PROVIDER_BASE_URL:}
+  provider-api-key: ${RAG_PROVIDER_API_KEY:}
+  embedding-model: ${RAG_EMBEDDING_MODEL:}
+  chat-model: ${RAG_CHAT_MODEL:}
   chunk-size: ${RAG_CHUNK_SIZE:800}
   chunk-overlap: ${RAG_CHUNK_OVERLAP:120}
   top-k: ${RAG_TOP_K:4}

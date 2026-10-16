@@ -5,8 +5,7 @@ containerized releases, and zero-downtime deployments across dev, staging, and
 production environments.
 
 ## Demo
-- Live: TBD
-- Video or GIF: TBD
+- Live: local demonstration; use the commands below.
 - Screenshots:
   ![CI/CD pipeline screenshot 1](<screenshots/20251229_1525_Automated DevOps Pipeline_simple_compose_01kdn4ftrvfwpsykbq83v1rfed.png>)
   ![CI/CD pipeline screenshot 2](<screenshots/20251229_1525_Automated DevOps Pipeline_simple_compose_01kdn4ftrwf6dsn5mk7yq4jbkd.png>)
@@ -152,8 +151,8 @@ mitigate with RBAC, least-privilege IAM, and network policies in production.
 - `Jenkinsfile`: Pipeline definition.
 
 ## Roadmap / tradeoffs
-- Add policy-as-code (OPA/Conftest) gates for Terraform and Kubernetes changes.
-- Add canary deployments alongside blue-green.
+- OPA/Conftest gates check Terraform/HCL and Kubernetes manifests through `make policy` and required root CI. Before applying infrastructure, validate the exact saved plan with `python ../../scripts/check-policy.py . --plan plan.json`; see [policy coverage](../../policies/README.md).
+- Canary deployments use shared Helm/Argo health gates alongside the existing blue-green and rolling strategies; see the executable example below.
 - Tradeoff: blue-green releases double temporary capacity to reduce risk.
 
 ## Decisions and rationale
@@ -213,3 +212,29 @@ spaces and explicit Kubernetes context without connecting to a real cluster.
 The Jenkinsfile is a template requiring an agent with Docker, kind/kubectl,
 Terraform, Ansible and the intended credentials/context; the local CLI proofs do
 not imply that an arbitrary Jenkins installation is already configured.
+
+## Verified plans and canary delivery
+
+`bash scripts/terraform-gate.sh plan` saves `release.tfplan`, extracts its JSON
+and checks the shared OPA policies. `apply` re-extracts and rechecks that saved
+plan, then applies that exact plan without recalculating variables. These files
+may contain sensitive state; they are Git-ignored and are not Jenkins artifacts.
+The Jenkins and local CI routes both use this gate. Conftest, Helm and Python are
+required on the agent alongside Terraform.
+
+For canary, install Argo Rollouts in the local test cluster and select
+`DEPLOY_MODE=canary RUN_DEPLOY=true RUN_TERRAFORM=false`. Jenkins exposes the same
+choice through `AUTO_DEPLOY`; `AUTO_APPLY` is deliberately incompatible because
+Helm owns canary workloads. The common release command creates `canary-cicd-demo`,
+checks `/health` through AnalysisTemplates and aborts unhealthy candidates.
+Select the context explicitly for non-kind targets. Blue/green and rolling routes
+retain their existing Terraform management and namespaces.
+
+```bash
+DEPLOY_MODE=canary RUN_DEPLOY=true ./scripts/ci.sh
+python ../../scripts/release-environment.py remove --mode canary --id cicd-demo --context kind-cicd-demo
+```
+
+The first deployment tests readiness; later revisions exercise progressive
+analysis. See the [shared deployment demonstration](../../GitOps%20Platform%20-%20Argo%20CD%20%26%20Helm/README.md)
+for preview ownership, approximate replica weights and cleanup.

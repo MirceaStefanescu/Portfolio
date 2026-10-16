@@ -1,0 +1,8 @@
+{
+  "version": "synthetic-window-gaussian-v1",
+  "mean": 20.0,
+  "stddev": 1.224744871391589,
+  "threshold": 3.0,
+  "training_count": 20,
+  "training_sha256": "788a90ab2bf98fe92b4899ac62124b69995a277bac1daa260fa62b7b2eeef08e"
+}

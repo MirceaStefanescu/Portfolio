@@ -34,7 +34,29 @@ services:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-c"]
     command: >
-      "kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic events --partitions 3 --replication-factor 1"
+      "kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic events --partitions 3 --replication-factor 1 &&
+       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic events.invalid --partitions 1 --replication-factor 1"
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.9.10
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/subjects"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    command: ["--config=/etc/otelcol/config.yml"]
+    volumes:
+      - ./otel-collector.yml:/etc/otelcol/config.yml:ro
 
   postgres:
     image: postgres:15
@@ -121,6 +143,8 @@ services:
     build:
       context: ./api
     depends_on:
+      schema-registry:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       postgres:
@@ -130,6 +154,11 @@ services:
     ports:
       - "127.0.0.1:8082:8080"
     environment:
+      APP_SCHEMA_REGISTRATION_ENABLED: "true"
+      APP_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_BSP_SCHEDULE_DELAY: "1000"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/analytics
       SPRING_DATASOURCE_USERNAME: analytics
       SPRING_DATASOURCE_PASSWORD: analytics

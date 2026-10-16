@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 
 import com.example.realtimechat.model.ChatEvent;
 import com.example.realtimechat.model.ChatMessage;
@@ -91,10 +93,60 @@ class ChatServiceTest {
 
     when(chatRoomRepository.findById(roomId)).thenReturn(Optional.of(room));
     when(chatMessageRepository.save(any(ChatMessage.class))).thenReturn(saved);
+    when(kafkaTemplate.send(eq(TOPIC), eq(roomId.toString()), any(ChatEvent.class)))
+        .thenReturn(java.util.concurrent.CompletableFuture.completedFuture(null));
 
     chatService.handleInboundMessage(roomId, "alex", "hello");
 
     verify(kafkaTemplate).send(eq(TOPIC), eq(roomId.toString()), any(ChatEvent.class));
+    verify(chatMessageRepository).markPublished(saved.getId());
+  }
+
+  @Test
+  void retriesFailedPublicationButDoesNotDuplicateAnInflightRequest() throws Exception {
+    ChatRoom room = new ChatRoom("General");
+    setField(room, "id", UUID.randomUUID());
+    ChatMessage message = new ChatMessage(room, "alex", "saved before broker outage");
+    setField(message, "id", UUID.randomUUID());
+    setField(message, "createdAt", Instant.now());
+    when(chatMessageRepository.findTop50ByPublishedFalseOrderByCreatedAtAsc()).thenReturn(java.util.List.of(message));
+    var pending = new java.util.concurrent.CompletableFuture<org.springframework.kafka.support.SendResult<String, ChatEvent>>();
+    when(kafkaTemplate.send(eq(TOPIC), any(String.class), any(ChatEvent.class)))
+        .thenReturn(pending).thenReturn(java.util.concurrent.CompletableFuture.completedFuture(null));
+    chatService.retryPendingMessages();
+    chatService.retryPendingMessages();
+    verify(kafkaTemplate, times(1)).send(eq(TOPIC), any(String.class), any(ChatEvent.class));
+    pending.completeExceptionally(new org.apache.kafka.common.errors.TimeoutException("unavailable"));
+    verify(chatMessageRepository, never()).markPublished(any());
+    chatService.retryPendingMessages();
+    verify(kafkaTemplate, times(2)).send(eq(TOPIC), any(String.class), any(ChatEvent.class));
+    verify(chatMessageRepository).markPublished(message.getId());
+  }
+
+  @Test
+  void reconnectReusesMessageIdAndRejectsChangedContent() throws Exception {
+    ChatRoom room = new ChatRoom("General");
+    UUID roomId = UUID.randomUUID();
+    setField(room, "id", roomId);
+    ChatMessage existing = new ChatMessage(room, "alex", "hello");
+    setField(existing, "id", UUID.randomUUID());
+    when(chatMessageRepository.findBySenderAndClientRequestId("alex", "request-1")).thenReturn(Optional.of(existing));
+    assertEquals(existing.getId(), chatService.handleInboundMessage(roomId, "alex", "hello", "request-1"));
+    assertThrows(IllegalArgumentException.class,
+        () -> chatService.handleInboundMessage(roomId, "alex", "different", "request-1"));
+    verify(chatMessageRepository, never()).save(any());
+    verifyNoInteractions(kafkaTemplate);
+  }
+
+  @Test
+  void searchIsScopedToRoomAndBoundsTheResult() throws Exception {
+    UUID roomId = UUID.randomUUID();
+    when(chatRoomRepository.existsById(roomId)).thenReturn(true);
+    when(chatMessageRepository.findByRoom_IdAndContentContainingIgnoreCaseOrderByCreatedAtDesc(
+        eq(roomId), eq("needle"), eq(org.springframework.data.domain.PageRequest.of(0, 100))))
+        .thenReturn(org.springframework.data.domain.Page.empty());
+    assertEquals(java.util.List.of(), chatService.getRecentMessages(roomId, 999, " needle "));
+    assertThrows(IllegalArgumentException.class, () -> chatService.getRecentMessages(roomId, 50, "a".repeat(201)));
   }
 
   @Test

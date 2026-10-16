@@ -1,0 +1,150 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "vault-demo",
+      "folder": "Secrets",
+      "interval": "10s",
+      "rules": [
+        {
+          "uid": "vault-refresh",
+          "title": "VaultRefreshFailed",
+          "condition": "B",
+          "for": "10s",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "annotations": {
+            "summary": "VaultRefreshFailed",
+            "runbook_url": "https://github.com/MirceaStefanescu/Portfolio/blob/main/Secure%20Secrets%20Management%20%26%20Observability%20Toolkit/runbooks/failed-rotation.md"
+          },
+          "labels": {
+            "scope": "local-demo"
+          },
+          "data": [
+            {
+              "refId": "A",
+              "datasourceUid": "prometheus",
+              "relativeTimeRange": {
+                "from": 60,
+                "to": 0
+              },
+              "model": {
+                "refId": "A",
+                "expr": "vault_secret_refresh_ok",
+                "instant": true,
+                "range": false,
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "prometheus"
+                }
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "model": {
+                "refId": "B",
+                "expression": "$A < 1",
+                "type": "math",
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "uid": "vault-rotation",
+          "title": "SecretRotationOverdue",
+          "condition": "B",
+          "for": "10s",
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "annotations": {
+            "summary": "SecretRotationOverdue",
+            "runbook_url": "https://github.com/MirceaStefanescu/Portfolio/blob/main/Secure%20Secrets%20Management%20%26%20Observability%20Toolkit/runbooks/failed-rotation.md"
+          },
+          "labels": {
+            "scope": "local-demo"
+          },
+          "data": [
+            {
+              "refId": "A",
+              "datasourceUid": "prometheus",
+              "relativeTimeRange": {
+                "from": 60,
+                "to": 0
+              },
+              "model": {
+                "refId": "A",
+                "expr": "time() - vault_secret_rotated_timestamp",
+                "instant": true,
+                "range": false,
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "prometheus"
+                }
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "model": {
+                "refId": "B",
+                "expression": "$A > 86400",
+                "type": "math",
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "contactPoints": [
+    {
+      "orgId": 1,
+      "name": "Local rotation inbox",
+      "receivers": [
+        {
+          "uid": "local-rotation-inbox",
+          "type": "webhook",
+          "disableResolveMessage": false,
+          "settings": {
+            "url": "http://app:8080/alerts",
+            "httpMethod": "POST"
+          }
+        }
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "orgId": 1,
+      "receiver": "Local rotation inbox",
+      "group_by": [
+        "alertname"
+      ],
+      "group_wait": "5s",
+      "group_interval": "10s",
+      "repeat_interval": "3h"
+    }
+  ]
+}

@@ -18,6 +18,7 @@ import org.springframework.test.context.DynamicPropertySource;
     "app.demo-auth=true",
     "spring.kafka.listener.auto-startup=false",
     "spring.kafka.admin.auto-create=false"
+    , "management.health.redis.enabled=false", "app.publisher-enabled=false", "app.presence-enabled=false"
 })
 @EnabledIfEnvironmentVariable(named = "CHAT_TEST_DB_URL", matches = ".+")
 class ChatPostgresIntegrationTest {
@@ -34,7 +35,7 @@ class ChatPostgresIntegrationTest {
 
   @Test
   void migratesPostgresAndServesPersistedRooms() {
-    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("1");
+    assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("2");
     assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
     var room = chatService.createRoom(new ChatRoomRequest("postgres-integration"));
     var response = http.getForEntity("/api/rooms", String.class);

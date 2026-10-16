@@ -26,7 +26,7 @@ class MockModel(ModelClient):
             return REFUSAL_MESSAGE
 
         expected = request.metadata.get("expected")
-        if expected:
+        if expected is not None:
             response = expected
         else:
             response = f"Answer: {request.user_input.strip()}"

@@ -18,8 +18,8 @@ This project demonstrates an end-to-end online shop with a modern SPA UI, RESTfu
 - CI: root Portfolio CI runs backend verification and frontend tests/builds on pull requests.
 
 ## Demo
-- Live: Not deployed yet.
-- Video or GIF: Add a 60 to 120 second walkthrough.
+- Live: isolated local deployment with seeded data; run `python scripts/demo-check.py ecommerce --keep` from the repository root.
+- Video: [recorded local checkout](screenshots/demo-checkout.webm).
 - Screenshots:
   - `screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6bzee4tyb7jj380myyp.png`
   - `screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c0fjjv7jkk2n500ejv.png`
@@ -64,7 +64,7 @@ Frontend config:
 
 Usage:
 - Register a user, browse the catalog, add items to the cart, and checkout.
-- Stripe test card: `4242 4242 4242 4242` with any future expiry and CVC.
+- The isolated demonstration needs no card. A separately configured Stripe sandbox can use its documented test cards.
 
 Sample data:
 - The backend seeds a few products on first run.
@@ -92,11 +92,12 @@ npm test
 ## Security
 Secrets are read from environment variables (see `backend/.env.example`). Spring Boot does not load `.env` automatically; export its values before starting. Do not commit `.env`. Authentication uses Spring Security with JWTs, bcrypt password hashing, and Jakarta Validation for request input. This is a demo app and does not include production hardening like rate limiting, audit logging, or advanced fraud checks.
 
-## Roadmap / tradeoffs
-- Add UI screenshots and a short demo video.
-- Add GitHub Actions CI for backend and frontend checks.
-- Add integration tests for checkout and order confirmation.
-- Add a live demo deployment with seeded data.
+## Demonstrated roadmap
+- Desktop/mobile screenshots and a real checkout recording are in `screenshots/`.
+- Required root GitHub Actions runs backend verification and frontend tests/builds.
+- The isolated Compose verifier tests authentication, checkout, receipt and persisted orders with MySQL.
+- `--keep` starts a local live demonstration with seeded products and explicit simulated payments.
+- Demo product illustrations and fonts are local. Stripe.js loads only when a real publishable key is configured.
 
 ## Notes / limitations
 - CORS is restricted to localhost origins by default.
@@ -136,3 +137,9 @@ python scripts/demo-check.py ecommerce --keep
 
 The verifier uses fresh data and random loopback ports, prints the exact URLs and
 cleanup command, and fails if the demonstrated behavior is missing. The isolated stack enables mock payments. The normal stack still requires an explicitly configured payment mode; a missing Stripe key must not silently enable mock payments.
+
+## Captured functional demonstration
+
+Paid simulated order after browser reload. Captured from the running local application on 16 October 2026.
+
+![Paid simulated order after browser reload](screenshots/orders-functional.png)

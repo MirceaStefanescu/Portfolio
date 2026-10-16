@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+PYTHON=${PYTHON:-python3}
 # Docker Desktop expects Windows host paths; container paths must remain unchanged.
 if command -v cygpath >/dev/null 2>&1; then
   ROOT_DIR=$(cygpath -m "$ROOT_DIR")
@@ -52,6 +53,11 @@ POLICY_FAIL_ON=${POLICY_FAIL_ON:-high}
 TRIVY_IMAGE=${TRIVY_IMAGE:-aquasec/trivy:0.75.0}
 GRYPE_IMAGE=${GRYPE_IMAGE:-anchore/grype:v0.120.1}
 COSIGN_IMAGE=${COSIGN_IMAGE:-gcr.io/projectsigstore/cosign:v3.1.3}
+# Match the workspace owner on Linux agents; keep the image default on Docker Desktop.
+COSIGN_USER_ARGS=()
+if [ "$(uname -s)" = "Linux" ]; then
+  COSIGN_USER_ARGS=(--user "$(id -u):$(id -g)")
+fi
 
 IMAGE=${IMAGE:-${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}}
 if [ "$LOCAL_DEMO" = "1" ] && [[ "$IMAGE" != "$REGISTRY/"* ]]; then
@@ -76,7 +82,9 @@ registry_up() {
 
 build_image() {
   log "building image $IMAGE"
-  docker build --pull -t "$IMAGE" "$ROOT_DIR/$APP_DIR"
+  docker pull cgr.dev/chainguard/busybox@sha256:f7d9063f22547e726221275158930e5033be3c6d8340c6867afb7d0d779fad8d
+  docker pull cgr.dev/chainguard/nginx@sha256:bbed24ea6459404aeaf23edca30844092adee4d6059808cda5ebf9456a43d874
+  "$PYTHON" "$ROOT_DIR/scripts/isolated-build.py" --image "$IMAGE" --artifacts "$ARTIFACTS_DIR" --app "$ROOT_DIR/$APP_DIR"
   docker push "$IMAGE"
   # Freeze the pushed artifact before SBOM generation, scans and signatures.
   IMAGE=$(image_digest)
@@ -137,7 +145,7 @@ ensure_keys() {
   fi
 
   log "generating cosign key pair"
-  docker run --rm \
+  docker run --rm "${COSIGN_USER_ARGS[@]}" \
     -e COSIGN_PASSWORD \
     -v "$KEYS_DIR:/keys" \
     "$COSIGN_IMAGE" generate-key-pair --output-key-prefix /keys/cosign
@@ -175,31 +183,27 @@ sign_artifacts() {
   digest=$(image_digest)
   printf '%s\n' "$digest" > "$ARTIFACTS_DIR/image-digest.txt"
   log "signing image"
-  docker run --rm --network "$(cosign_network)" \
+  docker run --rm "${COSIGN_USER_ARGS[@]}" --network "$(cosign_network)" \
     -e COSIGN_PASSWORD \
     -v "$KEYS_DIR:/keys:ro" \
     "$COSIGN_IMAGE" sign --yes "${SIGN_ARGS[@]}" --key /keys/cosign.key "$digest"
 
   log "signing SBOM"
-  docker run --rm --network "$(cosign_network)" \
+  docker run --rm "${COSIGN_USER_ARGS[@]}" --network "$(cosign_network)" \
     -e COSIGN_PASSWORD \
     -v "$KEYS_DIR:/keys:ro" \
     -v "$ARTIFACTS_DIR:/artifacts" \
     "$COSIGN_IMAGE" sign-blob --yes "${SIGN_ARGS[@]}" --key /keys/cosign.key \
     --bundle /artifacts/sbom.bundle.json --output-signature /artifacts/sbom.sig /artifacts/sbom.cdx.json
 
-  local dockerfile_sha
-  dockerfile_sha=$(sha256sum "$ROOT_DIR/$APP_DIR/Dockerfile" | cut -d ' ' -f 1)
-  cat > "$ARTIFACTS_DIR/provenance.json" <<EOF
-{"buildType":"https://slsa.dev/container-based-build/v1","builder":{"id":"devsecops-pipeline-local"},"invocation":{"configSource":{"uri":"local://app/Dockerfile","digest":{"sha256":"$dockerfile_sha"}},"parameters":{"image":"$digest"}},"metadata":{"buildInvocationId":"$(date -u +%Y%m%dT%H%M%SZ)"},"materials":[{"uri":"app/Dockerfile","digest":{"sha256":"$dockerfile_sha"}}]}
-EOF
+  "$PYTHON" "$ROOT_DIR/scripts/provenance.py" "$ARTIFACTS_DIR" "$digest"
   log "attesting provenance"
-  docker run --rm --network "$(cosign_network)" \
+  docker run --rm "${COSIGN_USER_ARGS[@]}" --network "$(cosign_network)" \
     -e COSIGN_PASSWORD \
     -v "$KEYS_DIR:/keys:ro" \
     -v "$ARTIFACTS_DIR:/artifacts:ro" \
     "$COSIGN_IMAGE" attest --yes "${SIGN_ARGS[@]}" --key /keys/cosign.key \
-    --predicate /artifacts/provenance.json --type https://slsa.dev/provenance/v0.2 "$digest"
+    --predicate /artifacts/provenance.json --type https://slsa.dev/provenance/v1 "$digest"
 }
 
 verify_signatures() {
@@ -216,22 +220,23 @@ verify_signatures() {
     echo "Signed digest does not match the selected image." >&2; return 1
   fi
   log "verifying signatures"
-  docker run --rm --network "$(cosign_network)" \
+  docker run --rm "${COSIGN_USER_ARGS[@]}" --network "$(cosign_network)" \
     -v "$KEYS_DIR:/keys:ro" \
     "$COSIGN_IMAGE" verify "${VERIFY_ARGS[@]}" --key /keys/cosign.pub "$digest" \
     > "$ARTIFACTS_DIR/cosign-verify.json"
 
-  docker run --rm --network "$(cosign_network)" \
+  docker run --rm "${COSIGN_USER_ARGS[@]}" --network "$(cosign_network)" \
     -v "$KEYS_DIR:/keys:ro" \
     -v "$ARTIFACTS_DIR:/artifacts:ro" \
     "$COSIGN_IMAGE" verify-blob "${VERIFY_ARGS[@]}" --key /keys/cosign.pub \
     --bundle /artifacts/sbom.bundle.json /artifacts/sbom.cdx.json
 
-  docker run --rm --network "$(cosign_network)" \
+  docker run --rm "${COSIGN_USER_ARGS[@]}" --network "$(cosign_network)" \
     -v "$KEYS_DIR:/keys:ro" \
     "$COSIGN_IMAGE" verify-attestation "${VERIFY_ARGS[@]}" --key /keys/cosign.pub \
-    --type https://slsa.dev/provenance/v0.2 "$digest" \
+    --type https://slsa.dev/provenance/v1 "$digest" \
     > "$ARTIFACTS_DIR/cosign-attestation-verify.json"
+  "$PYTHON" "$ROOT_DIR/scripts/release-policy.py" "$ARTIFACTS_DIR"
 }
 
 store_artifacts() {
@@ -297,6 +302,7 @@ case "$command" in
     sign_artifacts
     ;;
   store)
+    verify_signatures
     store_artifacts
     ;;
   verify)

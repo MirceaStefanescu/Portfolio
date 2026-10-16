@@ -1,6 +1,15 @@
 groups:
   - name: reliability-pack
     rules:
+      - alert: SyntheticCheckFailed
+        expr: probe_success{job="synthetic-http"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Synthetic HTTP check failed"
+          description: "The local health response did not match the expected status."
+          runbook_url: "runbooks/synthetic-check.md"
       - alert: ServiceDown
         expr: up{job!~"prometheus"} == 0
         for: 2m

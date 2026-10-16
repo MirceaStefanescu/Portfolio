@@ -1,0 +1,21 @@
+{{- if and .Values.rollout.enabled .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ printf "%s-health" (include "platform-service.fullname" .) }}
+  labels:
+    {{- include "platform-service.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: healthy-response
+      interval: {{ .Values.rollout.analysis.interval }}
+      count: {{ .Values.rollout.analysis.count }}
+      successCondition: {{ printf "result == %q" .Values.rollout.analysis.expectedStatus | quote }}
+      failureLimit: 0
+      consecutiveErrorLimit: 1
+      provider:
+        web:
+          url: {{ printf "http://%s-%s.%s.svc:%v%s" (include "platform-service.fullname" .) (ternary "preview" "canary" (eq .Values.rollout.strategy "blueGreen")) .Release.Namespace .Values.service.port .Values.rollout.analysis.path | quote }}
+          timeoutSeconds: 5
+          jsonPath: "{$.status}"
+{{- end }}

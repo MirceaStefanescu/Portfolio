@@ -1,142 +1,40 @@
+// Set the Pipeline script path to CI/CD Pipeline Automation/Jenkinsfile in the repository.
+// A Linux agent needs Node.js 26, Docker/Compose and Bash. Deployment additionally
+// needs the tools and explicit target described in README.md.
 pipeline {
   agent any
-
-  options {
-    timestamps()
-  }
-
+  options { timestamps(); disableConcurrentBuilds(); timeout(time: 20, unit: 'MINUTES') }
   parameters {
-    choice(name: "DEPLOY_MODE", choices: ["blue-green", "rolling"], description: "Deployment strategy")
-    choice(name: "RELEASE_COLOR", choices: ["blue", "green"], description: "Release color for blue-green")
-    string(name: "ENVIRONMENT", defaultValue: "dev", description: "Target environment")
-    string(name: "TF_ENV", defaultValue: "local-kind", description: "Terraform environment folder")
-    booleanParam(name: "AUTO_APPLY", defaultValue: false, description: "Run Terraform apply")
-    booleanParam(name: "AUTO_DEPLOY", defaultValue: false, description: "Deploy to Kubernetes")
+    choice(name: 'DEPLOY_MODE', choices: ['blue-green', 'rolling', 'canary'], description: 'Deployment strategy')
+    choice(name: 'RELEASE_COLOR', choices: ['blue', 'green'], description: 'Blue-green traffic target')
+    string(name: 'ENVIRONMENT', defaultValue: 'dev', description: 'Target environment')
+    string(name: 'TF_ENV', defaultValue: 'local-kind', description: 'Terraform environment folder')
+    string(name: 'IMAGE_REPOSITORY', defaultValue: 'cicd-demo', description: 'Local Docker image repository')
+    booleanParam(name: 'AUTO_APPLY', defaultValue: false, description: 'Validate and apply the exact Terraform plan')
+    booleanParam(name: 'RUN_ANSIBLE', defaultValue: false, description: 'Configure the selected Kubernetes target')
+    booleanParam(name: 'AUTO_DEPLOY', defaultValue: false, description: 'Deploy to the explicitly configured cluster')
   }
-
   environment {
-    IMAGE_NAME = "cicd-demo"
+    IMAGE_NAME = "${params.IMAGE_REPOSITORY}"
     IMAGE_TAG = "${BUILD_NUMBER}"
   }
-
   stages {
-    stage("Select local Kubernetes target") {
-      when { expression { return params.TF_ENV == "local-kind" } }
+    stage('Build, test and deliver') {
       steps {
-        script {
-          env.KUBECONFIG = env.KUBECONFIG ?: "${env.WORKSPACE}/.kube/config"
-          env.KUBECONTEXT = env.KUBECONTEXT ?: "kind-${env.CLUSTER_NAME ?: 'cicd-demo'}"
-          env.TF_VAR_kubeconfig = env.KUBECONFIG
-          env.TF_VAR_kube_context = env.KUBECONTEXT
-        }
-      }
-    }
-
-    stage("Install") {
-      steps {
-        sh "npm ci"
-      }
-    }
-
-    stage("Lint") {
-      steps {
-        sh "npm run lint"
-      }
-    }
-
-    stage("Unit Tests") {
-      steps {
-        sh "npm run test:unit"
-      }
-    }
-
-    stage("Integration Tests") {
-      steps {
-        sh "npm run test:integration"
-      }
-    }
-
-    stage("E2E Tests") {
-      steps {
-        sh "npm run test:e2e"
-      }
-    }
-
-    stage("Docker Build") {
-      steps {
-        sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
-        script {
-          if (params.TF_ENV == "local-kind" && (params.AUTO_APPLY || params.AUTO_DEPLOY)) {
-            sh "kind load docker-image ${IMAGE_NAME}:${IMAGE_TAG} --name ${env.CLUSTER_NAME ?: 'cicd-demo'}"
-          }
-        }
-      }
-    }
-
-    stage("Terraform Plan") {
-      steps {
-        sh "terraform -chdir=terraform/environments/${TF_ENV} init -input=false"
-        sh """
-          terraform -chdir=terraform/environments/${TF_ENV} plan -input=false \
-            -var=\\"image=${IMAGE_NAME}:${IMAGE_TAG}\\" \
-            -var=\\"deploy_mode=${DEPLOY_MODE}\\" \
-            -var=\\"release_color=${RELEASE_COLOR}\\" \
-            -var=\\"environment=${ENVIRONMENT}\\" \
-            -var=\\"build_id=${IMAGE_TAG}\\" \
-            -var=\\"git_sha=${env.GIT_COMMIT ?: 'dev'}\\"
-        """
-      }
-    }
-
-    stage("Terraform Apply") {
-      when {
-        expression { return params.AUTO_APPLY }
-      }
-      steps {
-        sh """
-          terraform -chdir=terraform/environments/${TF_ENV} apply -auto-approve \
-            -var=\\"image=${IMAGE_NAME}:${IMAGE_TAG}\\" \
-            -var=\\"deploy_mode=${DEPLOY_MODE}\\" \
-            -var=\\"release_color=${RELEASE_COLOR}\\" \
-            -var=\\"environment=${ENVIRONMENT}\\" \
-            -var=\\"build_id=${IMAGE_TAG}\\" \
-            -var=\\"git_sha=${env.GIT_COMMIT ?: 'dev'}\\"
-        """
-      }
-    }
-
-    stage("Ansible Config") {
-      steps {
-        sh """
-          ansible-playbook -i ansible/inventory/local.ini ansible/playbooks/configure-app.yml \
-            -e \\"app_environment=${ENVIRONMENT}\\" \
-            -e \\"release_color=${RELEASE_COLOR}\\" \
-            -e \\"build_id=${IMAGE_TAG}\\" \
-            -e \\"git_sha=${env.GIT_COMMIT ?: 'dev'}\\" \
-            -e \\"deploy_mode=${DEPLOY_MODE}\\"
-        """
-      }
-    }
-
-    stage("Deploy") {
-      when {
-        expression { return params.AUTO_DEPLOY }
-      }
-      steps {
-        script {
-          if (params.DEPLOY_MODE == "rolling") {
-            sh "IMAGE=${IMAGE_NAME}:${IMAGE_TAG} ./scripts/rolling.sh"
-          } else {
-            sh "IMAGE=${IMAGE_NAME}:${IMAGE_TAG} ./scripts/blue-green.sh ${RELEASE_COLOR}"
+        dir('CI/CD Pipeline Automation') {
+          withEnv(["RUN_TERRAFORM=${params.AUTO_APPLY}", "RUN_DEPLOY=${params.AUTO_DEPLOY}",
+                   "RUN_ANSIBLE=${params.RUN_ANSIBLE}", "GIT_SHA=${env.GIT_COMMIT ?: 'dev'}"]) {
+            // Reuse the same checked entrypoint as local CI. The directory is
+            // relative to the monorepo checkout, including its spaces.
+            sh 'bash scripts/ci.sh'
           }
         }
       }
     }
   }
-
   post {
     always {
-      archiveArtifacts artifacts: "deploy/app.env", allowEmptyArchive: true
+      archiveArtifacts artifacts: 'CI/CD Pipeline Automation/deploy/app.env', allowEmptyArchive: true
     }
   }
 }

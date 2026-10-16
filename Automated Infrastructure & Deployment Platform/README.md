@@ -6,8 +6,7 @@ Automated Infrastructure & Deployment Platform is an internal developer platform
 [![CodeQL](https://github.com/MirceaStefanescu/Portfolio/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/MirceaStefanescu/Portfolio/actions/workflows/github-code-scanning/codeql)
 
 ## Demo
-- Live: TBD
-- Video or GIF: TBD
+- Live: local demonstration; use the commands below.
 - Screenshots:
   - `screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt6ecwvwzf7axpd3xy0.png`
   - `screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt7f1ztphzn9c0kwrpe.png`
@@ -109,9 +108,9 @@ Secrets: use `.env` (see `.env.example`). Vault handles runtime secret injection
 - Portal generates templates without applying them to a real cluster by default.
 
 ## Roadmap / tradeoffs
-- Add policy-as-code (OPA/Conftest) for Terraform and Helm.
-- Implement SSO and RBAC for portal access.
-- Add preview environments and canary deploys.
+- Terraform/HCL and rendered Helm manifests are checked by the shared OPA/Conftest bundle: `make policy`. Root CI requires this gate. Before applying infrastructure, validate the exact saved plan with `python ../scripts/check-policy.py . --plan plan.json`; see [policy coverage](../policies/README.md).
+- SSO uses OpenID Connect authorization code flow, PKCE, state/nonce and issuer/audience/expiry/signature validation. Viewer, developer and administrator roles control API access; see [portal configuration](portal/README.md). The protocol suite uses a local signed-token provider. Connecting your organization's real identity provider requires its existing client configuration.
+- Preview environments and health-gated canary releases use the shared Helm/Argo command documented below, with namespace ownership checks and explicit cleanup.
 - Tradeoff: supporting both Jenkins and GitHub Actions increases template maintenance.
 
 ## Decisions and rationale
@@ -131,3 +130,32 @@ python scripts/demo-check.py portal --keep
 
 The verifier uses fresh data and random loopback ports, prints the exact URLs and
 cleanup command, and fails if the demonstrated behavior is missing. The portal generates templates; it does not provision an external environment merely by rendering them.
+
+## Demonstrating preview and canary releases
+
+The portal can run in an isolated preview or a health-gated canary using the shared
+release command. Build the portal image, load it into your selected local kind
+cluster and, from the repository root, run:
+
+```bash
+docker build -t portfolio-portal:demo "Automated Infrastructure & Deployment Platform/portal"
+kind load docker-image portfolio-portal:demo --name gitops-platform
+python scripts/release-environment.py deploy --mode preview --id portal-pr-123 --context kind-gitops-platform --image-repository portfolio-portal --image-tag demo --port 8080 --health-path /api/health --expected-status ok --env PORTAL_AUTH_MODE=demo
+```
+
+Replace `preview` with `canary` after installing Argo Rollouts for verified staged
+updates. Demo authentication is explicit here. A namespace-scoped existing Secret
+can instead supply OIDC settings through `--env-secret`; secret values never belong
+in source files or generated templates. The deployment CLI is separate from the
+HTTP template API: generating a template does not silently provision resources.
+Remove the owned namespace when finished using the same identity and context:
+
+```bash
+python scripts/release-environment.py remove --mode preview --id portal-pr-123 --context kind-gitops-platform
+```
+
+## Captured functional demonstration
+
+OIDC login, role checks and generated templates. Captured from the running local application on 16 October 2026.
+
+![OIDC login, role checks and generated templates](screenshots/sso-and-generators-functional.png)

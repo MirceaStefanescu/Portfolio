@@ -20,13 +20,21 @@ class EventParserTest {
   }
 
   @Test
-  void parseMissingTimestampUsesNow() {
-    long before = System.currentTimeMillis();
+  void rejectsMissingTimestampInsteadOfSilentlyReplacingEventTime() {
     String payload = "{\"eventType\":\"sensor.temperature\",\"value\":12.0}";
     Event event = EventParser.parse(payload);
 
-    assertNotNull(event);
-    assertTrue(event.timestamp >= before);
+    assertNull(event);
+  }
+
+  @Test void rejectsWrongTypesBoundsAndUnexpectedFields() {
+    for (String payload : new String[] {
+        "{\"eventType\":\"sensor\",\"value\":\"2\",\"timestamp\":123}",
+        "{\"eventType\":\"sensor\",\"timestamp\":123}",
+        "{\"eventType\":\"sensor\",\"value\":1e999,\"timestamp\":123}",
+        "{\"eventType\":\"sensor\",\"value\":2,\"timestamp\":0}",
+        "{\"eventType\":\"sensor\",\"value\":2,\"timestamp\":123,\"unknown\":true}"
+    }) assertNull(EventParser.parse(payload), payload);
   }
 
   @Test

@@ -1,0 +1,39 @@
+pipeline {
+  agent any
+  options { timestamps(); disableConcurrentBuilds(); timeout(time: 20, unit: 'MINUTES') }
+  parameters {
+    booleanParam(name: 'KEEP_DEMO', defaultValue: false, description: 'Retain the isolated successful demo; cleanup command is printed in the log')
+  }
+  stages {
+    stage('Unit and contract tests') {
+      steps {
+        dir('Event-Driven E-Commerce Platform') { sh 'make test' }
+      }
+    }
+    stage('Build and verify local deployment') {
+      steps {
+        sh 'python3 scripts/demo-check.py event-driven'
+      }
+    }
+    stage('Terraform validation') {
+      steps {
+        dir('Event-Driven E-Commerce Platform/infra/terraform') {
+          sh 'terraform fmt -check && terraform init -backend=false && terraform validate'
+        }
+      }
+    }
+    stage('Publish demo to local Docker engine') {
+      when { expression { params.KEEP_DEMO } }
+      steps {
+        // Builds application images into the local engine, creates a private network and fresh volumes.
+        // No ECR account or cloud deployment is used by this demonstrative pipeline.
+        sh 'python3 scripts/demo-check.py event-driven --keep'
+      }
+    }
+  }
+  post {
+    always {
+      junit allowEmptyResults: false, testResults: 'Event-Driven E-Commerce Platform/services/*/target/surefire-reports/TEST-*.xml'
+    }
+  }
+}

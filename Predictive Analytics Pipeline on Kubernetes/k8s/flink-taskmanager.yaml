@@ -13,19 +13,31 @@ spec:
       labels:
         app: flink-taskmanager
     spec:
+      securityContext:
+        fsGroup: 9999
       containers:
         - name: taskmanager
-          image: flink:1.17.2-scala_2.12-java11
+          image: predictive-analytics-flink-job:latest
+          imagePullPolicy: IfNotPresent
           args: ["taskmanager"]
           env:
             - name: FLINK_PROPERTIES
               value: |
                 jobmanager.rpc.address: flink-jobmanager
-                taskmanager.numberOfTaskSlots: 4
+                taskmanager.numberOfTaskSlots: 1
+                taskmanager.memory.process.size: 1024m
+                state.checkpoints.dir: file:///opt/flink/checkpoints
+          volumeMounts:
+            - name: checkpoints
+              mountPath: /opt/flink/checkpoints
           resources:
             requests:
               cpu: 250m
               memory: 512Mi
             limits:
               cpu: 1000m
-              memory: 1024Mi
+              memory: 1536Mi
+      volumes:
+        - name: checkpoints
+          persistentVolumeClaim:
+            claimName: flink-checkpoints

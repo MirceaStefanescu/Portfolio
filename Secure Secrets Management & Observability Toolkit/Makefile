@@ -19,3 +19,6 @@ unit-test:
 
 integration-test:
 	bash tests/test-vault.sh
+
+policy:
+	python ../scripts/check-policy.py .

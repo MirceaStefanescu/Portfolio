@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from eval_harness.graders import regex_grade, tool_grade
 from eval_harness.metrics import score_metric
 from eval_harness.storage import RunLogger
 from eval_harness.types import EvalRecord
@@ -78,6 +79,7 @@ def run_evaluation(
     model,
     output_dir: Path,
     run_name: str | None = None,
+    semantic_grader=None,
 ) -> dict:
     records = load_dataset(task.dataset_path)
     run_id = run_name or f"{task.name}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-%f')}"
@@ -99,7 +101,21 @@ def run_evaluation(
 
             scores: dict[str, float | None] = {}
             for metric in task.metrics:
-                score = score_metric(metric, response, record.expected, record.context)
+                if metric == "regex":
+                    pattern = record.metadata.get("pattern", record.expected)
+                    if not isinstance(pattern, str):
+                        raise ValueError("Regex grading requires an expected pattern")
+                    score = regex_grade(response, pattern)
+                elif metric == "tool_calls":
+                    score = tool_grade(response, record.metadata["expected_tool_calls"])
+                elif metric == "semantic_similarity":
+                    if semantic_grader is None or record.expected is None:
+                        raise ValueError(
+                            "Semantic grading requires an embeddings endpoint and reference"
+                        )
+                    score = semantic_grader.score(response, record.expected)
+                else:
+                    score = score_metric(metric, response, record.expected, record.context)
                 scores[metric] = score
                 if score is not None:
                     metric_totals[metric] += score

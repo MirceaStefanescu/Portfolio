@@ -23,6 +23,8 @@ def build_producer() -> KafkaProducer | None:
         bootstrap_servers=bootstrap,
         value_serializer=lambda value: json.dumps(value).encode("utf-8"),
         retries=3,
+        api_version=(3, 0, 0),
+        max_block_ms=5000,
     )
 
 

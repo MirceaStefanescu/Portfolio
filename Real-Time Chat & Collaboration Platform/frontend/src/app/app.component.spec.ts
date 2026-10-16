@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, provideZonelessChangeDetection } from "@angular/core";
-import { Subject, of } from "rxjs";
+import { Subject, of, throwError } from "rxjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppComponent } from "./app.component";
 import { AppModule } from "./app.module";
@@ -16,16 +16,20 @@ const message = (id: string, roomId: string): ChatMessage => ({
 describe("room timeline and composer", () => {
   let component: AppComponent;
   let incoming: Subject<ChatMessage>;
+  let connections: Subject<boolean>;
   let histories: Map<string, Subject<ChatMessage[]>>;
   let service: { [key: string]: any };
 
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [AppModule] });
     incoming = new Subject();
+    connections = new Subject();
     histories = new Map([["a", new Subject()], ["b", new Subject()]]);
     service = {
       connect: vi.fn(), disconnect: vi.fn(), subscribeToRoom: vi.fn(),
-      connected$: of(false), messages$: incoming,
+      connected$: connections, messages$: incoming,
+      presence$: of([]), errors$: new Subject(), saved$: new Subject(), setDisplayName: vi.fn(), notifyTyping: vi.fn(),
+      createRoom: vi.fn(),
       listRooms: () => of([]),
       getMessages: (id: string) => histories.get(id)!,
       sendMessage: vi.fn().mockReturnValue(false)
@@ -88,6 +92,52 @@ describe("room timeline and composer", () => {
     expect(component.messages).toEqual([]);
     expect(service["disconnect"]).toHaveBeenCalledOnce();
   });
+
+  it("reloads messages missed while disconnected", () => {
+    component.selectRoom(room("a"));
+    histories.get("a")!.next([message("before", "a")]);
+    connections.next(false);
+    connections.next(true);
+    histories.get("a")!.next([message("before", "a"), message("during-disconnect", "a")]);
+    expect(component.messages.map((m) => m.id)).toEqual(["before", "during-disconnect"]);
+    component.ngOnDestroy();
+  });
+
+  it("does not duplicate an existing room returned by the API", () => {
+    component.rooms = [room("a")];
+    component.newRoomName = "a";
+    service["createRoom"].mockReturnValue(of(room("a")));
+    component.createRoom();
+    expect(component.rooms).toHaveLength(1);
+    component.ngOnDestroy();
+  });
+
+  it("reports room creation failure and preserves the entered name", () => {
+    component.newRoomName = "keep this name";
+    service["createRoom"].mockReturnValue(throwError(() => new Error("offline")));
+    component.createRoom();
+    expect(component.newRoomName).toBe("keep this name");
+    expect(component.roomError).toContain("Could not create");
+    component.ngOnDestroy();
+  });
+
+  it("keeps a newer draft when the server rejects an earlier message", () => {
+    component.newMessage = "new draft";
+    service["errors$"].next({content: "earlier message", error: "Rate limit exceeded"});
+    expect(component.newMessage).toBe("new draft");
+    expect(component.messageError).toContain("earlier message");
+    component.ngOnDestroy();
+  });
+
+  it("cancels search results from the previous room", () => {
+    component.selectRoom(room("a"));
+    component.searchQuery = "needle";
+    component.search();
+    component.selectRoom(room("b"));
+    histories.get("a")!.next([message("stale search", "a")]);
+    expect(component.searchResults).toBeNull();
+    component.ngOnDestroy();
+  });
 });
 
 
@@ -103,6 +153,7 @@ describe("asynchronous rendering with zoneless Angular", () => {
         { provide: ChatService, useValue: {
           connect: vi.fn(), disconnect: vi.fn(), subscribeToRoom: vi.fn(),
           connected$: connected, messages$: incoming,
+          presence$: of([]), errors$: of(), saved$: of(), setDisplayName: vi.fn(), notifyTyping: vi.fn(),
           listRooms: () => rooms, getMessages: () => of([])
         } },
         { provide: AuthService, useValue: { user$: profile, loadProfile: () => of(null) } }

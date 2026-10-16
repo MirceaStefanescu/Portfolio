@@ -13,3 +13,10 @@ ansible
 k8s
 scripts
 deploy
+.devtools
+target
+__pycache__
+.venv
+.angular
+*.log
+DevTools.ps1

@@ -7,6 +7,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class OrderEventPublisher {
@@ -27,11 +32,18 @@ public class OrderEventPublisher {
 
   public void publish(OrderCreatedEvent event) {
     try {
-      String payload = objectMapper.writeValueAsString(event);
-      kafkaTemplate.send(orderCreatedTopic, event.orderId(), payload);
+      String payload = objectMapper.copy().disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+          .writeValueAsString(event);
+      OrderContract.validate(payload);
+      kafkaTemplate.send(orderCreatedTopic, event.orderId(), payload).get(10, TimeUnit.SECONDS);
       logger.info("Published order.created event orderId={}", event.orderId());
     } catch (JsonProcessingException ex) {
       throw new IllegalStateException("Failed to serialize order event", ex);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Order publication interrupted", ex);
+    } catch (ExecutionException | TimeoutException | org.apache.kafka.common.KafkaException ex) {
+      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Order publication was not confirmed", ex);
     }
   }
 }

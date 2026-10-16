@@ -109,7 +109,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [product-service, order-service, payment-service]
+        service: [product-service, order-service, payment-service, gateway]
     defaults:
       run:
         working-directory: Cloud-Native E-Commerce Platform/services/${{ matrix.service }}
@@ -141,6 +141,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26.11.1'
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.15'
@@ -151,8 +154,16 @@ jobs:
       - run: bash tests/test-portfolio-launcher.sh
       - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promote.sh"
       - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promotion-pr.sh"
+      - run: bash "CI/CD Pipeline Automation/scripts/test-terraform-gate.sh"
+      - run: python "GitOps Platform - Argo CD & Helm/scripts/test-dora.py"
+      - run: python tests/test-release-environment.py
+      - run: python "Predictive Analytics Pipeline on Kubernetes/ml/train.py" --check
+      - run: python "Secure RAG Service & Knowledge API/scripts/test_evaluate.py"
+      - run: node --test "Event-Driven E-Commerce Platform/scripts/test-demo-ui.cjs"
+      - run: python "Observability - New Relic & Prometheus/paging-demo/test_receiver.py"
       - run: bash tests/test-ci-status.sh
       - run: bash "DevSecOps Pipeline with SBOM & SLSA/scripts/test-pipeline.sh"
+      - run: python "DevSecOps Pipeline with SBOM & SLSA/scripts/test-release-policy.py"
 
   docker-build:
     runs-on: ubuntu-latest
@@ -166,6 +177,7 @@ jobs:
           - Cloud-Native E-Commerce Platform/services/order-service
           - Cloud-Native E-Commerce Platform/services/payment-service
           - Cloud-Native E-Commerce Platform/services/product-service
+          - Cloud-Native E-Commerce Platform/services/gateway
           - DevSecOps Pipeline with SBOM & SLSA/app
           - Event-Driven E-Commerce Platform/services/inventory-service
           - Event-Driven E-Commerce Platform/services/order-service
@@ -235,14 +247,55 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [portal, chat, ecommerce, predictive, observability, secrets]
+        project: [portal, chat, ecommerce, predictive, observability, secrets, event-driven, rag, habit]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.15'
+      - if: ${{ matrix.project == 'chat' }}
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26.11.1'
+      - if: ${{ matrix.project == 'chat' }}
+        run: npm ci
+        working-directory: Real-Time Chat & Collaboration Platform/frontend
       - name: Verify an isolated runnable demo and clean up its data
         run: python scripts/demo-check.py "${{ matrix.project }}"
+      - if: ${{ matrix.project == 'rag' }}
+        name: Verify vector replication and snapshot recovery
+        run: python "Secure RAG Service & Knowledge API/scripts/resilience-demo.py"
+      - if: ${{ matrix.project == 'portal' }}
+        name: Verify the local DORA exporter and Grafana dashboard
+        run: python "GitOps Platform - Argo CD & Helm/scripts/demo-dora.py"
+      - name: Verify KMS auto-unseal, replication and outage recovery
+        if: ${{ matrix.project == 'secrets' }}
+        run: python "Secure Secrets Management & Observability Toolkit/scripts/kms-region-demo.py"
+
+  infrastructure-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.15'
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v4.3.0
+      - name: Install verified Conftest release
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl --fail --silent --show-error --location --output conftest.tar.gz https://github.com/open-policy-agent/conftest/releases/download/v0.71.1/conftest_0.71.1_Linux_x86_64.tar.gz
+          echo 'c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985  conftest.tar.gz' | sha256sum --check --strict
+          tar -xzf conftest.tar.gz conftest
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - run: python tests/test-policy-runner.py
+      - run: python scripts/check-policy.py "Automated Infrastructure & Deployment Platform"
+      - run: python scripts/check-policy.py "CI/CD Pipeline Automation"
+      - run: python scripts/check-policy.py "GitOps Platform - Argo CD & Helm"
+      - run: python scripts/check-policy.py "Secure Secrets Management & Observability Toolkit"
+      - run: conftest verify --policy "DevSecOps Pipeline with SBOM & SLSA/policy/release" --data "DevSecOps Pipeline with SBOM & SLSA/policy/release/data.json"
 
   terraform:
     runs-on: ubuntu-latest
@@ -262,6 +315,8 @@ jobs:
           - directory: CI/CD Pipeline Automation/terraform/modules/cicd-app
             lock-args: ''
           - directory: Cloud-Native E-Commerce Platform/infra/terraform
+            lock-args: '-lockfile=readonly'
+          - directory: Event-Driven E-Commerce Platform/infra/terraform
             lock-args: '-lockfile=readonly'
           - directory: GitOps Platform - Argo CD & Helm/terraform/aws
             lock-args: '-lockfile=readonly'
@@ -341,7 +396,7 @@ jobs:
   status:
     name: Portfolio status
     if: ${{ always() }}
-    needs: [node, java, cloud-native-python, broker-integration, launcher, chat-postgres, container-validation, demo-integration, docker-build, terraform, helm, finops, gitops, prompt-quality, llmops]
+    needs: [node, java, cloud-native-python, broker-integration, launcher, chat-postgres, container-validation, demo-integration, docker-build, infrastructure-policy, terraform, helm, finops, gitops, prompt-quality, llmops]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

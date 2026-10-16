@@ -133,8 +133,34 @@ def _create_payment(order_id: str, amount_cents: int, currency: str) -> Payment:
 
 
 def handle_payment_request(message: dict) -> None:
+    if message.get("action", "authorize") == "refund":
+        _refund_payment(message["order_id"])
+        return
     payload = PaymentCreate.model_validate(message)
     _create_payment(payload.order_id, payload.amount_cents, payload.currency)
+
+
+def _refund_payment(order_id: str) -> Payment:
+    with get_connection() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT * FROM payments WHERE order_id = ? ORDER BY created_at LIMIT 1",
+            (order_id,),
+        ).fetchone()
+        if row is None or row["status"] not in ("authorized", "refunded"):
+            raise ValueError("Only an authorized payment can be refunded")
+        conn.execute(
+            "UPDATE payments SET status = ? WHERE id = ?", ("refunded", row["id"])
+        )
+        payment = Payment(**{**dict(row), "status": "refunded"})
+        conn.commit()
+    publish_event(
+        app.state.producer,
+        app.state.kafka_topic,
+        "payment.refunded",
+        payment.model_dump(),
+    )
+    return payment
 
 
 @app.get("/payments", response_model=list[Payment])

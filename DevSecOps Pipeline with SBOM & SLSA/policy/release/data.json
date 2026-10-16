@@ -1,0 +1,6 @@
+{
+  "release_policy": {
+    "builder": "https://portfolio.example/builders/isolated-static/v1",
+    "allowed_licenses": ["Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib", "OpenSSL", "MPL-2.0", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only", "GPL-3.0-or-later", "GCC-exception-3.1", "LGPL-2.0-only", "LGPL-2.0-or-later", "LGPL-2.1-only", "LGPL-2.1-or-later", "BSL-1.0", "Unicode-3.0", "LicenseRef-public-domain", "0BSD"]
+  }
+}

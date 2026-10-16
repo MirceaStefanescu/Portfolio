@@ -1,6 +1,7 @@
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const { once } = require("node:events");
+process.env.PORTAL_AUTH_MODE = "demo";
 const { app } = require("../src/server");
 let server, base;
 before(async () => {

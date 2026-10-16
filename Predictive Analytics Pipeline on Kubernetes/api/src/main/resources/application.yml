@@ -16,6 +16,8 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 app:
+  schema-registration-enabled: ${APP_SCHEMA_REGISTRATION_ENABLED:false}
+  schema-registry-url: ${APP_SCHEMA_REGISTRY_URL:http://localhost:8085}
   kafka:
     topic: ${KAFKA_TOPIC:events}
   elasticsearch:

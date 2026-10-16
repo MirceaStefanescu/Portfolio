@@ -1,0 +1,7 @@
+.devtools
+.env
+.env.*
+.git
+__pycache__
+*.log
+DevTools.ps1

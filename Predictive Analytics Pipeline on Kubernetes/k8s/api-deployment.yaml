@@ -13,6 +13,21 @@ spec:
       labels:
         app: predictive-analytics-api
     spec:
+      initContainers:
+        - name: wait-for-dependencies
+          image: confluentinc/cp-schema-registry:7.9.10
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              for attempt in {1..45}; do
+                if curl --fail --silent http://schema-registry:8081/subjects >/dev/null && (echo >/dev/tcp/postgres/5432) 2>/dev/null; then
+                  exit 0
+                fi
+                sleep 2
+              done
+              echo "Database or Schema Registry did not become ready" >&2
+              exit 1
       containers:
         - name: api
           image: predictive-analytics-api:latest

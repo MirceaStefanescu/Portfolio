@@ -1,0 +1,48 @@
+services:
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:8085:8085"
+    environment:
+      DATABASE_URL: postgres://habit:local-habit-demo@postgres:5432/habit
+      REDIS_URL: redis://redis:6379
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      REMINDER_INTERVAL_MS: "1000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+  postgres:
+    image: postgres:15-alpine@sha256:f7d23353e1b15400d22ebe31189f4d314b87a4c129cc400c8c2d8d4ca127bf81
+    environment:
+      POSTGRES_DB: habit
+      POSTGRES_USER: habit
+      POSTGRES_PASSWORD: local-habit-demo
+    volumes:
+      - habit-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U habit -d habit"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine@sha256:ee64a64eaab618d88051c3ade8f6352d11531fcf79d9a4818b9b183d8c1d18ba
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - habit-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel.yaml:/etc/otelcol/config.yaml:ro
+volumes:
+  habit-postgres:
+  habit-redis:

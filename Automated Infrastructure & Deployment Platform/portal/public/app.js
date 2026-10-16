@@ -21,6 +21,26 @@ const latest = {
   terraform: null,
   helm: null
 };
+let profile = null;
+async function loadIdentity() {
+  const response = await fetch("/api/me");
+  if (!response.ok) {
+    document.getElementById("identity").textContent = "Sign in to access the portal.";
+    document.getElementById("signIn").hidden = false;
+    [generatePipelineButton, generateTerraformButton, generateHelmButton].forEach(button => button.disabled = true);
+    return;
+  }
+  profile = await response.json();
+  document.getElementById("identity").textContent = `${profile.name} · ${profile.role}${profile.mode === "demo" ? " · Local demonstration" : ""}`;
+  document.getElementById("signOut").hidden = profile.mode === "demo";
+  [generatePipelineButton, generateTerraformButton, generateHelmButton].forEach(button => button.disabled = profile.role === "viewer");
+  await loadServiceStatus();
+}
+document.getElementById("signOut").addEventListener("click", async () => {
+  const response = await fetch("/api/logout", {method: "POST", headers: {"X-CSRF-Token": profile?.csrf || ""}});
+  if (response.ok) window.location.reload();
+  else document.getElementById("identity").textContent = "Sign-out failed. Please retry.";
+});
 
 function buildPayload() {
   return {
@@ -34,7 +54,7 @@ function buildPayload() {
 async function requestTemplate(endpoint) {
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-CSRF-Token": profile?.csrf || "" },
     body: JSON.stringify(buildPayload())
   });
 
@@ -152,5 +172,5 @@ downloadHelmButton.addEventListener("click", () => {
   downloadFile(latest.helm);
 });
 
-loadServiceStatus();
-setInterval(loadServiceStatus, 10000);
+loadIdentity().catch(() => { document.getElementById("identity").textContent = "Portal unavailable. Please reload."; });
+setInterval(() => { if (profile) loadServiceStatus(); }, 10000);

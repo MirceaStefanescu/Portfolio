@@ -1,3 +1,6 @@
 .env
 *.log
 **/target/
+**/data/
+**/*.tfstate
+**/*.tfstate.*

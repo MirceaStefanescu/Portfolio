@@ -12,11 +12,13 @@ describe("chat transport", () => {
   beforeEach(() => {
     vi.spyOn(Client.prototype, "activate").mockImplementation(() => {});
     vi.spyOn(Client.prototype, "deactivate").mockResolvedValue();
+    vi.spyOn(Client.prototype, "subscribe").mockReturnValue({ id: "sub", unsubscribe: vi.fn() });
+    vi.spyOn(Client.prototype, "publish").mockImplementation(() => {});
     service = new ChatService({} as HttpClient);
     service.connect();
     client = (service as unknown as { client: Client }).client;
   });
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => { service.disconnect(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
   it("only accepts a message when the connected transport publishes it", () => {
     const connected = vi.spyOn(Client.prototype, "connected", "get").mockReturnValue(false);
@@ -25,10 +27,47 @@ describe("chat transport", () => {
     expect(publish).not.toHaveBeenCalled();
     connected.mockReturnValue(true);
     expect(service.sendMessage("room", "user", "hello")).toBe(true);
-    expect(publish).toHaveBeenCalledWith({
-      destination: "/app/rooms/room/send",
-      body: JSON.stringify({ sender: "user", content: "hello" })
+    expect(publish.mock.calls[0][0].destination).toBe("/app/rooms/room/send");
+    expect(JSON.parse(publish.mock.calls[0][0].body!)).toEqual({ sender: "user", content: "hello", requestId: expect.any(String) });
+  });
+
+  it("resends unacknowledged messages with the same ID and restores a rejected draft", () => {
+    vi.spyOn(Client.prototype, "connected", "get").mockReturnValue(true);
+    const callbacks = new Map<string, (frame: any) => void>();
+    vi.mocked(client.subscribe).mockImplementation((destination, callback) => {
+      callbacks.set(destination, callback); return { id: destination, unsubscribe: vi.fn() };
     });
+    const errors = vi.fn();
+    service.errors$.subscribe(errors);
+    client.onConnect({} as any);
+    service.sendMessage("room", "user", "keep me");
+    const original = vi.mocked(client.publish).mock.calls.at(-1)![0];
+    client.onWebSocketClose(new CloseEvent("close"));
+    client.onConnect({} as any);
+    expect(vi.mocked(client.publish).mock.calls.at(-1)![0]).toEqual(original);
+    callbacks.get("/user/queue/receipts")!({body: JSON.stringify({requestId: JSON.parse(original.body!).requestId,
+      accepted: false, error: "Rate limit exceeded"})});
+    expect(errors).toHaveBeenCalledWith({content: "keep me", error: "Rate limit exceeded"});
+    vi.mocked(client.publish).mockClear();
+    client.onConnect({} as any);
+    expect(client.publish).not.toHaveBeenCalled();
+  });
+
+  it("expires typing and presence using server-relative time", () => {
+    vi.useFakeTimers(); vi.setSystemTime(100000);
+    vi.spyOn(Client.prototype, "connected", "get").mockReturnValue(true);
+    let receive!: (message: any) => void;
+    vi.mocked(client.subscribe).mockImplementation((destination, callback) => {
+      if (destination.endsWith("/presence")) receive = callback;
+      return {id: destination, unsubscribe: vi.fn()};
+    });
+    let current: any[] = [];
+    service.presence$.subscribe((members) => current = members);
+    service.subscribeToRoom("room");
+    receive({body: JSON.stringify({serverTime: 5000, members: [{sessionId: "s", name: "Alice", expiresAt: 10000, typingUntil: 7000}]})});
+    expect(current[0].name).toBe("Alice"); expect(current[0].typingUntil).toBe(102000);
+    vi.advanceTimersByTime(2000); expect(current[0].typingUntil).toBe(0);
+    vi.advanceTimersByTime(3000); expect(current).toEqual([]);
   });
 
   it("reports a failed publication without accepting the draft", () => {
@@ -64,6 +103,7 @@ describe("chat CSRF integration", () => {
   beforeEach(() => {
     vi.spyOn(Client.prototype, "activate").mockImplementation(() => {});
     vi.spyOn(Client.prototype, "deactivate").mockResolvedValue();
+    vi.spyOn(Client.prototype, "subscribe").mockReturnValue({ id: "sub", unsubscribe: vi.fn() });
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting(), ChatService]
     });

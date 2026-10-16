@@ -32,10 +32,18 @@ spec:
       labels:
         app: flink-jobmanager
     spec:
+      securityContext:
+        fsGroup: 9999
       containers:
         - name: jobmanager
-          image: flink:1.17.2-scala_2.12-java11
-          args: ["jobmanager"]
+          image: predictive-analytics-flink-job:latest
+          imagePullPolicy: IfNotPresent
+          args: ["standalone-job", "--job-classname", "com.portfolio.pipeline.flink.PredictionJob"]
+          envFrom:
+            - configMapRef:
+                name: predictive-analytics-config
+            - secretRef:
+                name: predictive-analytics-secrets
           ports:
             - containerPort: 8081
             - containerPort: 6123
@@ -44,3 +52,22 @@ spec:
             - name: FLINK_PROPERTIES
               value: |
                 jobmanager.rpc.address: flink-jobmanager
+                scheduler-mode: reactive
+                state.checkpoints.dir: file:///opt/flink/checkpoints
+                state.checkpoints.num-retained: 3
+                jobmanager.memory.process.size: 1024m
+          volumeMounts:
+            - name: checkpoints
+              mountPath: /opt/flink/checkpoints
+          readinessProbe:
+            httpGet:
+              path: /overview
+              port: 8081
+            initialDelaySeconds: 10
+          resources:
+            requests: {cpu: 250m, memory: 1Gi}
+            limits: {cpu: "2", memory: 1536Mi}
+      volumes:
+        - name: checkpoints
+          persistentVolumeClaim:
+            claimName: flink-checkpoints

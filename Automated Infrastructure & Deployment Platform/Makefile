@@ -1,4 +1,4 @@
-.PHONY: dev down test lint
+.PHONY: dev down test lint policy
 
 dev:
 	docker compose up --build
@@ -11,3 +11,6 @@ test:
 
 lint:
 	./scripts/lint.sh
+
+policy:
+	python ../scripts/check-policy.py .
