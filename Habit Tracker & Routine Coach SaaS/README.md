@@ -26,10 +26,7 @@ that target. The demo does not send reminders or create a real payment session.
 ## Demo
 - Live: TBD
 - Video or GIF: TBD
-- Screenshots:
-  - `docs/screenshots/20251228_1805_Habit Tracker Dashboard_01.png`
-  - `docs/screenshots/20251228_1805_Habit Tracker Habits_02.png`
-  - `docs/screenshots/20251228_1805_Habit Tracker Insights_03.png`
+- Screenshots: pending; add captures to `screenshots/`.
 
 ## Quickstart (local)
 Prereqs:

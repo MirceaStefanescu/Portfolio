@@ -21,15 +21,15 @@ This project demonstrates an end-to-end online shop with a modern SPA UI, RESTfu
 - Live: Not deployed yet.
 - Video or GIF: Add a 60 to 120 second walkthrough.
 - Screenshots:
-  - `docs/screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6bzee4tyb7jj380myyp.png`
-  - `docs/screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c0fjjv7jkk2n500ejv.png`
-  - `docs/screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c1ejjs4dbh4xrf43ar.png`
-  - `docs/screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c2f78b0a76nd46n7dp.png`
+  - `screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6bzee4tyb7jj380myyp.png`
+  - `screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c0fjjv7jkk2n500ejv.png`
+  - `screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c1ejjs4dbh4xrf43ar.png`
+  - `screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c2f78b0a76nd46n7dp.png`
 
-![E-commerce App 01](<docs/screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6bzee4tyb7jj380myyp.png>)
-![E-commerce App 02](<docs/screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c0fjjv7jkk2n500ejv.png>)
-![E-commerce App 03](<docs/screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c1ejjs4dbh4xrf43ar.png>)
-![E-commerce App 04](<docs/screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c2f78b0a76nd46n7dp.png>)
+![E-commerce App 01](<screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6bzee4tyb7jj380myyp.png>)
+![E-commerce App 02](<screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c0fjjv7jkk2n500ejv.png>)
+![E-commerce App 03](<screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c1ejjs4dbh4xrf43ar.png>)
+![E-commerce App 04](<screenshots/20251228_1739_E-commerce App Showcase_simple_compose_01kdjss6c2f78b0a76nd46n7dp.png>)
 
 ## Quickstart (local)
 Prereqs:

@@ -21,15 +21,15 @@ Event-driven e-commerce platform for high-traffic retail teams that need scalabl
 - Live: TBD
 - Video or GIF: TBD
 - Screenshots:
-  - `docs/screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz6e53rqfyhcxcva2v5.png`
-  - `docs/screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz7exyr3dtcvf2ds3cb.png`
-  - `docs/screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz8er9t65yx5vh4btk8.png`
-  - `docs/screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz9fnbr3ggv204mhjyp.png`
+  - `screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz6e53rqfyhcxcva2v5.png`
+  - `screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz7exyr3dtcvf2ds3cb.png`
+  - `screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz8er9t65yx5vh4btk8.png`
+  - `screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz9fnbr3ggv204mhjyp.png`
 
-![Scalable E-Commerce 01](<docs/screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz6e53rqfyhcxcva2v5.png>)
-![Scalable E-Commerce 02](<docs/screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz7exyr3dtcvf2ds3cb.png>)
-![Scalable E-Commerce 03](<docs/screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz8er9t65yx5vh4btk8.png>)
-![Scalable E-Commerce 04](<docs/screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz9fnbr3ggv204mhjyp.png>)
+![Scalable E-Commerce 01](<screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz6e53rqfyhcxcva2v5.png>)
+![Scalable E-Commerce 02](<screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz7exyr3dtcvf2ds3cb.png>)
+![Scalable E-Commerce 03](<screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz8er9t65yx5vh4btk8.png>)
+![Scalable E-Commerce 04](<screenshots/20251228_1737_Scalable E-Commerce System_simple_compose_01kdjsmnz9fnbr3ggv204mhjyp.png>)
 
 ## Quickstart (local)
 Prereqs:

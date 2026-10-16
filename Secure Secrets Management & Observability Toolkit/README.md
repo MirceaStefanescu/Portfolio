@@ -24,15 +24,15 @@ Secure secrets management and observability toolkit for platform teams that need
 - Live: TBD
 - Video or GIF: TBD
 - Screenshots:
-  - `docs/screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1f8fw6br0mfmzqtw691.png`
-  - `docs/screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fafb2857jeew5kqwcv.png`
-  - `docs/screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fbfkjvfczj5sfnsb8z.png`
-  - `docs/screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fcew3v42xfqes7yk3a.png`
+  - `screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1f8fw6br0mfmzqtw691.png`
+  - `screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fafb2857jeew5kqwcv.png`
+  - `screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fbfkjvfczj5sfnsb8z.png`
+  - `screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fcew3v42xfqes7yk3a.png`
 
-![Secrets Toolkit 01](<docs/screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1f8fw6br0mfmzqtw691.png>)
-![Secrets Toolkit 02](<docs/screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fafb2857jeew5kqwcv.png>)
-![Secrets Toolkit 03](<docs/screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fbfkjvfczj5sfnsb8z.png>)
-![Secrets Toolkit 04](<docs/screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fcew3v42xfqes7yk3a.png>)
+![Secrets Toolkit 01](<screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1f8fw6br0mfmzqtw691.png>)
+![Secrets Toolkit 02](<screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fafb2857jeew5kqwcv.png>)
+![Secrets Toolkit 03](<screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fbfkjvfczj5sfnsb8z.png>)
+![Secrets Toolkit 04](<screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fcew3v42xfqes7yk3a.png>)
 
 ## Quickstart (local)
 Prereqs:
