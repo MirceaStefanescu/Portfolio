@@ -46,6 +46,12 @@ def wait(check, description):
     raise RuntimeError("Timed out: " + description)
 
 
+def verify_metric(base, path, value, description, auth=False):
+    # Creating a datasource does not mean its proxy can serve queries yet.
+    rows = wait(lambda: request(base, path, auth=auth)["data"]["result"], description)
+    assert len(rows) == 1 and abs(float(rows[0]["value"][1]) - value) < 1e-9, rows
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--keep", action="store_true", help="Retain this isolated demo; print cleanup command")
@@ -91,10 +97,9 @@ def main():
                     "open_incidents": 0, "failed_attempts": 0}
         for metric, value in expected.items():
             query = urllib.parse.urlencode({"query": "portfolio_dora_" + metric})
-            rows = wait(lambda: request(prometheus, "/api/v1/query?" + query)["data"]["result"], metric)
-            assert len(rows) == 1 and abs(float(rows[0]["value"][1]) - value) < 1e-9, rows
-            proxy = request(grafana, "/api/datasources/proxy/uid/dora-demo/api/v1/query?" + query, auth=True)
-            assert proxy["data"]["result"] == rows or float(proxy["data"]["result"][0]["value"][1]) == value
+            verify_metric(prometheus, "/api/v1/query?" + query, value, metric)
+            verify_metric(grafana, "/api/datasources/proxy/uid/dora-demo/api/v1/query?" + query,
+                          value, "Grafana datasource: " + metric, auth=True)
         result = {"status": "PASS", "synthetic": True, "metrics": expected,
                   "grafana": grafana + "/d/portfolio-dora", "project": project, "compose_file": str(compose)}
         (directory / "result.json").write_text(json.dumps(result, indent=2))

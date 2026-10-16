@@ -1,4 +1,6 @@
 import unittest
+from unittest.mock import patch
+import importlib.util
 import json
 from pathlib import Path
 import socket
@@ -6,8 +8,42 @@ import subprocess
 import sys
 import time
 from urllib.request import urlopen
+from urllib.error import HTTPError
 from datetime import datetime, timezone
 from dora import metrics, report
+
+spec = importlib.util.spec_from_file_location("demo_dora", Path(__file__).with_name("demo-dora.py"))
+demo = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(demo)
+
+
+class DatasourceReadinessTests(unittest.TestCase):
+    path = "/api/datasources/proxy/uid/dora-demo/api/v1/query?query=portfolio_dora_open_incidents"
+
+    def response(self, *values):
+        return {"data": {"result": [{"value": [123, str(value)]} for value in values]}}
+
+    def test_proxy_waits_for_registration_and_first_sample(self):
+        missing = HTTPError("http://grafana" + self.path, 404, "Not Found", {}, None)
+        with patch.object(demo, "request", side_effect=[missing, self.response(), self.response(0)]) as request, \
+                patch.object(demo.time, "sleep"):
+            demo.verify_metric("http://grafana", self.path, 0, "Grafana datasource", auth=True)
+        self.assertEqual(request.call_count, 3)
+        request.assert_called_with("http://grafana", self.path, auth=True)
+
+    def test_wrong_value_or_duplicate_series_still_fails(self):
+        for response in [self.response(1), self.response(0, 0)]:
+            with self.subTest(response=response), patch.object(demo, "request", return_value=response):
+                with self.assertRaises(AssertionError):
+                    demo.verify_metric("http://grafana", self.path, 0, "Grafana datasource", auth=True)
+
+    def test_permanent_missing_datasource_still_times_out(self):
+        missing = HTTPError("http://grafana" + self.path, 404, "Not Found", {}, None)
+        with patch.object(demo, "request", side_effect=missing), \
+                patch.object(demo.time, "monotonic", side_effect=[0, 0, 121]), \
+                patch.object(demo.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "Timed out: Grafana datasource"):
+                demo.verify_metric("http://grafana", self.path, 0, "Grafana datasource", auth=True)
 
 
 class DoraTests(unittest.TestCase):
