@@ -43,6 +43,9 @@ def values(args):
         raise ValueError("Use a versioned image tag")
     if not 1 <= args.port <= 65535 or not args.health_path.startswith("/"):
         raise ValueError("Invalid service port or health path")
+    if args.env_secret and (len(args.env_secret) > 253 or not re.fullmatch(
+            r"[a-z0-9](?:[-a-z0-9.]*[a-z0-9])?", args.env_secret)):
+        raise ValueError("--env-secret must name an existing Kubernetes Secret, not contain credentials")
     env = []
     for item in args.env:
         name, separator, value = item.partition("=")
@@ -90,7 +93,7 @@ def main():
     parser.add_argument("--expected-status", default="OK", help="Exact JSON status value returned by health endpoint")
     parser.add_argument("--replicas", type=int, default=2)
     parser.add_argument("--env", action="append", default=[])
-    parser.add_argument("--env-secret", default="")
+    parser.add_argument("--env-secret", default="", help="Name of an existing Kubernetes Secret; never its contents")
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--events", type=Path, help="Optional local deployment JSONL ledger")
     parser.add_argument("--revision", default="")
@@ -129,38 +132,36 @@ def main():
     started = datetime.now(timezone.utc).isoformat()
     result = "failed"
     try:
-        with tempfile.TemporaryDirectory(prefix="portfolio-release-") as tmp:
-            path = Path(tmp) / "values.json"
-            path.write_text(json.dumps(configuration), encoding="utf-8")
-            rendered = run(helm + ["template", "app", str(CHART), "-n", namespace, "-f", str(path)])
-            manifests = Path(tmp) / "rendered.yaml"
-            manifests.write_text(rendered, encoding="utf-8", newline="\n")
-            run([shutil.which("conftest") or "conftest", "test", str(manifests),
-                 "--all-namespaces", "--policy", str(ROOT / "policies")])
-            if not current:
-                document = {"apiVersion": "v1", "kind": "Namespace", "metadata": {
-                    "name": namespace, "labels": {OWNER: identity}}}
-                # Create, never apply/adopt on a conflicting concurrent namespace.
-                run(kubectl + ["create", "-f", "-"], data=json.dumps(document))
-            # Services' selectors are reconciled by Argo. Helm 4's default SSA
-            # conflicts with that legitimate controller ownership on every update.
-            # Client-side merge retains controller-added selector fields; no force.
-            helm4 = run(helm + ["version", "--short"]).startswith("v4.")
-            apply_mode = ["--server-side=false"] if helm4 else []
-            # Argo's status.phase is checked below, including observedGeneration.
-            # Helm 4's generic watcher cannot infer readiness for a Rollout CR.
-            wait_mode = "--wait=legacy" if helm4 else "--wait"
-            run(helm + ["upgrade", "--install", "app", str(CHART), "-n", namespace,
-                        "-f", str(path), wait_mode, "--timeout", str(args.timeout) + "s"] + apply_mode,
-                timeout=args.timeout + 20)
-            if args.mode == "canary":
-                wait_canary(kubectl, namespace, args.timeout)
-            else:
-                run(kubectl + ["-n", namespace, "rollout", "status", "deployment/app",
-                               "--timeout=" + str(args.timeout) + "s"], timeout=args.timeout + 10)
-            result = "success"
-            print(json.dumps({"namespace": namespace, "service": "app",
-                              "mode": args.mode, "status": "PASS"}))
+        # Keep configuration and rendered environment values in process pipes.
+        # Neither credentials nor sensitive configuration belong in temporary files.
+        payload = json.dumps(configuration)
+        rendered = run(helm + ["template", "app", str(CHART), "-n", namespace, "-f", "-"], data=payload)
+        run([shutil.which("conftest") or "conftest", "test", "-", "--parser", "yaml",
+             "--all-namespaces", "--policy", str(ROOT / "policies")], data=rendered)
+        if not current:
+            document = {"apiVersion": "v1", "kind": "Namespace", "metadata": {
+                "name": namespace, "labels": {OWNER: identity}}}
+            # Create, never apply/adopt on a conflicting concurrent namespace.
+            run(kubectl + ["create", "-f", "-"], data=json.dumps(document))
+        # Services' selectors are reconciled by Argo. Helm 4's default SSA
+        # conflicts with that legitimate controller ownership on every update.
+        # Client-side merge retains controller-added selector fields; no force.
+        helm4 = run(helm + ["version", "--short"]).startswith("v4.")
+        apply_mode = ["--server-side=false"] if helm4 else []
+        # Argo's status.phase is checked below, including observedGeneration.
+        # Helm 4's generic watcher cannot infer readiness for a Rollout CR.
+        wait_mode = "--wait=legacy" if helm4 else "--wait"
+        run(helm + ["upgrade", "--install", "app", str(CHART), "-n", namespace,
+                    "-f", "-", wait_mode, "--timeout", str(args.timeout) + "s"] + apply_mode,
+            data=payload, timeout=args.timeout + 20)
+        if args.mode == "canary":
+            wait_canary(kubectl, namespace, args.timeout)
+        else:
+            run(kubectl + ["-n", namespace, "rollout", "status", "deployment/app",
+                           "--timeout=" + str(args.timeout) + "s"], timeout=args.timeout + 10)
+        result = "success"
+        print(json.dumps({"namespace": namespace, "service": "app",
+                          "mode": args.mode, "status": "PASS"}))
     finally:
         if args.events:
             entry = {"kind": "deployment", "id": str(uuid.uuid4()), "service": identity,

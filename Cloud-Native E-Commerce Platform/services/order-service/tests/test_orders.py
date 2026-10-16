@@ -93,6 +93,7 @@ def test_failed_delivery_can_retry_existing_order_without_duplicate(
     )
     assert response.status_code == 503
     from app.db import get_connection
+
     with get_connection() as connection:
         assert connection.execute("SELECT COUNT(*) FROM outbox").fetchone()[0] == 1
     detail = response.json()["detail"]
@@ -111,14 +112,28 @@ def test_failed_delivery_can_retry_existing_order_without_duplicate(
 def test_refund_saga_rejects_late_authorization(client, monkeypatch):
     from app import main
     from app.db import get_connection
-    monkeypatch.setattr(main, "_fetch_product", lambda _: {
-        "id": "one", "name": "Coffee", "price_cents": 500, "currency": "USD"})
-    order = client.post("/orders", json={"customer_id": "one", "items": [
-        {"product_id": "one", "quantity": 1}]}).json()
+
+    monkeypatch.setattr(
+        main,
+        "_fetch_product",
+        lambda _: {
+            "id": "one",
+            "name": "Coffee",
+            "price_cents": 500,
+            "currency": "USD",
+        },
+    )
+    order = client.post(
+        "/orders",
+        json={"customer_id": "one", "items": [{"product_id": "one", "quantity": 1}]},
+    ).json()
     assert client.post(f"/orders/{order['id']}/cancel").status_code == 409
     event = {"event_type": "payment.authorized", "payload": {"order_id": order["id"]}}
     main.handle_payment_event(event)
-    assert client.post(f"/orders/{order['id']}/cancel").json()["status"] == "cancel_pending"
+    assert (
+        client.post(f"/orders/{order['id']}/cancel").json()["status"]
+        == "cancel_pending"
+    )
     main.handle_payment_event(event)
     assert client.get(f"/orders/{order['id']}").json()["status"] == "cancel_pending"
     main.handle_payment_event({**event, "event_type": "payment.refunded"})
@@ -126,4 +141,9 @@ def test_refund_saga_rejects_late_authorization(client, monkeypatch):
     assert client.get(f"/orders/{order['id']}").json()["status"] == "cancelled"
     assert client.post(f"/orders/{order['id']}/cancel").status_code == 202
     with get_connection() as connection:
-        assert connection.execute("SELECT COUNT(*) FROM outbox WHERE action = 'refund'").fetchone()[0] == 1
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM outbox WHERE action = 'refund'"
+            ).fetchone()[0]
+            == 1
+        )
