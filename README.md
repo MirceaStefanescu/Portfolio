@@ -41,7 +41,7 @@ Start with these three examples. Each project opens with a real capture and link
 
 For an initial discussion, describe the problem, the current stack, the workflow you want to improve and any deadline or integration constraints. I can then help define a practical first deliverable and how it will be verified.
 
-[Contact me on LinkedIn](https://www.linkedin.com/in/stefanescumircea) to discuss a freelance project.
+[Email me at stefanescumircea1990@gmail.com](mailto:stefanescumircea1990@gmail.com) to discuss a freelance project.
 
 ## Project directory
 
