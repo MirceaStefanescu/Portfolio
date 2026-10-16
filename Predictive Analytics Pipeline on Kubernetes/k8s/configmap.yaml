@@ -6,6 +6,11 @@ metadata:
 data:
   KAFKA_BOOTSTRAP_SERVERS: kafka:9092
   KAFKA_TOPIC: events
+  APP_SCHEMA_REGISTRATION_ENABLED: "true"
+  APP_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_BSP_SCHEDULE_DELAY: "1000"
   POSTGRES_URL: jdbc:postgresql://postgres:5432/analytics
   POSTGRES_USER: analytics
   ELASTICSEARCH_HOST: http://elasticsearch:9200

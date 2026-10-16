@@ -29,6 +29,7 @@
         />
         <button (click)="createRoom()">Create</button>
       </div>
+      <p role="alert" *ngIf="roomError">{{ roomError }}</p>
       <ul class="room-list">
         <li
           *ngFor="let room of rooms"
@@ -47,8 +48,19 @@
         <span class="chat-hint">Messages are persisted and streamed via Kafka.</span>
       </div>
 
+      <div *ngIf="selectedRoom" class="chat-hint" aria-live="polite">
+        Online: {{ onlineUsers.join(', ') || 'No active participants' }}
+        <span *ngIf="typingUsers.length"> · {{ typingUsers.join(', ') }} typing…</span>
+      </div>
+      <form *ngIf="selectedRoom" (ngSubmit)="search()" class="room-create">
+        <input name="search" aria-label="Search messages" [(ngModel)]="searchQuery" maxlength="200" placeholder="Search this room" />
+        <button type="submit">Search</button>
+        <button type="button" *ngIf="searchResults !== null" (click)="searchQuery = ''; search()">Clear</button>
+      </form>
+      <p role="alert" *ngIf="messageError">{{ messageError }}</p>
       <div class="messages" *ngIf="selectedRoom; else emptyState">
-        <div class="message" *ngFor="let message of messages">
+        <p *ngIf="searchResults?.length === 0">No matching messages.</p>
+        <div class="message" *ngFor="let message of (searchResults ?? messages)">
           <div class="message-meta">
             <span class="sender">{{ message.sender }}</span>
             <span class="time">{{ message.createdAt | date: "shortTime" }}</span>
@@ -70,6 +82,8 @@
           type="text"
           [disabled]="!selectedRoom"
           [(ngModel)]="newMessage"
+          (ngModelChange)="notifyTyping()"
+          maxlength="4000"
           placeholder="Type a message and hit enter"
         />
         <button type="submit" [disabled]="!connected || !selectedRoom || !newMessage.trim()">Send</button>

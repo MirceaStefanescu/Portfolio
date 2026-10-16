@@ -1,0 +1,11 @@
+.devtools
+.env
+.env.*
+.git
+node_modules
+target
+__pycache__
+.venv
+.angular
+*.log
+DevTools.ps1

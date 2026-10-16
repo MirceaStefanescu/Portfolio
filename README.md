@@ -44,7 +44,7 @@ root in its own folder.
 - `DevSecOps Pipeline with SBOM & SLSA` - automated CI/CD pipeline with SBOMs, scanning, signing, and policy gates for supply-chain security.
 - `CI/CD Pipeline Automation` - automated CI/CD pipeline for web apps with Jenkins, Docker, Terraform, Ansible, and Kubernetes.
 - `LLMOps Evaluation Harness` - evaluation harness for LLM quality checks with metrics, run artifacts, and CI integration.
-- `Habit Tracker & Routine Coach SaaS` - React and Express habit-tracking demonstration; in-memory data resets on restart.
+- `Habit Tracker & Routine Coach SaaS` - React and Express habit-tracking demonstration with persistent data, reminders, groups and simulated subscriptions.
 
 ## Repository checks and maintenance
 
@@ -105,11 +105,11 @@ same default ports. Docker must be running with Linux containers. The Make/Bash
 commands below require a POSIX shell; Docker Desktop with Git Bash can also run
 the isolated Compose checks.
 
-Six complete Compose scenarios have an isolated verifier:
+Nine complete Compose scenarios have an isolated verifier:
 
 ```bash
 python scripts/demo-check.py portal
-# Also: chat, ecommerce, predictive, observability, secrets
+# Also: chat, ecommerce, predictive, observability, secrets, event-driven, rag, habit
 python scripts/demo-check.py chat --keep
 ```
 
@@ -118,27 +118,37 @@ Compose project and random loopback ports. It verifies the feature before report
 success and removes its containers/volumes afterward. `--keep` retains a successful
 stack for a browser walkthrough and prints its URLs and exact cleanup command.
 No provider account is used; E-commerce payments and Chat authentication are
-explicitly local demo modes. The six scenarios also run in Portfolio CI.
+explicitly local demo modes. The nine scenarios also run in Portfolio CI.
 
-| Project | Demonstrated local behavior | Entry point / remaining external scope |
+| Project | Demonstrated local behavior | Reproduce from the project unless specified |
 | --- | --- | --- |
-| Automated Infrastructure & Deployment Platform | Portal, four healthy service integrations, pipeline/Terraform/Helm template generation | `python scripts/demo-check.py portal`; generated templates require a separately configured deployment target |
-| Cloud-Native E-Commerce Platform | Order → brokers → payment → order update; persistence, duplicate handling and broker recovery | Project `make integration-test`; payments are simulated |
-| DevSecOps Pipeline with SBOM & SLSA | Real SBOM, Trivy/Grype gates, image/SBOM/provenance signatures; altered SBOM rejected | Project local quickstart; storage replication uses local folders |
-| Event-Driven E-Commerce Platform | Order creation and Kafka-driven inventory reduction | Project Compose quickstart and demo commands; implements Order and Inventory |
-| Full Stack E-commerce Application with Angular and Spring Boot | Registration, catalog/cart, simulated checkout, receipt and paid order history | `python scripts/demo-check.py ecommerce`; Stripe requires separate sandbox credentials |
-| Habit Tracker & Routine Coach SaaS | Habit CRUD, daily check-ins and counts in the React UI | Project backend/frontend quickstart; single-user, in-memory data |
-| GitOps Platform - Argo CD & Helm | Argo CD sync/health, three environments and self-healing; Velero data restore | Project `make dev`; cloud Terraform and a private mirrored repository need their own configuration |
-| Kubernetes FinOps & Cost Optimization | Namespace costs, real metrics, HPA scale-up/scale-down, persistent-volume backup | Project `make dev`; local costs are estimates, not cloud bills |
-| Observability - New Relic & Prometheus | Live metrics/logs/dashboard; stopped-service alert delivered and resolved | `python scripts/demo-check.py observability`; New Relic is optional and needs an account |
-| Predictive Analytics Pipeline on Kubernetes | Kafka/Flink event-time windows persisted in PostgreSQL and searchable in Elasticsearch | `python scripts/demo-check.py predictive`; send a continuing stream to advance the final window |
-| Real-Time Chat & Collaboration Platform | Two browser sessions exchange messages and retain history after reload | `python scripts/demo-check.py chat --keep`; OAuth provider login is separate |
-| Secure RAG Service & Knowledge API | Bearer/RBAC checks, Qdrant ingest/query and source attribution | Project `make dev` / `make demo`; local embeddings and LLM responses are deterministic mocks |
-| Prompt Quality & Safety | CLI suite evaluation and report artifacts | Project `make demo`; mock scores cover the supplied suite, not arbitrary models |
-| Secure Secrets Management & Observability Toolkit | Vault/AppRole, secret rotation, application/audit logs and metrics | `python scripts/demo-check.py secrets`; local development Vault |
-| CI/CD Pipeline Automation | Terraform provisioning, repeatable Ansible configuration, safe blue/green and rolling routing | Project Kubernetes quickstart; Jenkins/cloud agents must be configured separately |
-| LLMOps Evaluation Harness | Dataset evaluation and persisted result artifacts | Project documented CLI demo; real providers require separate configuration |
+| Automated Infrastructure & Deployment Platform | Local signed OIDC login/logout, roles, four live integrations, template generation, preview/canary and policy gates | Root `scripts/demo-check.py portal`; portal `npm run demo:sso` |
+| Cloud-Native E-Commerce Platform | JWT ownership, PostgreSQL persistence, transactional outbox, payment/refund, duplicate handling and broker recovery; two replicas per service in Kubernetes | `make integration-test`; [Kubernetes demo](<Cloud-Native E-Commerce Platform/k8s/README.md>) |
+| DevSecOps Pipeline with SBOM & SLSA | Isolated build, SBOM, Trivy/Grype, license policies, image/SBOM/provenance signatures, tamper rejection, four matching artifact copies and signed-image HTTP | Documented local pipeline; Jenkins pipeline also executed successfully |
+| Event-Driven E-Commerce Platform | Catalog/cart UI, durable checkout saga, payment/delivery failures, refund, local inbox, Schema Registry, persistence and Terraform resource replacement | Root `scripts/demo-check.py event-driven --keep`; Jenkins and Terraform quickstarts |
+| Full Stack E-commerce Application with Angular and Spring Boot | Registration, catalog/cart, simulated payment, receipt and persistent order history, desktop/mobile UI | Root `scripts/demo-check.py ecommerce --keep`; [recording](<Full Stack E-commerce Application with Angular and Spring Boot/screenshots/demo-checkout.webm>) |
+| Habit Tracker & Routine Coach SaaS | Identities, timezone schedules, streaks, persistent reminders/inbox, groups, CSV/ICS, simulated subscriptions, Redis outage recovery and OTLP | Root `scripts/demo-check.py habit --keep` |
+| GitOps Platform - Argo CD & Helm | Native reconciliation/self-heal/promotion, canary rejection/recovery, Velero data restore and actual Prometheus/Grafana DORA panels | `make dev`; `python scripts/demo-dora.py --keep` |
+| Kubernetes FinOps & Cost Optimization | Cost/usage telemetry, HPA, preview idle detection, scale-to-zero and restoration, persistent backup | `make dev`; documented idle-controller demonstration; costs are local estimates |
+| Observability - New Relic & Prometheus | Two Prometheus sources, persistent Mimir, logs, synthetic checks, dashboard and local Slack/PagerDuty delivery with retry/deduplication | Root `scripts/demo-check.py observability` |
+| Predictive Analytics Pipeline on Kubernetes | Fitted model, Schema Registry, real stream windows in both sinks, OTLP, KEDA scaling and Flink checkpoint recovery | Root `scripts/demo-check.py predictive`; `scripts/kind-demo.py` |
+| Real-Time Chat & Collaboration Platform | Two-session messaging, Redis presence/typing/rate limits, room search, durable Kafka recovery and PostgreSQL history | Root `scripts/demo-check.py chat --keep`; Terraform Kubernetes demo |
+| Secure RAG Service & Knowledge API | Hybrid retrieval, caching, RBAC, evaluation, API HPA, three-peer vector replication and snapshot recovery | Root `scripts/demo-check.py rag`; `python scripts/resilience-demo.py` |
+| Prompt Quality & Safety | Mock/HTTP adapter contracts, structured tool and semantic graders, reference validation and SQLite cache | `make dev` and `make test`; controlled local responses for provider contracts |
+| Secure Secrets Management & Observability Toolkit | AppRole, rotation/audit, local alert inbox, Transit KMS auto-unseal and two-region failover/recovery | Root `scripts/demo-check.py secrets`; `python scripts/kms-region-demo.py` |
+| CI/CD Pipeline Automation | Jenkins execution, saved-plan policy gate, Terraform/Ansible and blue/green, rolling and canary routing | Project Kubernetes quickstart and Jenkinsfile |
+| LLMOps Evaluation Harness | Dataset/regex/tool/semantic graders, persisted artifacts and SQLite response cache | `make dev` and `make test`; controlled local HTTP provider fixtures |
 
-These are the implemented local demonstration boundaries verified in October 2026.
-Planned features, production availability, external billing, OAuth/Stripe/New Relic
-accounts and cloud deployments are separate from these results.
+The demonstration scope was exercised on 16 October 2026. Tests include expected
+failure paths, recovery and data readback. The five application UIs were exercised
+in Chromium on desktop and mobile viewports with zero observed JavaScript errors
+or external requests. Actual captures are labeled in each project; older design
+illustrations are retained separately from execution evidence.
+
+All roadmap functionality is presented as demonstrations. Payments, subscriptions,
+deliveries, notifications, cloud regions and identity providers use explicit local
+modes or isolated fixtures. These runs create no real charges, external messages
+or provider accounts. Model evaluation fixtures prove code/transport behavior, not
+arbitrary model quality. Production availability, real cloud billing and live
+provider accounts require their own configuration and verification. Retention
+settings do not prove that the configured number of days has elapsed.

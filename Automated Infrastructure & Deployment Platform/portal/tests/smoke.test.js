@@ -49,7 +49,7 @@ test(
   async () => {
   const port = await getAvailablePort();
   const serverPath = path.join(__dirname, "..", "src", "server.js");
-  const env = { ...process.env, PORT: String(port) };
+  const env = { ...process.env, PORT: String(port), PORTAL_AUTH_MODE: "demo" };
 
   const child = spawn(process.execPath, [serverPath], {
     env,

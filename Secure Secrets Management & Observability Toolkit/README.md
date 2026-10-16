@@ -21,8 +21,7 @@ Secure secrets management and observability toolkit for platform teams that need
 - CI/CD: rotation automation hooks.
 
 ## Demo
-- Live: TBD
-- Video or GIF: TBD
+- Live: local demonstration; use the commands below.
 - Screenshots:
   - `screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1f8fw6br0mfmzqtw691.png`
   - `screenshots/20251228_1751_Secrets Management Toolkit_simple_compose_01kdjtf1fafb2857jeew5kqwcv.png`
@@ -108,9 +107,9 @@ Secrets: use `.env` (see `.env.example`). Vault runs in dev mode for local demos
 - Status: MVP; local stack runs in dev mode for fast demos.
 
 ## Roadmap / tradeoffs
-- Add policy-as-code checks (OPA/Conftest) for Vault and Kubernetes manifests.
-- Add secret rotation alerts in Grafana and failed-rotation runbooks.
-- Support cloud KMS auto-unseal and multi-region Vault replication.
+- OPA/Conftest checks Vault application capabilities, Terraform/HCL and Kubernetes manifests with `make policy` and required root CI; see [policy coverage](../policies/README.md).
+- Grafana provisions overdue-rotation and failed-fetch rules, with firing/resolved notifications in the local /alerts inbox and a [recovery runbook](runbooks/failed-rotation.md).
+- The [KMS/region demonstration](#kms-and-region-demonstration) uses Vault Transit as a local KMS and two independent file-backed Vault regions, with guarded KV replication and failover.
 - Tradeoff: running Vault plus Elastic and Prometheus adds operational overhead in exchange for compliance and visibility.
 
 ## Skills and Deliverables
@@ -124,7 +123,7 @@ Role: AI Platform Engineer.
 
 ### Vault container compatibility checks
 
-`make test` runs both the six Node tests and an isolated Vault/AppRole integration
+`make test` runs the Node tests and an isolated Vault/AppRole integration
 probe. The probe creates a unique Compose project, publishes no ports, checks the
 application can read its secret and verifies the audit file, then removes only its
 temporary containers and volumes.
@@ -147,3 +146,33 @@ python scripts/demo-check.py secrets --keep
 
 The verifier uses fresh data and random loopback ports, prints the exact URLs and
 cleanup command, and fails if the demonstrated behavior is missing. The check waits for the real secret refresh interval and verifies both application and Vault audit events in Elasticsearch. Secrets are masked in application responses.
+
+## KMS and region demonstration
+
+Run from this project with Python 3.11+ and Docker:
+
+```bash
+python scripts/kms-region-demo.py
+```
+
+The verifier creates three isolated, file-backed Vault servers: a Transit KMS and
+two application regions. It checks automatic unsealing after restart, KMS key
+rotation, two secret versions replicated with SHA-256 readback, rejection of a
+stale compare-and-set write, and read failover to the secondary region. It then
+stops the KMS, restarts the secondary Vault, requires evidence of a KMS connection
+failure with no usable secret endpoint, restores the KMS and checks the retained
+data. The native Vault client timeout is explicitly three seconds in this local
+test so an unavailable KMS produces a bounded failure.
+
+Credentials exist only in the test process and private container environments;
+the output contains status, versions and content digests. The test removes its
+own containers and volumes in a `finally` block. It uses random loopback ports and
+does not need cloud accounts. This demonstrates application-level KV replication
+and a local Transit KMS, not Vault Enterprise DR or a cloud provider's KMS service.
+See the [Vault Transit seal documentation](https://developer.hashicorp.com/vault/docs/configuration/seal/transit).
+
+The main application refuses expired cached secrets, returns degraded health after
+a failed refresh, and recovers after Vault becomes available. Provisioned Grafana
+rules send firing and resolved events to the local `/alerts` inbox for failed
+refreshes and overdue rotation. The complete demo checks these transitions; it
+does not send email or contact external paging services.

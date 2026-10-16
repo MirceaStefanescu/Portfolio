@@ -18,6 +18,13 @@ export class AppComponent implements OnInit, OnDestroy {
   newMessage = "";
   user: UserProfile | null = null;
   connected = false;
+  roomError = "";
+  messageError = "";
+  searchQuery = "";
+  searchResults: ChatMessage[] | null = null;
+  onlineUsers: string[] = [];
+  typingUsers: string[] = [];
+  private searchSubscription?: Subscription;
 
   private readonly subscriptions: Subscription[] = [];
   private historySubscription?: Subscription;
@@ -26,10 +33,25 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.chatService.connect();
+    this.subscriptions.push(this.chatService.saved$.subscribe((roomId) => {
+      if (this.selectedRoom?.id === roomId) this.loadHistory(roomId);
+    }));
+    this.subscriptions.push(this.chatService.presence$.subscribe((members) => {
+      this.onlineUsers = [...new Set(members.map((member) => member.name))];
+      this.typingUsers = [...new Set(members.filter((member) => member.typingUntil > 0).map((member) => member.name))];
+      this.changes.markForCheck();
+    }));
+    this.subscriptions.push(this.chatService.errors$.subscribe((failure) => {
+      this.messageError = `${failure.error}. Unsent text: ${failure.content}`;
+      if (!this.newMessage) this.newMessage = failure.content;
+      this.changes.markForCheck();
+    }));
 
     this.subscriptions.push(
       this.chatService.connected$.subscribe((connected) => {
+        const reconnected = connected && !this.connected;
         this.connected = connected;
+        if (reconnected && this.selectedRoom) this.selectRoom(this.selectedRoom);
         this.changes.markForCheck();
       })
     );
@@ -47,6 +69,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.authService.user$.subscribe((user) => {
         this.user = user;
+        this.chatService.setDisplayName(user?.displayName || user?.username || "anonymous");
         this.changes.markForCheck();
       })
     );
@@ -72,11 +95,18 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   selectRoom(room: ChatRoom): void {
+    this.searchSubscription?.unsubscribe();
+    this.searchQuery = ""; this.searchResults = null;
     this.historySubscription?.unsubscribe();
     this.selectedRoom = room;
     this.messages = [];
     this.chatService.subscribeToRoom(room.id);
-    this.historySubscription = this.chatService.getMessages(room.id).subscribe({
+    this.loadHistory(room.id);
+  }
+
+  private loadHistory(roomId: string): void {
+    this.historySubscription?.unsubscribe();
+    this.historySubscription = this.chatService.getMessages(roomId).subscribe({
       next: (messages) => {
         const merged = new Map([...messages, ...this.messages].map((message) => [message.id, message]));
         this.messages = [...merged.values()];
@@ -94,10 +124,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.chatService.createRoom(name).subscribe({
       next: (room) => {
+        this.roomError = "";
         this.newRoomName = "";
-        this.rooms = [...this.rooms, room];
+        this.rooms = [...this.rooms.filter((existing) => existing.id !== room.id), room];
         this.changes.markForCheck();
         this.selectRoom(room);
+      },
+      error: () => {
+        this.roomError = "Could not create the room. Your name was kept; please retry.";
+        this.changes.markForCheck();
       }
     });
   }
@@ -114,9 +149,19 @@ export class AppComponent implements OnInit, OnDestroy {
 
     const sender = this.user?.displayName || this.user?.username || "anonymous";
     if (this.chatService.sendMessage(this.selectedRoom.id, sender, content)) {
+      this.messageError = "";
       this.newMessage = "";
     }
   }
+
+  search(): void {
+    this.searchSubscription?.unsubscribe();
+    if (!this.selectedRoom || !this.searchQuery.trim()) { this.searchResults = null; return; }
+    this.searchSubscription = this.chatService.getMessages(this.selectedRoom.id, 100, this.searchQuery.trim())
+      .subscribe({next: (messages) => { this.searchResults = messages; this.changes.markForCheck(); },
+        error: () => { this.messageError = "Search failed. Please retry."; this.changes.markForCheck(); }});
+  }
+  notifyTyping(): void { this.chatService.notifyTyping(); }
 
   login(): void {
     this.authService.login();
@@ -127,6 +172,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.searchSubscription?.unsubscribe();
     this.historySubscription?.unsubscribe();
     this.subscriptions.forEach((subscription) => subscription.unsubscribe());
     this.chatService.disconnect();

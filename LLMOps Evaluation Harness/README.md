@@ -3,9 +3,8 @@
 Open-source evaluation harness for teams that need repeatable LLM quality checks with scored metrics and CI-friendly runs.
 
 ## Demo
-- Live: TBD
-- Video or GIF: TBD
-- Screenshots: TBD
+- Live: local demonstration; use the commands below.
+- Interface: command-line reports; no browser UI is required.
 
 ## Why this exists
 LLM behavior drifts, and manual review does not scale. This harness provides a lightweight, repeatable way to evaluate prompts and model responses, store results, and surface regressions in CI.
@@ -71,9 +70,26 @@ Secrets: use `.env` (see `.env.example`). Do not log prompts containing sensitiv
 ### CI integration
 The workflow in `.github/workflows/llmops-eval-harness-ci.yml` runs `ruff`, `pytest`, and a package build. Add your task JSONL files and keep them small for fast CI.
 
-## Roadmap / tradeoffs
-- Add task-specific graders (regex, semantic similarity, tool outputs).
-- Add cached model responses to reduce eval cost.
+## Task graders and response caching
+
+The runner supports `regex`, `tool_calls`, and `semantic_similarity` in addition to the original metrics.
+`regex` applies a full match against `metadata.pattern` (or `expected`). For tool tasks,
+set `metadata.expected_tool_calls` to an ordered array of `{ "name": "lookup", "arguments": { "id": 3 } }`.
+Responses use `{ "tool_calls": [...] }`; OpenAI function-call responses are also accepted.
+Optional `metadata.tools` carries OpenAI tool schemas to the HTTP adapter. Tools are never executed.
+
+Semantic grading calls an explicitly configured OpenAI-compatible embeddings endpoint with the response
+and reference, then computes cosine similarity. Use `--embedding-endpoint <url> --embedding-model <model>`
+and, if required, `EMBEDDING_API_KEY`. This metric requires an actual embedding model; tests use controlled
+HTTP responses and do not certify any provider's semantic quality or account availability.
+
+Enable persistent caching with `--cache runs/responses.sqlite --cache-namespace <model-config-version>`.
+The namespace must identify the model/version, endpoint, generation settings and account; change it when
+any of those change. Cache keys also include the complete prompt and record. Empty responses are valid;
+failed generations are never cached or retried automatically. The SQLite file contains response text:
+keep it private and delete that exact file to clear the cache. Concurrent misses can issue separate requests.
+
+## Tradeoffs
 - Tradeoff: simple metrics keep the harness portable but require careful task design.
 
 ## Decisions and rationale

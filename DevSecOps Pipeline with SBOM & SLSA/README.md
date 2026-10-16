@@ -3,8 +3,7 @@
 Automated CI/CD pipeline template for regulated teams that need SBOMs, signed artifacts, and policy gates across AWS, Azure, and GCP.
 
 ## Demo
-- Live: TBD
-- Video or GIF: TBD
+- Live: local demonstration; use the commands below.
 - Screenshots:
   - `demo/pipeline-architecture.svg`
   - `demo/pipeline-artifacts.svg`
@@ -61,6 +60,8 @@ CI builds produce artifacts and SBOMs, which are scanned and signed before polic
 ## Quickstart (local)
 Prereqs:
 - Docker
+- Python 3.11+ and Bash
+- Conftest 0.71.1 for the required license/provenance gate
 - Make (optional)
 
 Run:
@@ -99,9 +100,9 @@ Secrets: use `.env` for local Cosign keys, prefer KMS or keyless OIDC in CI, kee
 - Local storage is simulated with filesystem replication; replace with S3/Blob/GCS in production.
 - The demo pipeline signs with a local key; CI can switch to keyless signing via OIDC.
 
-## Roadmap / tradeoffs
-- Add SLSA level 3 provenance with isolated builders and hermetic builds.
-- Add policy-as-code bundles for license and provenance enforcement.
+## Demonstrative roadmap
+- SLSA v1 provenance comes from an isolated, networkless static-site worker and binds the current sources, builder, pinned base, pushed image digest and signed SBOM digest.
+- OPA/Conftest enforces package licenses, builder identity, source bindings and isolation before replication. Unknown or missing package licenses are rejected.
 - Tradeoff: stronger gates improve security but slow down release throughput.
 
 ## Decisions and rationale
@@ -113,7 +114,7 @@ Secrets: use `.env` for local Cosign keys, prefer KMS or keyless OIDC in CI, kee
 - `app/`: demo container image used by the pipeline.
 - `demo/`: pipeline architecture and artifact replication visuals.
 - `scripts/pipeline.sh`: local end-to-end pipeline runner.
-- `policy/provenance.json`: illustrative predicate; the runner generates the signed predicate from the actual Dockerfile hash and pushed image digest.
+- `policy/release/`: required policy and positive/negative tests; `policy/provenance.json` is a historical illustrative predicate and is never used to attest a release.
 - `ci/github-actions/pipeline.yml`: GitHub Actions pipeline template.
 - `ci/jenkins/Jenkinsfile`: Jenkins pipeline template.
 
@@ -138,6 +139,34 @@ then signs that same digest. The generated provenance includes the actual
 Dockerfile SHA-256. `make verify` checks the image, SBOM bundle and attestation;
 a different selected image, missing inputs or modified SBOM fails verification.
 The High/Critical Trivy and High Grype gates remain enforced.
+
+The worker receives only a read-only copy of the public HTML source and the builder
+script, plus its unsigned output directory. It has no network, Docker socket,
+signing keys or writable root filesystem; all capabilities are dropped and
+privilege escalation is blocked. The controller performs COPY-only image assembly
+from the pinned Chainguard Nginx base, then scans and signs outside the BusyBox worker.
+The base contains package metadata so the SBOM and license checks cover the actual
+runtime packages. The distribution aggregate has no single license; its individual
+packages must all pass the example allowlist. That allowlist demonstrates policy
+enforcement and is not legal approval for a production distribution.
+
+This implements selected SLSA Build L3 controls for a local demonstration. The
+local Docker host, controller and signing key remain a trusted boundary; the
+example does not claim independently certified SLSA L3 or a production builder.
+Both CI templates call the same local pipeline and gates; they do not silently
+substitute the old illustrative predicate or publish to a cloud registry.
+
+After `make dev`, verify the three storage replicas and backup by hash, reject a
+modified SBOM with the real Cosign verifier, and test the signed image over HTTP:
+
+```bash
+python3 scripts/check-demo-artifacts.py --artifacts artifacts --storage storage --backups backups --keys .keys
+python3 scripts/test-release-policy.py
+conftest verify --policy policy/release --data policy/release/data.json
+```
+
+See the [runtime image documentation](https://images.chainguard.dev/directory/image/nginx/overview)
+and [SLSA v1 provenance specification](https://slsa.dev/spec/v1.0/provenance).
 
 Use `SCANNER_CACHE_DIR` to select an existing managed cache and `ENV_FILE` to select
 a dedicated environment file. Relative artifact/storage/key paths in `.env` are

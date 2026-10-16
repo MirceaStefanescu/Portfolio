@@ -21,7 +21,7 @@ GitOps delivery platform for platform engineers and SREs who need repeatable, au
 - Docker: consistent build/runtime for CI jobs and tooling.
 
 ## Demo
-Live: TBD
+Live: local demonstration; use the commands below.
 
 Video or GIF:
 ![GitOps promotion flow](demo/gitops-promotion.gif)
@@ -127,15 +127,15 @@ CI runs the same checks; see `.github/workflows/gitops-platform-ci.yml`.
 Secrets: use `.env` (see `.env.example`). Store cloud credentials in OIDC-backed GitHub Actions secrets, restrict Argo CD access with RBAC, and enable namespace isolation plus network policies between environments. Velero backups should use encrypted buckets and least-privilege IAM roles. Enable secret scanning and Dependabot in GitHub.
 
 ## Roadmap / tradeoffs
-- Add policy-as-code checks (OPA/Conftest) for Helm and Terraform.
-- Add promotion metrics and deployment DORA dashboards.
-- Add automated verification gates for canary analysis.
+- OPA/Conftest gates check Terraform/HCL and rendered Helm manifests through `make policy` and required root CI; see [policy coverage](../policies/README.md).
+- Promotion metrics and a Grafana DORA dashboard use an explicit deployment/incident ledger; see the runnable example below. Missing lead/restore times remain absent, and failed canary attempts are separate from incidents caused by successful releases.
+- Argo AnalysisTemplates check the candidate service at each partial weight and before blue/green promotion. Failed health responses abort promotion. The primary service selects both ReplicaSets during canary; dedicated stable/canary services support analysis. Without a traffic manager, weights approximate the replica ratio, not exact request percentages.
 - Tradeoff: multi-cloud parity improves resilience but increases operational overhead.
 
 ## Project structure
 - `apps/`: Argo CD app-of-apps and per-environment Applications.
 - `charts/`: Helm chart with environment overrides.
-- `demo/`: placeholder demo assets (screenshots and GIF).
+- `demo/`: architecture illustrations; actual runtime captures are in `screenshots/`.
 - `infra/`: Helm values for Argo CD and Argo Rollouts.
 - `k8s/`: MinIO and Velero values plus backup manifest.
 - `terraform/`: AWS, Azure, and GCP cluster baselines.
@@ -201,3 +201,85 @@ command in `platform-prod` with this project's kubeconfig/context. This optional
 command needs the official Argo Rollouts kubectl plugin. A paused rollout is an
 approval gate, not a startup failure. Roll back the Git revision to restore the
 previous desired image through Argo CD.
+
+## Preview environments and canary verification
+
+The demo uses a local Podinfo image rebuilt from the pinned upstream 6.15.0
+source with Go 1.27.2 and patched Go dependencies. `make kind-up` calls the shared
+`../scripts/build-local-podinfo.sh` helper and loads the resulting image. For the
+first build, provide Go 1.27.2, Python 3.12+ and Docker; configurable build and
+cache locations are documented by `python ../scripts/build-local-podinfo.py --help`.
+The helper verifies the source archive and public CA bundle, runs upstream Go
+package tests and builds a static binary into a `scratch` image. There is no
+Debian/Alpine runtime layer. Existing correctly tagged local images are reused.
+The prepared source can be inspected with `--prepare-only`, then built offline
+with `--build-only`; downloading source alone never executes it.
+
+From the repository root, with Helm, Conftest, kubectl and an explicit context:
+
+```bash
+python scripts/release-environment.py deploy --mode preview --id pr-123 --context kind-gitops-platform --image-repository portfolio-podinfo --image-tag 6.15.0-security1
+python scripts/release-environment.py remove --mode preview --id pr-123 --context kind-gitops-platform
+python scripts/release-environment.py deploy --mode canary --id demo --context kind-gitops-platform --image-repository portfolio-podinfo --image-tag 6.15.0-security1 --events /tmp/deployments.jsonl
+```
+
+Each release uses its own `preview-<id>` or `canary-<id>` namespace. The command
+refuses existing namespaces without its ownership label, validates rendered
+manifests with OPA, waits for readiness and checks the observed Rollout generation.
+Helm 4 uses its supported legacy wait strategy for built-in resources and client
+merge for the selectors owned by Argo; the separate Argo phase/generation check
+is mandatory for accepting a canary. A generic Helm watcher cannot determine this
+custom resource's readiness.
+Canary needs the installed Argo Rollouts controller. Analysis performs three JSON
+health checks at each intermediate weight. Initial installation has no previous
+version to compare; Argo skips progressive analysis for that initial revision.
+A later failed candidate is aborted while the stable ReplicaSet remains available.
+Inspect `kubectl get analysisruns -n canary-demo` before changing a rejected release.
+Remove a canary through the same command with `--mode canary --id demo` only when
+finished with that environment. Removal checks ownership and Kubernetes UID/version
+preconditions. It never removes the cluster.
+
+## DORA dashboard and reproducible ledger
+
+```bash
+python scripts/dora.py observability/demo-events.jsonl --as-of 2026-01-31T00:00:00Z
+python scripts/dora.py observability/demo-events.jsonl --as-of 2026-01-31T00:00:00Z --serve 9119
+```
+
+These commands run from this project. The explicit synthetic fixture yields two
+successful deployments, 45-minute mean lead time, a 50% change failure ratio and
+20-minute mean restoration time. `/report` returns JSON and `/metrics` exports
+Prometheus gauges on loopback. Import `observability/dora-dashboard.json` into
+Grafana and select the Prometheus datasource that scrapes this exporter.
+
+For measured data, pass `--events` to the release command and provide `--revision`
+and `--committed-at` for lead time. Record incidents separately as JSONL objects
+with `kind: incident`, unique `id`, `deployment_id`, `started_at` and `resolved_at`
+(or null while open). Only incidents linked to successful releases count toward
+change failure ratio. Failed attempts have their own metric. Repeated identical
+events are deduplicated; conflicting duplicates and impossible timestamps fail.
+Missing commit times or resolved incidents produce no corresponding time metric,
+not a fabricated zero. The ledger defines the observation boundary and window;
+it is not proof of organization-wide delivery performance.
+
+References: [Argo analysis](https://argo-rollouts.readthedocs.io/en/stable/features/analysis/),
+[basic canary weights](https://argo-rollouts.readthedocs.io/en/stable/features/canary/).
+
+## Captured functional demonstration
+
+Actual Grafana dashboard using the explicitly synthetic ledger. Captured from the running local application on 16 October 2026.
+
+![Actual Grafana dashboard using the explicitly synthetic ledger](screenshots/dora-dashboard-functional.png)
+
+### Complete local DORA stack
+
+`python scripts/demo-dora.py --keep` starts isolated Prometheus 3.15 and Grafana
+13.2, imports the dashboard, verifies all six metrics through both APIs, and prints
+the loopback URL and cleanup command. The fixture is evaluated as of 31 January
+2026; its values are synthetic examples, not organizational performance.
+
+The October verification also exercised native Argo CD revision reconciliation,
+self-healing from five replicas back to the desired two, and a second Git revision
+promoted after health analysis. Velero/Kopia restored 60,000 bytes into a different
+PVC and namespace with an identical SHA-256; both volume jobs and the restore were
+Completed. A successful object-only backup is not accepted as a data-restore test.

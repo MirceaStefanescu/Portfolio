@@ -23,7 +23,7 @@ Use case: An IoT sensor network emits temperature events; Flink aggregates and s
 - Grafana: dashboards for prediction metrics and pipeline health.
 
 ## Demo
-- Live: TBD
+- Live: local demonstration; use the commands below.
 - Video or GIF: `demo/pipeline-demo.gif`
 - Screenshots: `demo/grafana-dashboard.png`, `demo/flink-ui.png`
 
@@ -122,8 +122,8 @@ CREATE TABLE predictions (
 Elasticsearch index `predictions` stores JSON documents with `event_type`, `window_start`, `window_end`, `event_count`, `avg_value`, `prediction_score`, and `generated_at`.
 
 ### Processing notes
-- Invalid JSON or missing `eventType` is logged and dropped to keep the stream running.
-- Prediction scoring uses a lightweight heuristic (placeholder for a real ML model).
+- Both producer and Flink validate the bundled JSON Schema. Invalid Kafka records go to `events.invalid`; Flink exposes accepted/rejected counters. The API rejects malformed requests before publication.
+- The fitted univariate Gaussian model scores 30-second window averages as absolute z-scores. A score >= 3 is anomalous. `ml/training.csv` contains 20 synthetic normal windows; `ml/validation.csv` has eight held-out windows. `python ml/train.py --check` reproduces the model and checks all eight labels. This demonstrates anomaly detection, not calibrated real-world accuracy.
 
 ## Tests
 ```
@@ -132,31 +132,26 @@ make test
 
 Or:
 ```
-mvn -f api/pom.xml test
+mvn -f api/pom.xml verify
 mvn -f flink/pom.xml test
 ```
 
 ## Security
 Secrets: use `.env` (see `.env.example`). Demo credentials are for local use only. The demo API is unauthenticated; add JWT/OAuth and network policies for production. Use RBAC and namespace isolation for Kubernetes, and restrict Kafka/PostgreSQL/Elasticsearch access to internal services. Data used in demos is synthetic.
 
-## Roadmap / tradeoffs
-- Add a lightweight ML model for anomaly detection and document its training inputs.
-- Add schema registry and data-quality checks for event validation.
-- Add integration tests using Testcontainers (Kafka/PostgreSQL).
-- Add an end-to-end demo script for Kind-based Kubernetes runs.
-- Add OpenTelemetry traces and publish a small throughput benchmark.
-- Tradeoff: dual storage (PostgreSQL + Elasticsearch) improves query flexibility at the cost of higher operational overhead.
+## Demonstrative roadmap
+- A fitted anomaly model, reproducible training inputs and held-out checks replace the placeholder score.
+- Confluent Schema Registry registers the exact JSON contract with backward compatibility enforcement. Both services validate it locally; the registry being available alone is not validation.
+- `mvn -f api/pom.xml verify` runs real Kafka/PostgreSQL Testcontainers integration. Missing Docker fails rather than skipping the test.
+- `python scripts/kind-demo.py --cluster <disposable-kind-cluster>` builds and loads the images, provisions a fresh namespace and checks Kafka lag scaling, Flink reactive parallelism, checkpoint recovery and new predictions. See [Kubernetes guide](k8s/README.md).
+- OTLP producer spans measure each acknowledged or failed Kafka send. Compose and Kubernetes use a local OpenTelemetry Collector.
+- PostgreSQL and Elasticsearch use deterministic window keys, making checkpoint replay idempotent at both sinks. They are separate sinks, without a distributed transaction; temporary divergence during an outage is observable.
+- Tradeoff: dual storage improves query flexibility at the cost of operational overhead. The local Gaussian baseline is intentionally small and domain-specific.
 
 ## Performance
-Local benchmark harness:
-- Script: `perf/k6/pipeline-load.js`
-- Run: `k6 run perf/k6/pipeline-load.js` (set `BASE_URL` to target another host)
-- Scenario: 5 VUs for 30s, `POST /api/events` + `GET /api/predictions`
-- Baseline (local Docker Compose):
-  - Avg latency: 7.62 ms
-  - p95 latency: 3.50 ms
-  - Throughput: 9.84 req/s
-  - Errors: 0.00%
+Use `python perf/benchmark.py --url http://127.0.0.1:8082` for a bounded local benchmark (100 requests, four workers by default). The JSON output records wall-clock time, mean/p95 latency, throughput and failures. `perf/k6/pipeline-load.js` remains available for a paced 30-second workload.
+
+Observed on an isolated Docker Desktop demo, 16 October 2026: 100/100 requests acknowledged, zero errors, 0.576 seconds, 173.47 requests/second, mean 22.90 ms and p95 30.96 ms. This measures ingestion acknowledgement on one host, not sustained end-to-end production capacity. The functional test separately compares completed PostgreSQL and Elasticsearch windows and verifies traces and rejected records.
 
 ## API
 - OpenAPI: `docs/openapi.yaml`

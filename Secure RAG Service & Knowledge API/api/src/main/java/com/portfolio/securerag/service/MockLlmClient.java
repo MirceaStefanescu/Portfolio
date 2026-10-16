@@ -7,6 +7,7 @@ import java.util.Set;
 import org.springframework.stereotype.Component;
 
 @Component
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "rag.provider", havingValue = "local", matchIfMissing = true)
 public class MockLlmClient implements LlmClient {
 
     @Override

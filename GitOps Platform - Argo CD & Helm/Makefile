@@ -36,6 +36,7 @@ kind-up:
 	$(KUBECTL) wait --for=condition=Ready nodes --all --timeout=120s
 	# Velero supports local PVs, but skips kind's default hostPath PVs.
 	$(KUBECTL) annotate storageclass standard defaultVolumeType=local --overwrite
+	bash ../scripts/build-local-podinfo.sh "$(CLUSTER_NAME)"
 
 argocd:
 	helm repo add argo https://argoproj.github.io/argo-helm
@@ -92,6 +93,9 @@ destroy:
 promote:
 	if [ -z "$(ENV)" ] || [ -z "$(TAG)" ]; then echo "Usage: make promote ENV=dev TAG=1.2.3 [STRATEGY=canary|blueGreen]"; exit 1; fi
 	./scripts/promote.sh "$(ENV)" "$(TAG)" "$(STRATEGY)"
+
+policy:
+	python ../scripts/check-policy.py .
 
 test:
 	bash scripts/test-promote.sh

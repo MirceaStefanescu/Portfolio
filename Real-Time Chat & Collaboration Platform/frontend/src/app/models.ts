@@ -18,3 +18,10 @@ export interface UserProfile {
   username: string;
   email: string;
 }
+
+export interface PresenceMember {
+  sessionId: string;
+  name: string;
+  expiresAt: number;
+  typingUntil: number;
+}

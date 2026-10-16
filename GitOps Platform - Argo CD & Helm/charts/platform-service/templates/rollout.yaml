@@ -7,6 +7,8 @@ metadata:
     {{- include "platform-service.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  progressDeadlineSeconds: {{ .Values.rollout.progressDeadlineSeconds }}
+  progressDeadlineAbort: true
   selector:
     matchLabels:
       {{- include "platform-service.selectorLabels" . | nindent 6 }}
@@ -25,20 +27,51 @@ spec:
           env:
             - name: APP_ENV
               value: {{ .Values.environment | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.envFromSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envFromSecret | quote }}
+          {{- end }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.healthPath | quote }}
+              port: http
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.healthPath | quote }}
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
   strategy:
     {{- if eq .Values.rollout.strategy "canary" }}
     canary:
-      stableService: {{ include "platform-service.fullname" . }}
+      stableService: {{ printf "%s-stable" (include "platform-service.fullname" .) }}
       canaryService: {{ printf "%s-canary" (include "platform-service.fullname" .) }}
       steps:
-        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
+        {{- range .Values.rollout.canary.steps }}
+        - {{ toYaml . | nindent 10 | trim }}
+        {{- if and $.Values.rollout.analysis.enabled (hasKey . "setWeight") (gt (int .setWeight) 0) (lt (int .setWeight) 100) }}
+        - analysis:
+            templates:
+              - templateName: {{ printf "%s-health" (include "platform-service.fullname" $) }}
+        {{- end }}
+        {{- end }}
     {{- else if eq .Values.rollout.strategy "blueGreen" }}
     blueGreen:
       activeService: {{ include "platform-service.fullname" . }}
       previewService: {{ printf "%s-preview" (include "platform-service.fullname" .) }}
       autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
       previewReplicaCount: {{ .Values.rollout.blueGreen.previewReplicaCount }}
+      {{- if .Values.rollout.analysis.enabled }}
+      prePromotionAnalysis:
+        templates:
+          - templateName: {{ printf "%s-health" (include "platform-service.fullname" .) }}
+      {{- end }}
     {{- end }}
 {{- end }}

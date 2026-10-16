@@ -3,9 +3,8 @@
 Evidence-driven prompt engineering toolkit for teams that need safer, more reliable LLM outputs with measurable evaluations.
 
 ## Demo
-- Live: TBD
-- Video or GIF: TBD
-- Screenshots: TBD
+- Live: local demonstration; use the commands below.
+- Interface: command-line reports; no browser UI is required.
 
 ## Why this exists
 Prompt changes can silently degrade quality or safety. This project provides a small, repeatable eval harness, guardrails, and CI checks to quantify prompt improvements and catch regressions early.
@@ -59,9 +58,27 @@ Secrets: use `.env` (see `.env.example`). Threat model notes include prompt inje
 ## Notes / limitations
 - The mock LLM returns deterministic responses for repeatable CI runs; swap in a real provider adapter for production-grade evaluations.
 
-## Roadmap / tradeoffs
-- Add real provider adapters (OpenAI, Anthropic, local models).
-- Add semantic grading and structured tool-eval tasks.
+## Provider adapters and structured evaluations
+
+The default `mock` provider remains offline. To use an actual provider, pass
+`--provider openai|anthropic|local --endpoint <full-url> --model <model>`.
+Supply `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or optional `LOCAL_MODEL_API_KEY` through the environment.
+OpenAI/local endpoints use the Chat Completions contract; Anthropic uses the Messages contract.
+Requests are bounded to 30 seconds and are not automatically retried after uncertain failures.
+Only use accounts, endpoints and costs authorized for the evaluation. Adapter tests use controlled HTTP
+responses; they do not prove access to a provider account or model quality.
+
+Datasets can include `tools` (OpenAI function schemas) and `expected_tool_calls`
+(ordered `{ "name": "lookup", "arguments": { "id": 1 } }` objects). Select the `tool_calls` metric.
+The adapter translates schemas for Anthropic, and the grader compares names and structured arguments.
+No returned tool is executed. An absent reference is unscored; an explicit empty list means no calls expected.
+
+Select `semantic_similarity` and pass `--embedding-endpoint <full-url> --embedding-model <model>`
+for cosine similarity from a configured OpenAI-compatible embeddings service. `EMBEDDING_API_KEY` is optional.
+Malformed, nonfinite and zero embeddings fail visibly. Semantic accuracy must be evaluated on a representative
+dataset with the chosen real model; deterministic fixtures verify the integration contract only.
+
+## Tradeoffs
 - Tradeoff: deterministic mocks improve CI reliability but do not replace live model testing.
 
 ## Decisions and rationale

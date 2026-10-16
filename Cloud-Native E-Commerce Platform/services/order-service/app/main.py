@@ -1,11 +1,13 @@
 import logging
 import os
+import sqlite3
 import threading
 import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
 import pika
+import psycopg
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
@@ -22,6 +24,7 @@ from app.messaging import (
 from app.models import Order, OrderCreate, OrderItem
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+LOGGER = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -49,10 +52,23 @@ def on_startup() -> None:
         handle_payment_event,
         app.state.stop_event,
     )
+    app.state.dispatch_lock = threading.Lock()
+    app.state.outbox_thread = None
+    if (
+        os.getenv("OUTBOX_ENABLED", "true").lower() == "true"
+        and os.getenv("RABBITMQ_ENABLED", "true").lower() == "true"
+    ):
+        app.state.outbox_thread = threading.Thread(target=_outbox_loop, daemon=True)
+        app.state.outbox_thread.start()
 
 
 def on_shutdown() -> None:
     app.state.stop_event.set()
+    outbox = app.state.outbox_thread
+    if outbox is not None:
+        outbox.join(timeout=15)
+        if outbox.is_alive():
+            raise RuntimeError("Outbox dispatcher did not stop; producer remains open")
     thread = app.state.consumer_thread
     if thread is not None:
         thread.join(timeout=5)
@@ -112,10 +128,17 @@ def _load_order(order_id: str) -> Order:
 
 
 def _update_order_status(order_id: str, status: str) -> bool:
+    allowed = {
+        "paid": ["pending"],
+        "payment_failed": ["pending"],
+        "cancelled": ["paid", "cancel_pending"],
+    }[status]
     with get_connection() as conn:
         result = conn.execute(
-            "UPDATE orders SET status = ?, updated_at = ? WHERE id = ? AND status != ?",
-            (status, _now(), order_id, status),
+            "UPDATE orders SET status = ?, updated_at = ? WHERE id = ? AND status IN ("
+            + ",".join("?" for _ in allowed)
+            + ")",
+            (status, _now(), order_id, *allowed),
         )
         return result.rowcount > 0
 
@@ -135,6 +158,8 @@ def handle_payment_event(event: dict) -> None:
         order_id, "payment_failed"
     ):
         ORDERS_FAILED.inc()
+    elif event_type == "payment.refunded":
+        _update_order_status(order_id, "cancelled")
 
 
 @app.get("/orders", response_model=list[Order])
@@ -209,6 +234,10 @@ def create_order(payload: OrderCreate) -> Order:
                 """,
                 (order_id, item.product_id, item.name, item.quantity, item.price_cents),
             )
+        conn.execute(
+            "INSERT INTO outbox (id, order_id, action, created_at) VALUES (?, ?, ?, ?)",
+            (order_id + ":authorize", order_id, "authorize", now),
+        )
         conn.commit()
 
     ORDERS_CREATED.inc()
@@ -227,7 +256,18 @@ def create_order(payload: OrderCreate) -> Order:
     return order
 
 
-def _dispatch_order(order: Order) -> None:
+def _dispatch_order(order: Order, action: str = "authorize") -> None:
+    with app.state.dispatch_lock:
+        _dispatch_locked(order, action)
+
+
+def _dispatch_locked(order: Order, action: str) -> None:
+    with get_connection() as conn:
+        pending = conn.execute(
+            "SELECT id FROM outbox WHERE id = ?", (order.id + ":" + action,)
+        ).fetchone()
+    if pending is None:
+        return
     try:
         send_payment_request(
             {
@@ -235,12 +275,15 @@ def _dispatch_order(order: Order) -> None:
                 "amount_cents": order.total_cents,
                 "currency": order.currency,
                 "customer_id": order.customer_id,
+                "action": action,
             }
         )
         publish_event(
             app.state.producer,
             app.state.orders_topic,
-            "order.created",
+            "order.created"
+            if action == "authorize"
+            else "order.cancellation_requested",
             {
                 "order_id": order.id,
                 "customer_id": order.customer_id,
@@ -250,18 +293,72 @@ def _dispatch_order(order: Order) -> None:
             },
         )
     except (pika.exceptions.AMQPError, KafkaError, OSError) as exc:
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE outbox SET attempts = attempts + 1, last_error = ? WHERE id = ?",
+                (type(exc).__name__, order.id + ":" + action),
+            )
         raise HTTPException(
             status_code=503,
             detail={
-                "message": "Order saved; message delivery pending. Retry the saved order.",
+                "message": "Order saved; delivery is pending automatic recovery.",
                 "order_id": order.id,
                 "retry_url": f"/orders/{order.id}/retry-delivery",
             },
         ) from exc
+    with get_connection() as conn:
+        conn.execute("DELETE FROM outbox WHERE id = ?", (order.id + ":" + action,))
+
+
+def _outbox_loop() -> None:
+    while not app.state.stop_event.wait(2):
+        try:
+            with get_connection() as conn:
+                rows = conn.execute(
+                    "SELECT order_id, action FROM outbox ORDER BY created_at LIMIT 50"
+                ).fetchall()
+            for row in rows:
+                if app.state.stop_event.is_set():
+                    break
+                try:
+                    _dispatch_order(_load_order(row["order_id"]), row["action"])
+                except HTTPException:
+                    LOGGER.warning(
+                        "Outbox delivery pending for order %s", row["order_id"]
+                    )
+        except (sqlite3.Error, psycopg.Error, OSError):
+            LOGGER.exception("Outbox database unavailable; pending records retained")
 
 
 @app.post("/orders/{order_id}/retry-delivery", response_model=Order)
 def retry_delivery(order_id: str) -> Order:
     order = _load_order(order_id)
-    _dispatch_order(order)
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT action FROM outbox WHERE order_id = ?", (order_id,)
+        ).fetchall()
+    for row in rows:
+        _dispatch_order(order, row["action"])
+    return _load_order(order_id)
+
+
+@app.post("/orders/{order_id}/cancel", response_model=Order, status_code=202)
+def cancel_order(order_id: str) -> Order:
+    order = _load_order(order_id)
+    if order.status in ("cancel_pending", "cancelled"):
+        return order
+    if order.status != "paid":
+        raise HTTPException(
+            status_code=409, detail="Only a paid order can enter refund compensation"
+        )
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE orders SET status = ?, updated_at = ? WHERE id = ? AND status = ?",
+            ("cancel_pending", _now(), order_id, "paid"),
+        )
+        conn.execute(
+            "INSERT INTO outbox (id, order_id, action, created_at) VALUES (?, ?, ?, ?) ON CONFLICT (id) DO NOTHING",
+            (order_id + ":refund", order_id, "refund", _now()),
+        )
+    # The durable outbox completes compensation after broker recovery as well.
     return _load_order(order_id)

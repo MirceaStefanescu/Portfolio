@@ -32,6 +32,12 @@ public class ChatMessage {
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
+  @Column(nullable = false)
+  private boolean published;
+
+  @Column(name = "client_request_id", length = 64)
+  private String clientRequestId;
+
   protected ChatMessage() {
   }
 
@@ -67,4 +73,7 @@ public class ChatMessage {
   public Instant getCreatedAt() {
     return createdAt;
   }
+
+  public String getClientRequestId() { return clientRequestId; }
+  public void setClientRequestId(String value) { this.clientRequestId = value; }
 }

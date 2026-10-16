@@ -1,0 +1,676 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "postgres-products-data",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "postgres-products",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "postgres-products"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "postgres-products"
+            }
+          },
+          "spec": {
+            "enableServiceLinks": false,
+            "containers": [
+              {
+                "name": "postgres-products",
+                "image": "postgres:15-alpine",
+                "ports": [
+                  {
+                    "containerPort": 5432
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "POSTGRES_DB",
+                    "value": "products"
+                  },
+                  {
+                    "name": "POSTGRES_USER",
+                    "value": "products"
+                  },
+                  {
+                    "name": "POSTGRES_PASSWORD",
+                    "value": "local-products-only"
+                  }
+                ],
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "pg_isready",
+                      "-U",
+                      "products",
+                      "-d",
+                      "products"
+                    ]
+                  },
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 5
+                },
+                "volumeMounts": [
+                  {
+                    "name": "data",
+                    "mountPath": "/var/lib/postgresql/data"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "data",
+                "persistentVolumeClaim": {
+                  "claimName": "postgres-products-data"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "postgres-products",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "selector": {
+          "app": "postgres-products"
+        },
+        "ports": [
+          {
+            "name": "tcp-5432",
+            "port": 5432,
+            "targetPort": 5432
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "postgres-orders-data",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "postgres-orders",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "postgres-orders"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "postgres-orders"
+            }
+          },
+          "spec": {
+            "enableServiceLinks": false,
+            "containers": [
+              {
+                "name": "postgres-orders",
+                "image": "postgres:15-alpine",
+                "ports": [
+                  {
+                    "containerPort": 5432
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "POSTGRES_DB",
+                    "value": "orders"
+                  },
+                  {
+                    "name": "POSTGRES_USER",
+                    "value": "orders"
+                  },
+                  {
+                    "name": "POSTGRES_PASSWORD",
+                    "value": "local-orders-only"
+                  }
+                ],
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "pg_isready",
+                      "-U",
+                      "orders",
+                      "-d",
+                      "orders"
+                    ]
+                  },
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 5
+                },
+                "volumeMounts": [
+                  {
+                    "name": "data",
+                    "mountPath": "/var/lib/postgresql/data"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "data",
+                "persistentVolumeClaim": {
+                  "claimName": "postgres-orders-data"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "postgres-orders",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "selector": {
+          "app": "postgres-orders"
+        },
+        "ports": [
+          {
+            "name": "tcp-5432",
+            "port": 5432,
+            "targetPort": 5432
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "postgres-payments-data",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "postgres-payments",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "postgres-payments"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "postgres-payments"
+            }
+          },
+          "spec": {
+            "enableServiceLinks": false,
+            "containers": [
+              {
+                "name": "postgres-payments",
+                "image": "postgres:15-alpine",
+                "ports": [
+                  {
+                    "containerPort": 5432
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "POSTGRES_DB",
+                    "value": "payments"
+                  },
+                  {
+                    "name": "POSTGRES_USER",
+                    "value": "payments"
+                  },
+                  {
+                    "name": "POSTGRES_PASSWORD",
+                    "value": "local-payments-only"
+                  }
+                ],
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "pg_isready",
+                      "-U",
+                      "payments",
+                      "-d",
+                      "payments"
+                    ]
+                  },
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 5
+                },
+                "volumeMounts": [
+                  {
+                    "name": "data",
+                    "mountPath": "/var/lib/postgresql/data"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "data",
+                "persistentVolumeClaim": {
+                  "claimName": "postgres-payments-data"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "postgres-payments",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "selector": {
+          "app": "postgres-payments"
+        },
+        "ports": [
+          {
+            "name": "tcp-5432",
+            "port": 5432,
+            "targetPort": 5432
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "zookeeper",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "zookeeper"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "zookeeper"
+            }
+          },
+          "spec": {
+            "enableServiceLinks": false,
+            "containers": [
+              {
+                "name": "zookeeper",
+                "image": "confluentinc/cp-zookeeper:7.9.10",
+                "ports": [
+                  {
+                    "containerPort": 2181
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "ZOOKEEPER_CLIENT_PORT",
+                    "value": "2181"
+                  },
+                  {
+                    "name": "ZOOKEEPER_TICK_TIME",
+                    "value": "2000"
+                  }
+                ],
+                "readinessProbe": {
+                  "tcpSocket": {
+                    "port": 2181
+                  },
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 5
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "zookeeper",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "selector": {
+          "app": "zookeeper"
+        },
+        "ports": [
+          {
+            "name": "tcp-2181",
+            "port": 2181,
+            "targetPort": 2181
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "kafka",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "kafka"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "kafka"
+            }
+          },
+          "spec": {
+            "enableServiceLinks": false,
+            "containers": [
+              {
+                "name": "kafka",
+                "image": "confluentinc/cp-kafka:7.9.10",
+                "ports": [
+                  {
+                    "containerPort": 9092
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "KAFKA_BROKER_ID",
+                    "value": "1"
+                  },
+                  {
+                    "name": "KAFKA_ZOOKEEPER_CONNECT",
+                    "value": "zookeeper:2181"
+                  },
+                  {
+                    "name": "KAFKA_LISTENERS",
+                    "value": "PLAINTEXT://0.0.0.0:9092"
+                  },
+                  {
+                    "name": "KAFKA_ADVERTISED_LISTENERS",
+                    "value": "PLAINTEXT://kafka.cloud-native-ecommerce.svc.cluster.local:9092"
+                  },
+                  {
+                    "name": "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
+                    "value": "PLAINTEXT:PLAINTEXT"
+                  },
+                  {
+                    "name": "KAFKA_INTER_BROKER_LISTENER_NAME",
+                    "value": "PLAINTEXT"
+                  },
+                  {
+                    "name": "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",
+                    "value": "1"
+                  },
+                  {
+                    "name": "KAFKA_AUTO_CREATE_TOPICS_ENABLE",
+                    "value": "true"
+                  }
+                ],
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "kafka-broker-api-versions",
+                      "--bootstrap-server",
+                      "localhost:9092"
+                    ]
+                  },
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 5
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "kafka",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "selector": {
+          "app": "kafka"
+        },
+        "ports": [
+          {
+            "name": "tcp-9092",
+            "port": 9092,
+            "targetPort": 9092
+          }
+        ],
+        "publishNotReadyAddresses": true
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "rabbitmq-data",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "rabbitmq",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "rabbitmq"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "rabbitmq"
+            }
+          },
+          "spec": {
+            "enableServiceLinks": false,
+            "containers": [
+              {
+                "name": "rabbitmq",
+                "image": "rabbitmq:3.12-management",
+                "ports": [
+                  {
+                    "containerPort": 5672
+                  },
+                  {
+                    "containerPort": 15672
+                  }
+                ],
+                "env": [],
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "rabbitmq-diagnostics",
+                      "-q",
+                      "check_running"
+                    ]
+                  },
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 5
+                },
+                "volumeMounts": [
+                  {
+                    "name": "data",
+                    "mountPath": "/var/lib/rabbitmq"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "data",
+                "persistentVolumeClaim": {
+                  "claimName": "rabbitmq-data"
+                }
+              }
+            ],
+            "securityContext": {
+              "runAsUser": 999,
+              "runAsGroup": 999,
+              "fsGroup": 999
+            }
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "rabbitmq",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "spec": {
+        "selector": {
+          "app": "rabbitmq"
+        },
+        "ports": [
+          {
+            "name": "tcp-5672",
+            "port": 5672,
+            "targetPort": 5672
+          },
+          {
+            "name": "tcp-15672",
+            "port": 15672,
+            "targetPort": 15672
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Secret",
+      "metadata": {
+        "name": "commerce-databases",
+        "namespace": "cloud-native-ecommerce"
+      },
+      "stringData": {
+        "product-url": "postgresql://products:local-products-only@postgres-products:5432/products",
+        "order-url": "postgresql://orders:local-orders-only@postgres-orders:5432/orders",
+        "payment-url": "postgresql://payments:local-payments-only@postgres-payments:5432/payments"
+      }
+    }
+  ]
+}

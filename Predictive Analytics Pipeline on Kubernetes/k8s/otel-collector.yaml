@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-config
+  namespace: predictive-analytics
+data:
+  collector.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:4318
+    exporters:
+      debug:
+        verbosity: detailed
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          exporters: [debug]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: predictive-analytics
+spec:
+  selector: {app: otel-collector}
+  ports: [{port: 4318, targetPort: 4318}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: predictive-analytics
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: otel-collector}
+  template:
+    metadata:
+      labels: {app: otel-collector}
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:0.162.0
+          args: ["--config=/etc/collector/collector.yaml"]
+          volumeMounts:
+            - {name: config, mountPath: /etc/collector, readOnly: true}
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+      volumes:
+        - name: config
+          configMap: {name: otel-config}

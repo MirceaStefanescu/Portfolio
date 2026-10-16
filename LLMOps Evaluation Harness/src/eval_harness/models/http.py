@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 import requests
@@ -29,6 +30,8 @@ class HttpModel(BaseModel):
             headers["Authorization"] = f"Bearer {self.api_key}"
 
         payload = self._build_payload(prompt)
+        if self.mode == "openai" and record.metadata.get("tools"):
+            payload["tools"] = record.metadata["tools"]
         response = requests.post(
             self.endpoint,
             json=payload,
@@ -50,15 +53,21 @@ class HttpModel(BaseModel):
 
     @staticmethod
     def _extract_text(payload: dict[str, Any]) -> str:
+        value = None
         if "output" in payload:
-            return str(payload["output"])
-        if "text" in payload:
-            return str(payload["text"])
-        if payload.get("choices"):
+            value = payload["output"]
+        elif "text" in payload:
+            value = payload["text"]
+        elif payload.get("choices"):
             choice = payload["choices"][0]
             if isinstance(choice, dict):
+                message = choice.get("message", {})
+                if message.get("tool_calls"):
+                    return json.dumps({"tool_calls": message["tool_calls"]})
                 if "message" in choice and "content" in choice["message"]:
-                    return str(choice["message"]["content"])
-                if "text" in choice:
-                    return str(choice["text"])
+                    value = choice["message"]["content"]
+                elif "text" in choice:
+                    value = choice["text"]
+        if isinstance(value, str):
+            return value
         raise ValueError("Unsupported response format from model endpoint.")

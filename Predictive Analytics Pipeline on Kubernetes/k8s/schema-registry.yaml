@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: schema-registry
+  namespace: predictive-analytics
+spec:
+  selector: {app: schema-registry}
+  ports: [{port: 8081, targetPort: 8081}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: schema-registry
+  namespace: predictive-analytics
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: schema-registry}
+  template:
+    metadata:
+      labels: {app: schema-registry}
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: registry
+          image: confluentinc/cp-schema-registry:7.9.10
+          env:
+            - {name: SCHEMA_REGISTRY_HOST_NAME, value: schema-registry}
+            - {name: SCHEMA_REGISTRY_LISTENERS, value: "http://0.0.0.0:8081"}
+            - {name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS, value: "PLAINTEXT://kafka:9092"}
+          readinessProbe:
+            httpGet: {path: /subjects, port: 8081}
+            initialDelaySeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 512Mi}
+            limits: {cpu: "1", memory: 1Gi}

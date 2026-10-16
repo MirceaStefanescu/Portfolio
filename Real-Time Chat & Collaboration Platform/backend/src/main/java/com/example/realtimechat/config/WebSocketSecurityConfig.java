@@ -24,9 +24,9 @@ public class WebSocketSecurityConfig {
         : AuthenticatedAuthorizationManager.authenticated();
     return messages
         .nullDestMatcher().access(access)
-        .simpSubscribeDestMatchers("/topic/rooms/*").access(access)
+        .simpSubscribeDestMatchers("/topic/rooms/*", "/topic/rooms/*/presence", "/user/queue/receipts").access(access)
         .simpTypeMatchers(SimpMessageType.SUBSCRIBE).denyAll()
-        .simpDestMatchers("/app/rooms/*/send").access(access)
+        .simpDestMatchers("/app/rooms/*/send", "/app/rooms/*/presence").access(access)
         .anyMessage().denyAll()
         .build();
   }

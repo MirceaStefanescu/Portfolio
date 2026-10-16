@@ -101,6 +101,39 @@ public class QdrantClient {
         restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers()), String.class);
     }
 
+    public void removeStaleChunks(String documentId, List<String> currentIds) {
+        var filter = Map.of("must", List.of(Map.of("key", "documentId", "match", Map.of("value", documentId))),
+                "must_not", List.of(Map.of("has_id", currentIds)));
+        restTemplate.exchange(qdrantProperties.getUrl() + "/collections/" + qdrantProperties.getCollection()
+                + "/points/delete?wait=true", HttpMethod.POST,
+                new HttpEntity<>(Map.of("filter", filter), headers()), String.class);
+    }
+
+    /** Read the complete bounded corpus; never silently rank a truncated subset. */
+    public List<RetrievedChunk> lexicalCorpus() {
+        var chunks = new ArrayList<RetrievedChunk>();
+        JsonNode offset = null;
+        do {
+            var body = new HashMap<String, Object>();
+            body.put("limit", 256); body.put("with_payload", true); body.put("with_vector", false);
+            if (offset != null) body.put("offset", offset);
+            var response = restTemplate.exchange(qdrantProperties.getUrl() + "/collections/"
+                    + qdrantProperties.getCollection() + "/points/scroll", HttpMethod.POST,
+                    new HttpEntity<>(body, headers()), JsonNode.class).getBody();
+            if (response == null || !response.path("result").path("points").isArray()) {
+                throw new IllegalStateException("Invalid Qdrant scroll response");
+            }
+            for (var node : response.path("result").path("points")) {
+                var payload = node.path("payload");
+                chunks.add(new RetrievedChunk(payload.path("documentId").asText(), payload.path("title").asText(),
+                        payload.path("source").asText(), payload.path("text").asText(), 0));
+            }
+            if (chunks.size() > 10000) throw new IllegalStateException("Local BM25 corpus limit is 10000 chunks");
+            offset = response.path("result").get("next_page_offset");
+        } while (offset != null && !offset.isNull());
+        return chunks;
+    }
+
     private void createCollection() {
         String url = qdrantProperties.getUrl() + "/collections/" + qdrantProperties.getCollection();
         Map<String, Object> vectors = new HashMap<>();

@@ -9,6 +9,10 @@ IMAGE_TAG="${IMAGE_TAG:-local}"
 FULL_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 export TF_ENV="${TF_ENV:-local-kind}"
 TF_DIR="terraform/environments/${TF_ENV}"
+if [[ "${DEPLOY_MODE:-blue-green}" == canary && "${RUN_TERRAFORM:-false}" == true ]]; then
+  echo "Canary workloads use Helm/Argo. Use RUN_DEPLOY=true and RUN_TERRAFORM=false." >&2
+  exit 2
+fi
 
 if [[ "$TF_ENV" == "local-kind" ]]; then
   export KUBECONFIG="${KUBECONFIG:-$ROOT_DIR/.kube/config}"
@@ -34,15 +38,8 @@ if [[ "$TF_ENV" == "local-kind" && ( "${RUN_TERRAFORM:-false}" == "true" || "${R
 fi
 
 if [[ "${RUN_TERRAFORM:-false}" == "true" ]]; then
-  echo "Running Terraform apply"
-  terraform -chdir="${TF_DIR}" init -input=false
-  terraform -chdir="${TF_DIR}" apply -auto-approve \
-    -var="image=${FULL_IMAGE}" \
-    -var="deploy_mode=${DEPLOY_MODE:-blue-green}" \
-    -var="release_color=${RELEASE_COLOR:-blue}" \
-    -var="environment=${ENVIRONMENT:-dev}" \
-    -var="build_id=${IMAGE_TAG}" \
-    -var="git_sha=${GIT_SHA:-dev}"
+  export IMAGE_NAME IMAGE_TAG
+  bash scripts/terraform-gate.sh plan-apply
 fi
 
 if [[ "${RUN_ANSIBLE:-false}" == "true" ]]; then
@@ -57,7 +54,10 @@ fi
 
 if [[ "${RUN_DEPLOY:-false}" == "true" ]]; then
   echo "Deploying to Kubernetes"
-  if [[ "${DEPLOY_MODE:-blue-green}" == "rolling" ]]; then
+  if [[ "${DEPLOY_MODE:-blue-green}" == "canary" ]]; then
+    export IMAGE_NAME IMAGE_TAG
+    bash scripts/canary.sh
+  elif [[ "${DEPLOY_MODE:-blue-green}" == "rolling" ]]; then
     IMAGE="${FULL_IMAGE}" ./scripts/rolling.sh
   else
     IMAGE="${FULL_IMAGE}" ./scripts/blue-green.sh "${RELEASE_COLOR:-blue}"

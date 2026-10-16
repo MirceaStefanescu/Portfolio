@@ -15,12 +15,16 @@ spec:
     spec:
       containers:
         - name: order-service
+          imagePullPolicy: IfNotPresent
           image: cn-order-service:latest
           ports:
             - containerPort: 8000
           env:
-            - name: DB_PATH
-              value: /data/orders.db
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: commerce-databases
+                  key: order-url
             - name: PRODUCT_SERVICE_URL
               value: http://product-service:8000
             - name: KAFKA_BOOTSTRAP

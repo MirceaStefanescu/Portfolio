@@ -7,6 +7,22 @@
   "tags": ["ecommerce", "spring-boot"],
   "panels": [
     {
+      "type": "bargauge",
+      "title": "Orders by saga status",
+      "gridPos": {"h": 6, "w": 16, "x": 0, "y": 14},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "commerce_orders", "legendFormat": "{{status}}", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "type": "stat",
+      "title": "Demo charged cents (always zero)",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 14},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "commerce_demo_charged_cents", "refId": "A"}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
       "type": "stat",
       "title": "Order Service Up",
       "gridPos": {"h": 6, "w": 12, "x": 0, "y": 0},

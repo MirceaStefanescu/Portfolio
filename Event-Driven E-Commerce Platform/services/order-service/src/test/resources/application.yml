@@ -3,5 +3,6 @@ spring:
     bootstrap-servers: localhost:9092
 
 app:
+  saga-enabled: false
   topics:
     order-created: order.created

@@ -11,3 +11,4 @@ CREATE TABLE IF NOT EXISTS predictions (
 
 CREATE INDEX IF NOT EXISTS idx_predictions_event_type ON predictions(event_type);
 CREATE INDEX IF NOT EXISTS idx_predictions_window_end ON predictions(window_end);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_prediction_window ON predictions(event_type, window_start, window_end);

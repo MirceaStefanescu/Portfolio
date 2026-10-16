@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: cloud-native-ecommerce
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: commerce-gateway
+  template:
+    metadata:
+      labels:
+        app: commerce-gateway
+    spec:
+      containers:
+        - name: gateway
+          imagePullPolicy: IfNotPresent
+          image: cn-gateway:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: commerce-gateway
+                  key: jwt-secret
+            - name: REDIS_URL
+              value: redis://gateway-redis:6379/0
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: '1'
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: cloud-native-ecommerce
+spec:
+  selector:
+    app: commerce-gateway
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-redis
+  namespace: cloud-native-ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway-redis
+  template:
+    metadata:
+      labels:
+        app: gateway-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-redis
+  namespace: cloud-native-ecommerce
+spec:
+  selector:
+    app: gateway-redis
+  ports:
+    - port: 6379
+      targetPort: 6379

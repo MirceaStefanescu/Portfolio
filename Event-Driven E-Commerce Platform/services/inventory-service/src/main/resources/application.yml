@@ -2,10 +2,18 @@ server:
   port: 8082
 
 spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:file:./data/inventory;DB_CLOSE_ON_EXIT=FALSE}
+    username: sa
+    password: ""
   application:
     name: inventory-service
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
     consumer:
       group-id: inventory-service
       auto-offset-reset: earliest

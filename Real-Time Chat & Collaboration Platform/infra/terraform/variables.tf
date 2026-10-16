@@ -10,12 +10,12 @@ variable "kubeconfig_path" {
 
 variable "backend_image" {
   type    = string
-  default = "realtime-chat-backend:latest"
+  default = "realtime-chat-backend:local"
 }
 
 variable "frontend_image" {
   type    = string
-  default = "realtime-chat-frontend:latest"
+  default = "realtime-chat-frontend:local"
 }
 
 variable "frontend_service_type" {
@@ -53,4 +53,10 @@ variable "github_client_secret" {
   type      = string
   default   = ""
   sensitive = true
+}
+
+variable "demo_auth" {
+  description = "Enable only for an isolated local demonstration, never public deployment."
+  type        = bool
+  default     = false
 }

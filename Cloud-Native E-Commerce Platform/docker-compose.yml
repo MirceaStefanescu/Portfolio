@@ -1,6 +1,67 @@
 version: "3.9"
 
 services:
+  gateway:
+    build: ./services/gateway
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Set a random gateway JWT_SECRET of at least 32 bytes}
+      JWT_ISSUER: ${JWT_ISSUER:-portfolio}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-commerce}
+      REDIS_URL: redis://gateway-redis:6379/0
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
+    ports:
+      - "127.0.0.1:8088:8000"
+    depends_on:
+      - gateway-redis
+      - product-service
+      - order-service
+      - payment-service
+
+  gateway-redis:
+    image: redis:7-alpine
+
+  postgres-products:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: products
+      POSTGRES_USER: products
+      POSTGRES_PASSWORD: ${PRODUCT_DB_PASSWORD:-local-products-only}
+    volumes:
+      - products-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U products -d products"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  postgres-orders:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: orders
+      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD:-local-orders-only}
+    volumes:
+      - orders-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orders -d orders"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  postgres-payments:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: payments
+      POSTGRES_USER: payments
+      POSTGRES_PASSWORD: ${PAYMENT_DB_PASSWORD:-local-payments-only}
+    volumes:
+      - payments-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payments -d payments"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.9.10
     environment:
@@ -31,22 +92,23 @@ services:
 
   product-service:
     build: ./services/product-service
-    ports:
-      - "127.0.0.1:8010:8000"
     environment:
+      DATABASE_URL: postgresql://products:${PRODUCT_DB_PASSWORD:-local-products-only}@postgres-products:5432/products
       DB_PATH: /data/products.db
       KAFKA_BOOTSTRAP: kafka:9092
       KAFKA_TOPIC: products
     volumes:
       - product-data:/data
     depends_on:
-      - kafka
+      kafka:
+        condition: service_started
+      postgres-products:
+        condition: service_healthy
 
   order-service:
     build: ./services/order-service
-    ports:
-      - "127.0.0.1:8020:8000"
     environment:
+      DATABASE_URL: postgresql://orders:${ORDER_DB_PASSWORD:-local-orders-only}@postgres-orders:5432/orders
       DB_PATH: /data/orders.db
       PRODUCT_SERVICE_URL: http://product-service:8000
       KAFKA_BOOTSTRAP: kafka:9092
@@ -57,15 +119,19 @@ services:
     volumes:
       - order-data:/data
     depends_on:
-      - kafka
-      - rabbitmq
-      - product-service
+      kafka:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+      product-service:
+        condition: service_started
+      postgres-orders:
+        condition: service_healthy
 
   payment-service:
     build: ./services/payment-service
-    ports:
-      - "127.0.0.1:8030:8000"
     environment:
+      DATABASE_URL: postgresql://payments:${PAYMENT_DB_PASSWORD:-local-payments-only}@postgres-payments:5432/payments
       DB_PATH: /data/payments.db
       KAFKA_BOOTSTRAP: kafka:9092
       KAFKA_TOPIC_PAYMENTS: payments
@@ -74,10 +140,17 @@ services:
     volumes:
       - payment-data:/data
     depends_on:
-      - kafka
-      - rabbitmq
+      kafka:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+      postgres-payments:
+        condition: service_healthy
 
 volumes:
+  products-postgres:
+  orders-postgres:
+  payments-postgres:
   product-data:
   order-data:
   payment-data:

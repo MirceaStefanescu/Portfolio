@@ -1,27 +1,58 @@
 # Terraform Deployment
 
-This Terraform configuration deploys the full stack (PostgreSQL, Kafka, backend, frontend) into an existing Kubernetes cluster.
+This configuration deploys PostgreSQL, Redis, ZooKeeper, Kafka, the backend and
+frontend into an existing Kubernetes cluster. The local demonstration needs no
+OAuth account or cloud subscription.
 
 ## Prerequisites
 - Kubernetes cluster and kubeconfig
-- Docker images for backend and frontend built and pushed to a registry
+- Docker images for backend and frontend, available in the selected cluster
 
-## Example
+## Local Kind example
+
+Run these commands from this project's root. Use a dedicated Kind cluster and a
+new namespace. The frontend stays inside the cluster until the explicit
+loopback port forward.
+
 ```bash
-export KUBECONFIG=~/.kube/config
+docker build -t realtime-chat-backend:local backend
+docker build -t realtime-chat-frontend:local frontend
+kind create cluster --name chat-demo --kubeconfig "$PWD/.kube/config"
+kind load docker-image realtime-chat-backend:local realtime-chat-frontend:local --name chat-demo
+export TF_VAR_kubeconfig_path="$PWD/.kube/config"
+export TF_VAR_namespace=chat-demo
+export TF_VAR_demo_auth=true
+export TF_VAR_frontend_service_type=ClusterIP
+export TF_VAR_frontend_base_url=http://127.0.0.1:4201
+export TF_VAR_cors_allowed_origins=http://127.0.0.1:4201
 terraform -chdir=infra/terraform init
-terraform -chdir=infra/terraform apply \
-  -var "backend_image=your-registry/realtime-chat-backend:latest" \
-  -var "frontend_image=your-registry/realtime-chat-frontend:latest" \
-  -var "frontend_base_url=http://your-frontend-domain" \
-  -var "cors_allowed_origins=http://your-frontend-domain" \
-  -var "github_client_id=..." \
-  -var "github_client_secret=..."
+terraform -chdir=infra/terraform apply
+kubectl --kubeconfig "$PWD/.kube/config" --context kind-chat-demo -n chat-demo \
+  port-forward service/realtime-chat-frontend 4201:80 --address=127.0.0.1
 ```
 
-## Notes
-- Kafka and PostgreSQL are deployed as single-instance workloads for demo use.
-- For production, replace them with managed services or dedicated operators.
+Open `http://127.0.0.1:4201` in two tabs. Stop the port forward before cleanup:
+
+```bash
+terraform -chdir=infra/terraform destroy
+kind delete cluster --name chat-demo
+```
+
+The PostgreSQL claim uses delayed binding safely: Terraform creates the pod
+before waiting for its readiness. Service-link environment injection is disabled
+to avoid overriding Kafka's listener configuration. Each component has a
+readiness probe; the backend waits for PostgreSQL, Kafka and Redis deployments.
+
+The verified local scenario installs all 15 resources from empty state, exercises
+two STOMP sessions and Kafka recovery, replaces the backend while preserving all
+62 test messages, and produces a Terraform plan with no changes. PostgreSQL data
+survives backend replacement; destroying the stack intentionally removes its
+claim. Kafka and Redis are single-instance ephemeral demonstration services.
+
+Keep state, plans and kubeconfig private; they are ignored by Git. OAuth mode
+remains optional, requires your own provider credentials and must set
+`demo_auth=false`. This local validation does not certify an external provider
+or a production deployment.
 
 ## Terraform Kubernetes provider migration
 

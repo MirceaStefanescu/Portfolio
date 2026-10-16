@@ -1,4 +1,38 @@
 services:
+  mimir:
+    image: grafana/mimir:3.2.0
+    command: ["-config.file=/etc/mimir/mimir.yml"]
+    volumes:
+      - ./mimir/mimir.yml:/etc/mimir/mimir.yml:ro
+      - mimir-data:/data
+    ports:
+      - "127.0.0.1:9009:9009"
+
+  prometheus-secondary:
+    image: prom/prometheus:v2.49.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    volumes:
+      - ./prometheus/secondary.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-secondary-data:/prometheus
+
+  demo-api-secondary:
+    build:
+      context: ../CI/CD Pipeline Automation
+    mem_limit: 512m
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.29.0
+    command: ["--config.file=/etc/blackbox/blackbox.yml"]
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+
+  paging-demo:
+    build: ./paging-demo
+    volumes:
+      - paging-data:/data
+    ports:
+      - "127.0.0.1:8088:8088"
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.162.0
     command: ["--config=/etc/otel-collector/${OTEL_COLLECTOR_CONFIG:-config.yaml}"]
@@ -79,6 +113,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_ANALYTICS_REPORTING_ENABLED=false
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -121,6 +156,9 @@ services:
       - ./logs:/var/log/app
 
 volumes:
+  mimir-data:
+  prometheus-secondary-data:
+  paging-data:
   loki-data:
   prometheus-data:
   grafana-data:

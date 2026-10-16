@@ -1,8 +1,8 @@
 # Observability: New Relic & Prometheus
 
-Production-grade observability platform for microservices teams that need unified metrics, traces, and alerting across multi-cloud Kubernetes clusters.
+Demonstrative observability platform with real metrics, traces, logs, synthetic probes and local paging. Two independent Prometheus writers represent two clusters on the same Docker host; no external account is required.
 
-This project standardizes instrumentation with OpenTelemetry, ingests metrics and traces into Prometheus and New Relic, and keeps dashboards reliable with persistent storage and backup workflows.
+OpenTelemetry feeds the local collector, Prometheus and Mimir retain metrics, and Grafana displays the results. The optional New Relic export configuration remains separate from the self-contained demonstration.
 
 ## Features
 - OpenTelemetry SDK + Collector instrumentation for metrics and traces
@@ -12,6 +12,9 @@ This project standardizes instrumentation with OpenTelemetry, ingests metrics an
 - SLO-oriented alerting for latency, errors, and saturation signals
 - Reliability pack assets: Helm chart, dashboards, alert rules, and on-call runbooks
 - Built-in telemetry generator for local validation of the pipeline
+- Mimir 3.2 receives remote-write metrics labeled demo-a/demo-b, persists its WAL/blocks and configures 180-day retention.
+- Blackbox Exporter 0.29 probes the actual API health status and response body.
+- Alertmanager uses its native Slack and PagerDuty integrations against a persistent local protocol receiver, with retry, incident resolution and an inbox UI.
 
 ## Tech stack (and why)
 - OpenTelemetry: vendor-neutral instrumentation and telemetry export.
@@ -23,8 +26,7 @@ This project standardizes instrumentation with OpenTelemetry, ingests metrics an
 - Docker: local dev stack and quick verification.
 
 ## Demo
-- Live: TBD
-- Video or GIF: TBD
+- Live: local demonstration; use the commands below.
 - Screenshots:
   - `screenshots/20251228_1746_Unified Cloud Observability_simple_compose_01kdjt55ncegvv90qnwvzbev87.png`
   - `screenshots/20251228_1746_Unified Cloud Observability_simple_compose_01kdjt55nde0kbfkfd985v68jc.png`
@@ -64,6 +66,8 @@ Access:
 - Grafana: http://localhost:3000 (admin / admin)
 - Alertmanager: http://localhost:9093
 - Loki: http://localhost:3100
+- Mimir readiness: http://localhost:9009/ready
+- Local paging inbox: http://localhost:8088
 
 Send OTLP telemetry to:
 - gRPC: `localhost:4317`
@@ -79,7 +83,9 @@ New Relic (optional):
 
 ## Alerting
 - Prometheus rules: `prometheus/alert.rules.yml` (service down, error rate, latency, saturation, telemetry, log ingestion).
-- Alertmanager config: `alertmanager/alertmanager.yml` (default receiver is a no-op; wire Slack/PagerDuty for paging).
+- Alertmanager config: `alertmanager/alertmanager.yml` sends native Slack/PagerDuty payloads to `paging-demo` only. The local receiver validates the expected protocol, accepts only a synthetic PagerDuty routing key and never forwards messages externally.
+- SyntheticCheckFailed fires after 30 seconds of a failed HTTP/body probe. The existing ServiceDown threshold remains two minutes.
+- The inbox persists through restart. Its `POST /fail-next` endpoint accepts `{"kind":"pagerduty","count":1}` to exercise a recoverable 503; it is part of this isolated demo, not a production control endpoint.
 
 ## Helm chart
 ```
@@ -118,13 +124,17 @@ make test
 ## Security
 Secrets: use `.env` (see `.env.example`). Store New Relic license keys in Kubernetes secrets or a vault, restrict Grafana access with SSO/RBAC, and apply network policies to limit collector ingress. Enable encryption at rest for Prometheus volumes and lock down cloud IAM for backups.
 
-## Roadmap / tradeoffs
-- Add multi-cluster federation (Thanos/Mimir) for long-term retention.
-- Add paging integrations (Slack/PagerDuty) and synthetic checks.
-- Tradeoff: richer telemetry improves visibility but increases storage and egress costs.
+## Multi-cluster and retention demonstration
+
+The primary and secondary Prometheus servers scrape separate API containers and remote-write to Mimir with distinct cluster labels. The Multi-cluster Demo dashboard queries Mimir for both sources and Prometheus for synthetic availability/duration. The verifier stops both writers, restarts Mimir and queries the previously recorded timestamp to prove persistent data survives without reingestion.
+
+Mimir uses its documented local monolithic/filesystem mode with anonymous usage reporting disabled. Retention is configured to 4,320 hours (180 days); the short test verifies configuration and restart persistence, not 180 days of elapsed operation. Both simulated clusters share one host and this is not an HA or cross-region reliability claim.
+
+Richer telemetry consumes disk and CPU even in a demonstration. All data lives in this stack's named volumes; the existing cleanup command resets only that stack.
 
 ## Notes / limitations
-- The local Docker Compose stack is a single-node demo; HA and multi-cloud topology are implemented via Kubernetes/Helm.
+- The Docker stack runs on one host. Helm supplies reliability dashboard/rule assets for an existing Kubernetes monitoring stack; it does not itself create multiple clouds.
+- Slack/PagerDuty protocol delivery is demonstrated locally. No real workspace, incident service, email or SMS is contacted. New Relic account-side behavior is outside the local demonstration.
 
 ## Tags
 monitoring, tracing, kubernetes, grafana, prometheus, alertmanager, loki, observability, new relic, opentelemetry
@@ -144,5 +154,6 @@ python scripts/demo-check.py observability
 python scripts/demo-check.py observability --keep
 ```
 
-The verifier uses fresh data and random loopback ports, prints the exact URLs and
-cleanup command, and fails if the demonstrated behavior is missing. The check verifies actual metrics/logs and deliberately stops only its own demo API until Alertmanager receives ServiceDown, then restarts it and verifies resolution. The local receiver does not contact an external notification service.
+The verifier uses fresh data and random loopback ports, prints the exact URLs and cleanup command, and fails if behavior is missing. It verifies real OTLP/HTTP metrics, Loki logs, provisioned dashboards, two Mimir cluster sources and persistence with both writers stopped. It stops only its own demo API, observes failed synthetic checks and ServiceDown, requires delivery through both local paging protocols after a controlled 503, then verifies resolution and inbox persistence after restart.
+
+Official references: [Mimir local mode](https://grafana.com/docs/mimir/latest/get-started/), [Alertmanager integration configuration](https://prometheus.io/docs/alerting/latest/configuration/), [Blackbox Exporter 0.29](https://github.com/prometheus/blackbox_exporter/releases/tag/v0.29.0).

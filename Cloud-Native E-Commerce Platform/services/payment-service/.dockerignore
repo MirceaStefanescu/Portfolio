@@ -4,3 +4,13 @@ __pycache__/
 *.pyd
 .pytest_cache/
 .env
+.devtools
+.env.*
+.git
+node_modules
+target
+__pycache__
+.venv
+.angular
+*.log
+DevTools.ps1

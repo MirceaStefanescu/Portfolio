@@ -15,12 +15,16 @@ spec:
     spec:
       containers:
         - name: payment-service
+          imagePullPolicy: IfNotPresent
           image: cn-payment-service:latest
           ports:
             - containerPort: 8000
           env:
-            - name: DB_PATH
-              value: /data/payments.db
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: commerce-databases
+                  key: payment-url
             - name: KAFKA_BOOTSTRAP
               value: kafka:9092
             - name: KAFKA_TOPIC_PAYMENTS

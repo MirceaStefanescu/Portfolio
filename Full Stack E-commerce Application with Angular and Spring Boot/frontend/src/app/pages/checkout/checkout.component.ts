@@ -44,7 +44,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private orderId: number | null = null;
   private paymentIntentId: string | null = null;
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     if (!this.items().length) {
       this.status.set('error');
       this.fatalError.set(true);
@@ -53,10 +53,21 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     }
 
     if (!this.demoMode && typeof Stripe === 'undefined') {
-      this.status.set('error');
-      this.fatalError.set(true);
-      this.errorMessage.set('Stripe.js failed to load.');
-      return;
+      this.status.set('loading');
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://js.stripe.com/v3/';
+          script.onload = () => resolve();
+          script.onerror = () => { script.remove(); reject(new Error('Stripe.js failed to load.')); };
+          document.head.appendChild(script);
+        });
+      } catch {
+        this.status.set('error');
+        this.fatalError.set(true);
+        this.errorMessage.set('Stripe.js failed to load.');
+        return;
+      }
     }
 
     this.status.set('loading');

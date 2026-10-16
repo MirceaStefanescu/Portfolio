@@ -10,7 +10,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: kafka-init
-          image: confluentinc/cp-kafka:7.5.0
+          image: confluentinc/cp-kafka:7.9.10
           command:
             - /bin/sh
             - -c
@@ -23,3 +23,4 @@ spec:
                 sleep 2;
               done
               kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic events --partitions 3 --replication-factor 1
+              kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic events.invalid --partitions 1 --replication-factor 1

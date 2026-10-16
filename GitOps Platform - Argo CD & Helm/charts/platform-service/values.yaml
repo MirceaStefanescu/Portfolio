@@ -1,9 +1,12 @@
 replicaCount: 2
 environment: dev
+extraEnv: []
+envFromSecret: ""
+healthPath: /healthz
 
 image:
-  repository: ghcr.io/stefanprodan/podinfo
-  tag: "6.15.0"
+  repository: portfolio-podinfo
+  tag: "6.15.0-security1"
   pullPolicy: IfNotPresent
 
 service:
@@ -13,6 +16,14 @@ service:
 rollout:
   enabled: true
   strategy: canary
+  progressDeadlineSeconds: 120
+  analysis:
+    enabled: true
+    interval: 5s
+    count: 3
+    # Podinfo returns uppercase OK; callers can select their endpoint's exact value.
+    path: /healthz
+    expectedStatus: OK
   canary:
     steps:
       - setWeight: 20

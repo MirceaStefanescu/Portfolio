@@ -43,6 +43,10 @@ class EventProducerTest {
     assertEquals(503, status.getStatusCode().value());
   }
   @Test void rejectsInvalidValuesBeforeSending() {
+    assertThrows(IllegalArgumentException.class, () -> producer.publish(new EventRequest("sensor",null,null)));
+    assertThrows(IllegalArgumentException.class, () -> producer.publish(new EventRequest("bad type",1.0,null)));
+    assertThrows(IllegalArgumentException.class, () -> producer.publish(new EventRequest("sensor",1000001.0,null)));
+    assertThrows(IllegalArgumentException.class, () -> producer.publish(new EventRequest("sensor",1.0,Instant.EPOCH)));
     assertThrows(IllegalArgumentException.class, () -> producer.publish(new EventRequest(" ",1.0,null)));
     assertThrows(IllegalArgumentException.class, () -> producer.publish(new EventRequest("purchase",Double.NaN,null)));
     assertThrows(IllegalArgumentException.class, () -> producer.publish(new EventRequest("purchase",Double.POSITIVE_INFINITY,null)));

@@ -1,3 +1,12 @@
 node_modules
 dist
 .git
+.devtools
+.env
+.env.*
+target
+__pycache__
+.venv
+.angular
+*.log
+DevTools.ps1

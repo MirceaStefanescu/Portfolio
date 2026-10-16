@@ -8,7 +8,8 @@ from prompt_quality_safety.guardrails import is_refusal
 
 
 def exact_match(case: EvalCase, response: str) -> float | None:
-    if not case.expected:
+    # Only None means no reference; empty or whitespace-only expected is a valid reference.
+    if case.expected is None:
         return None
     return 1.0 if normalize(case.expected) == normalize(response) else 0.0
 

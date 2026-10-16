@@ -4,3 +4,4 @@ requests==2.34.2
 kafka-python==3.0.11
 pika==1.4.4
 prometheus-client==0.26.0
+psycopg[binary]==3.3.6

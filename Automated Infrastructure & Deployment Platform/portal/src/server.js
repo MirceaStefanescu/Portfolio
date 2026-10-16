@@ -4,6 +4,7 @@ const { config } = require("./config");
 const { log, logError, requestLogger } = require("./logger");
 const { loadTemplates, renderTemplate } = require("./templates");
 const { normalizeInput } = require("./validation");
+const { installAccess } = require("./auth");
 
 const app = express();
 const publicDir = path.join(__dirname, "..", "public");
@@ -23,6 +24,8 @@ app.use(express.static(publicDir));
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
+
+installAccess(app);
 
 app.get(
   "/api/services",
@@ -223,7 +226,7 @@ app.use((err, req, res, next) => {
     const status = err.type === "entity.too.large" ? 413 : 400;
     return res.status(status).json({ error: status === 413 ? "Request too large" : "Invalid JSON", requestId: req.requestId });
   }
-  logError(err, { requestId: req.requestId, path: req.originalUrl });
+  logError(err, { requestId: req.requestId, path: req.path });
   res.status(500).json({ error: "Internal server error", requestId: req.requestId });
 });
 

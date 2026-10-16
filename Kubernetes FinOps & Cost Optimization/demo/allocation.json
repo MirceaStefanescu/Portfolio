@@ -1,0 +1,11 @@
+{
+  "source": "synthetic multi-cluster demonstration; not a cloud bill",
+  "currency": "USD",
+  "captured_at": "2026-01-21T12:00:00Z",
+  "window_hours": 24,
+  "allocations": [
+    {"cluster":"demo-aws","namespace":"store","controller":"api","team":"sales","cost":12,"daily_history":[3,3.2,3.1,2.9,3.2,3],"cpu_request_m":1000,"cpu_p95_m":120,"memory_request_mib":1024,"memory_p95_mib":220},
+    {"cluster":"demo-azure","namespace":"store","controller":"worker","team":"sales","cost":4,"daily_history":[4,4.1,4,3.9,4,4],"cpu_request_m":500,"cpu_p95_m":400,"memory_request_mib":512,"memory_p95_mib":300},
+    {"cluster":"demo-gcp","namespace":"research","controller":"notebook","team":"data","cost":5,"daily_history":[5,5,5,5,5,5],"cpu_request_m":2000,"cpu_p95_m":2,"memory_request_mib":2048,"memory_p95_mib":100,"idle_hours":48,"requests_last_24h":0}
+  ]
+}

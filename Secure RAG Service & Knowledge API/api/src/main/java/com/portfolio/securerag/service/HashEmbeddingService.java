@@ -6,6 +6,7 @@ import java.util.Locale;
 import org.springframework.stereotype.Service;
 
 @Service
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "rag.provider", havingValue = "local", matchIfMissing = true)
 public class HashEmbeddingService implements EmbeddingService {
 
     private final RagProperties ragProperties;

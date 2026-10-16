@@ -14,6 +14,10 @@ provider "kubernetes" {
 resource "kubernetes_namespace_v1" "chat" {
   metadata {
     name = var.namespace
+    labels = {
+      "app.kubernetes.io/part-of" = "portfolio-chat"
+      "portfolio-demo"            = tostring(var.demo_auth)
+    }
   }
 }
 
@@ -24,16 +28,18 @@ resource "kubernetes_secret_v1" "app" {
   }
 
   data = {
-    db_username          = base64encode(var.db_username)
-    db_password          = base64encode(var.db_password)
-    github_client_id     = base64encode(var.github_client_id)
-    github_client_secret = base64encode(var.github_client_secret)
+    db_username          = var.db_username
+    db_password          = var.db_password
+    github_client_id     = var.github_client_id
+    github_client_secret = var.github_client_secret
   }
 
   type = "Opaque"
 }
 
 resource "kubernetes_persistent_volume_claim_v1" "postgres" {
+  # WaitForFirstConsumer classes bind only after the dependent Pod is created.
+  wait_until_bound = false
   metadata {
     name      = "postgres-data"
     namespace = kubernetes_namespace_v1.chat.metadata[0].name
@@ -71,9 +77,15 @@ resource "kubernetes_deployment_v1" "postgres" {
         }
       }
       spec {
+        enable_service_links = false
         container {
           name  = "postgres"
           image = "postgres:15-alpine"
+          readiness_probe {
+            exec { command = ["pg_isready", "-U", var.db_username, "-d", "chat"] }
+            initial_delay_seconds = 5
+            period_seconds        = 3
+          }
 
           port {
             container_port = 5432
@@ -158,9 +170,14 @@ resource "kubernetes_deployment_v1" "zookeeper" {
         }
       }
       spec {
+        enable_service_links = false
         container {
           name  = "zookeeper"
-          image = "confluentinc/cp-zookeeper:7.5.1"
+          image = "confluentinc/cp-zookeeper:7.9.10"
+          readiness_probe {
+            tcp_socket { port = 2181 }
+            initial_delay_seconds = 5
+          }
 
           port {
             container_port = 2181
@@ -219,9 +236,14 @@ resource "kubernetes_deployment_v1" "kafka" {
         }
       }
       spec {
+        enable_service_links = false
         container {
           name  = "kafka"
-          image = "confluentinc/cp-kafka:7.5.1"
+          image = "confluentinc/cp-kafka:7.9.10"
+          readiness_probe {
+            tcp_socket { port = 9092 }
+            initial_delay_seconds = 10
+          }
 
           port {
             container_port = 9092
@@ -274,6 +296,7 @@ resource "kubernetes_service_v1" "kafka" {
 }
 
 resource "kubernetes_deployment_v1" "backend" {
+  depends_on = [kubernetes_deployment_v1.postgres, kubernetes_deployment_v1.kafka, kubernetes_deployment_v1.redis]
   metadata {
     name      = "realtime-chat-backend"
     namespace = kubernetes_namespace_v1.chat.metadata[0].name
@@ -296,9 +319,17 @@ resource "kubernetes_deployment_v1" "backend" {
         }
       }
       spec {
+        enable_service_links = false
         container {
           name  = "backend"
           image = var.backend_image
+          readiness_probe {
+            http_get {
+              path = "/actuator/health"
+              port = 8080
+            }
+            initial_delay_seconds = 10
+          }
 
           port {
             container_port = 8080
@@ -329,6 +360,14 @@ resource "kubernetes_deployment_v1" "backend" {
           env {
             name  = "KAFKA_BOOTSTRAP_SERVERS"
             value = "kafka:9092"
+          }
+          env {
+            name  = "REDIS_HOST"
+            value = "redis"
+          }
+          env {
+            name  = "DEMO_AUTH"
+            value = tostring(var.demo_auth)
           }
           env {
             name  = "FRONTEND_BASE_URL"
@@ -364,7 +403,7 @@ resource "kubernetes_deployment_v1" "backend" {
 
 resource "kubernetes_service_v1" "backend" {
   metadata {
-    name      = "realtime-chat-backend"
+    name      = "backend"
     namespace = kubernetes_namespace_v1.chat.metadata[0].name
   }
   spec {
@@ -401,9 +440,17 @@ resource "kubernetes_deployment_v1" "frontend" {
         }
       }
       spec {
+        enable_service_links = false
         container {
           name  = "frontend"
           image = var.frontend_image
+          readiness_probe {
+            http_get {
+              path = "/"
+              port = 80
+            }
+            initial_delay_seconds = 3
+          }
 
           port {
             container_port = 80

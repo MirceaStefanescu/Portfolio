@@ -27,6 +27,9 @@ lint:
 ci:
 	./scripts/ci.sh
 
+policy:
+	python ../../scripts/check-policy.py .
+
 kind-up:
 	./scripts/kind-up.sh
 

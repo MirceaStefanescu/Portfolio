@@ -6,14 +6,20 @@ metadata:
 spec:
   scaleTargetRef:
     name: flink-taskmanager
-  pollingInterval: 30
-  cooldownPeriod: 120
+  pollingInterval: 5
+  cooldownPeriod: 30
   minReplicaCount: 1
-  maxReplicaCount: 6
+  maxReplicaCount: 3
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 30
   triggers:
     - type: kafka
       metadata:
-        bootstrapServers: kafka:9092
+        bootstrapServers: kafka.predictive-analytics.svc.cluster.local:9092
         topic: events
         consumerGroup: predictive-analytics
         lagThreshold: "5"
+        offsetResetPolicy: earliest

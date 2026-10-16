@@ -29,11 +29,22 @@ const vaultSecretLastFetch = new client.Gauge({
   help: "Unix timestamp of the last successful Vault secret fetch"
 });
 
+const vaultSecretRefreshOk = new client.Gauge({
+  name: "vault_secret_refresh_ok",
+  help: "Whether the most recent Vault fetch succeeded"
+});
+const vaultSecretRotatedAt = new client.Gauge({
+  name: "vault_secret_rotated_timestamp",
+  help: "Unix timestamp of the last secret rotation, zero if invalid"
+});
+
 module.exports = {
   register: client.register,
   httpRequestsTotal,
   httpRequestDuration,
   vaultSecretFetchTotal,
   vaultSecretFetchFailures,
-  vaultSecretLastFetch
+  vaultSecretLastFetch,
+  vaultSecretRefreshOk,
+  vaultSecretRotatedAt
 };

@@ -38,8 +38,9 @@ public class ChatRoomController {
   @GetMapping("/{roomId}/messages")
   public List<ChatMessageResponse> getRecentMessages(
       @PathVariable UUID roomId,
-      @RequestParam(defaultValue = "50") int limit
+      @RequestParam(defaultValue = "50") int limit,
+      @RequestParam(defaultValue = "") String query
   ) {
-    return chatService.getRecentMessages(roomId, limit);
+    return chatService.getRecentMessages(roomId, limit, query);
   }
 }

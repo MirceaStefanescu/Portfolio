@@ -7,6 +7,7 @@ from typing import Any
 
 from prompt_quality_safety.cache import InMemoryCache, cache_key
 from prompt_quality_safety.datasets import EvalCase, load_jsonl
+from prompt_quality_safety.graders import SemanticGrader, tool_calls
 from prompt_quality_safety.metrics import METRICS
 from prompt_quality_safety.models import ModelClient, ModelRequest
 from prompt_quality_safety.prompts import build_prompt, load_prompt
@@ -17,6 +18,7 @@ def run_suite(
     model: ModelClient,
     output_dir: Path | None = None,
     use_cache: bool = True,
+    semantic_grader: SemanticGrader | None = None,
 ) -> dict[str, Any]:
     suite_path = suite_path.resolve()
     project_root = find_project_root(suite_path)
@@ -40,7 +42,7 @@ def run_suite(
         for case in cases:
             prompt_text = build_prompt(system_prompt, case.input, case.context)
             response = _generate(model, case, prompt_text, system_prompt, cache)
-            metrics_result = _evaluate(case, response, metrics)
+            metrics_result = _evaluate(case, response, metrics, semantic_grader)
 
             record = {
                 "id": case.id,
@@ -82,10 +84,10 @@ def _generate(
     system_prompt: str,
     cache: InMemoryCache | None,
 ) -> str:
-    key = cache_key(prompt_text) if cache else None
+    key = cache_key(json.dumps([prompt_text, asdict(case)], sort_keys=True)) if cache else None
     if cache and key:
         cached = cache.get(key)
-        if cached:
+        if cached is not None:
             return cached
 
     request = ModelRequest(
@@ -101,12 +103,18 @@ def _generate(
     return response
 
 
-def _evaluate(case: EvalCase, response: str, metrics: list[str]) -> dict[str, float | None]:
+def _evaluate(
+    case: EvalCase, response: str, metrics: list[str], semantic_grader: SemanticGrader | None = None
+) -> dict[str, float | None]:
     results: dict[str, float | None] = {}
     for metric_name in metrics:
-        metric_fn = METRICS.get(metric_name)
+        metric_fn = {**METRICS, "tool_calls": tool_calls}.get(metric_name)
+        if metric_name == "semantic_similarity":
+            if semantic_grader is None:
+                raise ValueError("semantic_similarity requires an explicit embeddings grader")
+            metric_fn = semantic_grader
         if metric_fn is None:
-            results[metric_name] = None
+            raise ValueError(f"Unknown metric: {metric_name}")
         else:
             results[metric_name] = metric_fn(case, response)
     return results

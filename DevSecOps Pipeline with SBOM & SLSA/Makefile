@@ -23,6 +23,8 @@ verify:
 
 test:
 	bash scripts/test-pipeline.sh
+	python3 scripts/test-release-policy.py
+	conftest verify --policy policy/release --data policy/release/data.json
 	./scripts/pipeline.sh scan
 
 down:

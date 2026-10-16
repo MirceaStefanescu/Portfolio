@@ -2,11 +2,25 @@ server:
   port: 8081
 
 spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:file:./data/order;DB_CLOSE_ON_EXIT=FALSE}
+    username: sa
+    password: ""
   application:
     name: order-service
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    consumer:
+      group-id: order-saga
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:
+      acks: all
+      properties:
+        max.block.ms: 5000
+        delivery.timeout.ms: 10000
+        request.timeout.ms: 5000
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
@@ -20,5 +34,6 @@ management:
       application: ${spring.application.name}
 
 app:
+  inventory-url: ${INVENTORY_URL:http://localhost:8082}
   topics:
     order-created: order.created

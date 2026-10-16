@@ -31,6 +31,7 @@
   </dependencyManagement>
 
   <dependencies>
+    <dependency><groupId>com.networknt</groupId><artifactId>json-schema-validator</artifactId><version>2.0.8</version></dependency>
     <dependency>
       <groupId>org.apache.flink</groupId>
       <artifactId>flink-streaming-java</artifactId>
@@ -109,6 +110,7 @@
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.portfolio.pipeline.flink.PredictionJob</mainClass>
                 </transformer>

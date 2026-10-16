@@ -7,6 +7,7 @@ from collections.abc import Callable
 from typing import Any
 
 import pika
+import psycopg
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import KafkaError
 
@@ -31,6 +32,8 @@ def build_producer() -> KafkaProducer | None:
         bootstrap_servers=bootstrap,
         value_serializer=lambda value: json.dumps(value).encode("utf-8"),
         retries=3,
+        api_version=(3, 0, 0),
+        max_block_ms=5000,
     )
 
 
@@ -61,6 +64,10 @@ def send_payment_request(message: dict[str, Any]) -> None:
     connection = None
     try:
         params = pika.URLParameters(url)
+        params.socket_timeout = 5
+        params.stack_timeout = 7
+        params.blocked_connection_timeout = 5
+        params.connection_attempts = 1
         connection = pika.BlockingConnection(params)
         channel = connection.channel()
         channel.queue_declare(queue=queue, durable=True)
@@ -127,7 +134,7 @@ def _consumer_loop(
                             LOGGER.warning("Invalid payment event: %s", exc)
                 if batches:
                     consumer.commit()
-        except (KafkaError, OSError, sqlite3.Error) as exc:
+        except (KafkaError, OSError, sqlite3.Error, psycopg.Error) as exc:
             LOGGER.warning("Kafka consumer error: %s", exc)
         finally:
             if consumer is not None:
