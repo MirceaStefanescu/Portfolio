@@ -1,8 +1,21 @@
 # Habit Tracker & Routine Coach SaaS
 
-A complete local demonstration of habit tracking, coaching, reminders and shared
-challenges. All identities and subscription transactions are synthetic. No external
-account, card, email provider or Firebase project is required.
+## SaaS workflows and user dashboards
+
+Turn recurring user activities into a usable application with schedules, progress and collaboration.
+
+**What I can deliver:** Profiles, timezone-aware schedules, streaks, reminders, groups, exports and a simulated subscription journey.
+
+**Skills demonstrated:** React, Express, PostgreSQL, Redis, scheduling, API integration.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Habit check-in and streak tracking in the application](screenshots/action-checkin-streak.png)
+
+*Actual demonstration capture. Identities, subscriptions and notification delivery are local demonstrations with no real charges.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Run the complete application
 
@@ -140,3 +153,5 @@ Habits, reminders, groups and simulated subscription. Captured from the running 
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

@@ -1,8 +1,21 @@
 # Full Stack E-commerce Application with Angular and Spring Boot
 
-Full-stack e-commerce web app for shoppers and store owners, built as an Angular single-page application with a Spring Boot REST API and Stripe payments.
+## Web applications with a Java backend
 
-This project demonstrates an end-to-end online shop with a modern SPA UI, RESTful APIs, and external payment integration.
+Give users a complete path from registration and product browsing to checkout and order history.
+
+**What I can deliver:** An Angular interface connected to authenticated Spring Boot APIs, a persistent database and a demonstrable checkout flow.
+
+**Skills demonstrated:** Java, Spring Boot, Angular, TypeScript, SQL, JWT.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Registration and product catalog in the running application](screenshots/action-registration-catalog.png)
+
+*Actual demonstration capture. The demonstrated checkout uses simulated payments; real payment processing requires a separately configured integration.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Features
 - JWT-based authentication with bcrypt-hashed passwords
@@ -147,3 +160,5 @@ Paid simulated order after browser reload. Captured from the running local appli
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

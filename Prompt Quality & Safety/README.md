@@ -1,6 +1,21 @@
 # Prompt Quality & Safety
 
-Evidence-driven prompt engineering toolkit for teams that need safer, more reliable LLM outputs with measurable evaluations.
+## Prompt regression and safety checks
+
+Catch prompt and response regressions before changing an AI-enabled workflow.
+
+**What I can deliver:** Versioned prompt cases, output/reference checks, injection test cases, provider-adapter tests and repeatable reports.
+
+**Skills demonstrated:** Python, prompt evaluation, structured outputs, test automation.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Prompt evaluation results from an executed local run](screenshots/action-prompt-summary.png)
+
+*Actual demonstration capture. Passing the supplied cases does not guarantee safety or quality for arbitrary prompts or models.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Demo
 - Live: local demonstration; use the commands below.
@@ -88,3 +103,5 @@ dataset with the chosen real model; deterministic fixtures verify the integratio
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

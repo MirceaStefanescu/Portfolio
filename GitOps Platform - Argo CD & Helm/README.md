@@ -1,6 +1,21 @@
 # GitOps Platform - Argo CD & Helm
 
-GitOps delivery platform for platform engineers and SREs who need repeatable, auditable multi-environment microservice deployments with fast rollbacks and disaster recovery.
+## Git-based Kubernetes delivery
+
+Make deployments traceable and recover from configuration drift or an unsuccessful release.
+
+**What I can deliver:** Versioned environment configuration, Argo CD reconciliation, controlled promotion, rollback and backup/restore procedures.
+
+**Skills demonstrated:** Argo CD, Helm, Kubernetes, Terraform, Velero, Prometheus.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![DORA dashboard from the local deployment event ledger](screenshots/action-dashboard-portfolio-dora.png)
+
+*Actual demonstration capture. The deployment and recovery examples run locally; the dashboard uses a synthetic event ledger.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Features
 - Argo CD app-of-apps manages dev/staging/prod with drift detection and self-healing.
@@ -287,3 +302,5 @@ Completed. A successful object-only backup is not accepted as a data-restore tes
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

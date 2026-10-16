@@ -1,8 +1,21 @@
 # CI/CD Pipeline Automation
 
-Automated CI/CD pipeline for web teams that need repeatable builds,
-containerized releases, and zero-downtime deployments across dev, staging, and
-production environments.
+## Build and deployment automation
+
+Make application releases repeatable and give the team a documented recovery path.
+
+**What I can deliver:** Build/test pipelines, container packaging, infrastructure plan checks and demonstrated rolling, blue/green and canary releases.
+
+**Skills demonstrated:** Jenkins, Docker, Terraform, Ansible, Kubernetes, CI/CD.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../../README.md#discuss-a-project)
+
+![Running application with deployment and pipeline metadata](screenshots/action-deployment-metadata.png)
+
+*Actual demonstration capture. Release strategies are demonstrated locally; availability objectives depend on the target system and its acceptance tests.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Demo
 - Live: local demonstration; use the commands below.
@@ -242,3 +255,5 @@ for preview ownership, approximate replica weights and cleanup.
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

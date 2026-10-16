@@ -1,8 +1,21 @@
-# Observability: New Relic & Prometheus
+# Observability - New Relic & Prometheus
 
-Demonstrative observability platform with real metrics, traces, logs, synthetic probes and local paging. Two independent Prometheus writers represent two clusters on the same Docker host; no external account is required.
+## Monitoring and incident diagnosis
 
-OpenTelemetry feeds the local collector, Prometheus and Mimir retain metrics, and Grafana displays the results. The optional New Relic export configuration remains separate from the self-contained demonstration.
+Help a team see service errors, latency and resource use, then follow an alert to useful evidence.
+
+**What I can deliver:** Instrumented services, metrics/logs/traces, Grafana dashboards and tested alert delivery, retry and deduplication.
+
+**Skills demonstrated:** OpenTelemetry, Prometheus, Grafana, Mimir, logging, alerting.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Live local reliability dashboard](screenshots/action-dashboard-b52ec153-6bab-4f9b-9b8d-3f14402a072f.png)
+
+*Actual demonstration capture. The working demonstration uses local services and a local notification receiver; external New Relic or paging accounts are not used.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Features
 - OpenTelemetry SDK + Collector instrumentation for metrics and traces
@@ -161,3 +174,5 @@ Official references: [Mimir local mode](https://grafana.com/docs/mimir/latest/ge
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

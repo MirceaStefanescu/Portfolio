@@ -1,8 +1,21 @@
 # Cloud-Native E-Commerce Platform
 
-Cloud-native e-commerce platform for teams that need reliable product, order, and payment APIs with event-driven workflows.
+## Backend APIs and resilient payments
 
-This project demonstrates a production-minded microservices baseline with REST APIs, async messaging, and Kubernetes-ready operational patterns.
+Keep product, order and payment workflows consistent when messages are retried or a service restarts.
+
+**What I can deliver:** Authenticated Python APIs, persistent orders, duplicate-safe payment handling, refunds and broker recovery.
+
+**Skills demonstrated:** Python, FastAPI, PostgreSQL, Kafka, RabbitMQ, Kubernetes.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Verified broker recovery, duplicate handling and refunds](screenshots/action-cloud-recovery.png)
+
+*Actual demonstration capture. Payments are local simulations; the API and recovery checks use real local services.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Features
 - Product, order, and payment REST APIs with independent data stores
@@ -211,3 +224,5 @@ Local benchmark harness:
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

@@ -1,6 +1,21 @@
 # DevSecOps Pipeline with SBOM & SLSA
 
-Automated CI/CD pipeline template for regulated teams that need SBOMs, signed artifacts, and policy gates across AWS, Azure, and GCP.
+## Software supply chain checks
+
+Add reviewable security evidence and release gates to your build process.
+
+**What I can deliver:** Dependency inventories (SBOMs), vulnerability scans, artifact signatures and checks that reject altered releases.
+
+**Skills demonstrated:** Jenkins, Docker, SBOM, Trivy, Grype, signing, policy gates.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Actual CycloneDX inventory produced by the pipeline](screenshots/action-sbom-inventory.png)
+
+*Actual demonstration capture. This demonstrates release controls; it is not an independent security audit or a compliance certification.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Demo
 - Live: local demonstration; use the commands below.
@@ -175,3 +190,5 @@ resolved against this project. Keys and signing passwords remain local and ignor
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

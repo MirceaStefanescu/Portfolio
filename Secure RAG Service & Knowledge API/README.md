@@ -1,6 +1,21 @@
 # Secure RAG Service & Knowledge API
 
-Secure retrieval-augmented generation (RAG) microservice for platform and knowledge teams that need question answering over open-source documentation with high availability.
+## Document search and RAG APIs
+
+Give an application controlled access to answers and source retrieval from a document collection.
+
+**What I can deliver:** Authenticated ingestion and query APIs, role checks, hybrid retrieval, caching, evaluation and vector-store recovery.
+
+**Skills demonstrated:** Java, Spring Boot, JWT/RBAC, Qdrant, retrieval, Kubernetes.
+
+[Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
+
+![Successful query against the local knowledge API](screenshots/action-rag-api-05.png)
+
+*Actual demonstration capture. Answer generation uses the documented local mock; real-model quality and a customer document corpus require separate evaluation.*
+
+<details>
+<summary>Technical documentation: features, architecture, setup and tests</summary>
 
 ## Features
 - Ingests open-source documentation, chunks content, and embeds it into a replicated vector store.
@@ -209,3 +224,5 @@ the disposable application's resources; preserve real PVC data separately.
 ## Verified screenshots
 
 See the [per-function screenshot index](screenshots/README.md) for the existing local demonstration flows and their verification scope.
+
+</details>

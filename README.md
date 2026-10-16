@@ -1,50 +1,86 @@
-# Portfolio
+# Mircea Stefanescu | Java Backend & Full-Stack Development
 
-This repository contains multiple projects. Each project lives at the repository
-root in its own folder.
+**Freelance services: Java/Spring Boot APIs, system integrations, web applications and deployment automation.**
 
-## Structure
+I help teams build and maintain backend services, connect systems through APIs and events, and deliver changes with tests and operational visibility. My professional background includes enterprise Java development, release validation and production support.
 
-- `<Project Name>/` - one project per folder at the repo root
+[Find a service](#services) · [See working examples](#selected-work) · [Explore all 16 projects](#project-directory) · [Discuss a project](#discuss-a-project)
+
+## Services
+
+| What your team needs | What I can deliver | Relevant demonstration |
+| --- | --- | --- |
+| Build or repair a Java backend | REST APIs, authentication and roles, database persistence, tests and defect fixes | [Java + Angular application](<Full Stack E-commerce Application with Angular and Spring Boot/README.md>) |
+| Connect systems and asynchronous workflows | Kafka integrations, event contracts, retries, duplicate handling and recovery | [Event-driven order workflow](<Event-Driven E-Commerce Platform/README.md>) |
+| Build a web application or add live collaboration | User journeys, frontend/API integration, messaging and persistent history | [Real-time collaboration](<Real-Time Chat & Collaboration Platform/README.md>) |
+| Automate builds and releases | CI/CD pipelines, containers, infrastructure checks and documented rollback | [Deployment automation](<CI/CD Pipeline Automation/README.md>) |
+| Improve diagnosis and operations | Metrics, logs, traces, dashboards, alerts and secrets integration | [Observability](<Observability - New Relic & Prometheus/README.md>) |
+| Add document retrieval or evaluate an AI feature | RAG API integration, access control, evaluation datasets and regression reports | [Knowledge API and retrieval](<Secure RAG Service & Knowledge API/README.md>) |
+
+I can work on an existing codebase or an agreed new implementation. A typical first scope is one API/integration, a reproducible defect, one user workflow or a delivery pipeline, with acceptance criteria defined before implementation.
+
+## Selected work
+
+Start with these three examples. Each project opens with a real capture and links to the complete feature walkthrough.
+
+- **[A complete web workflow](<Full Stack E-commerce Application with Angular and Spring Boot/README.md>)** — Registration, catalog, cart, simulated checkout and persistent order history. [View captures](<Full Stack E-commerce Application with Angular and Spring Boot/screenshots/README.md>)
+- **[Reliable event-driven business logic](<Event-Driven E-Commerce Platform/README.md>)** — An order saga with successful checkout, failure handling, cancellation and compensation. [View captures](<Event-Driven E-Commerce Platform/screenshots/README.md>)
+- **[Real-time collaboration](<Real-Time Chat & Collaboration Platform/README.md>)** — Bidirectional chat, presence, typing indicators and searchable history. [View captures](<Real-Time Chat & Collaboration Platform/screenshots/README.md>)
+
+![Running Angular and Spring Boot application](<Full Stack E-commerce Application with Angular and Spring Boot/screenshots/action-registration-catalog.png>)
+
+*Actual local application capture. The checkout uses simulated payments.*
+
+## How I work
+
+1. **Clarify the outcome:** the user workflow, existing system, constraints and a testable definition of done.
+2. **Deliver a bounded change:** implementation, relevant automated tests and a reviewable demonstration.
+3. **Hand over something maintainable:** setup instructions, configuration notes, known limits and recovery steps appropriate to the scope.
+
+## Discuss a project
+
+For an initial discussion, describe the problem, the current stack, the workflow you want to improve and any deadline or integration constraints. I can then help define a practical first deliverable and how it will be verified.
+
+[Contact me on LinkedIn](https://www.linkedin.com/in/stefanescumircea) to discuss a freelance project.
+
+## Project directory
+
+Choose a capability, then open the project for its demonstration, code and setup instructions.
+
+| Capability | Project evidence |
+| --- | --- |
+| Developer self-service portal | [Automated Infrastructure & Deployment Platform](<Automated Infrastructure & Deployment Platform/README.md>) |
+| Backend APIs and resilient payments | [Cloud-Native E-Commerce Platform](<Cloud-Native E-Commerce Platform/README.md>) |
+| Software supply chain checks | [DevSecOps Pipeline with SBOM & SLSA](<DevSecOps Pipeline with SBOM & SLSA/README.md>) |
+| Java integrations and order workflows | [Event-Driven E-Commerce Platform](<Event-Driven E-Commerce Platform/README.md>) |
+| Web applications with a Java backend | [Full Stack E-commerce Application with Angular and Spring Boot](<Full Stack E-commerce Application with Angular and Spring Boot/README.md>) |
+| Git-based Kubernetes delivery | [GitOps Platform - Argo CD & Helm](<GitOps Platform - Argo CD & Helm/README.md>) |
+| SaaS workflows and user dashboards | [Habit Tracker & Routine Coach SaaS](<Habit Tracker & Routine Coach SaaS/README.md>) |
+| Kubernetes cost visibility | [Kubernetes FinOps & Cost Optimization](<Kubernetes FinOps & Cost Optimization/README.md>) |
+| Repeatable LLM evaluation | [LLMOps Evaluation Harness](<LLMOps Evaluation Harness/README.md>) |
+| Monitoring and incident diagnosis | [Observability - New Relic & Prometheus](<Observability - New Relic & Prometheus/README.md>) |
+| Streaming data and analytics APIs | [Predictive Analytics Pipeline on Kubernetes](<Predictive Analytics Pipeline on Kubernetes/README.md>) |
+| Prompt regression and safety checks | [Prompt Quality & Safety](<Prompt Quality & Safety/README.md>) |
+| Real-time collaboration features | [Real-Time Chat & Collaboration Platform](<Real-Time Chat & Collaboration Platform/README.md>) |
+| Document search and RAG APIs | [Secure RAG Service & Knowledge API](<Secure RAG Service & Knowledge API/README.md>) |
+| Application secrets and operational visibility | [Secure Secrets Management & Observability Toolkit](<Secure Secrets Management & Observability Toolkit/README.md>) |
+| Build and deployment automation | [CI/CD Pipeline Automation](<CI/CD Pipeline Automation/README.md>) |
+
+## What the portfolio proves
+
+These are standalone portfolio demonstrations, not customer case studies. The projects contain runnable code, tests and **177 feature captures across 16 projects**, with a screenshot index in every project. Captures distinguish browser views, API responses, command-line output and reused execution evidence.
+
+Payments, subscriptions, identity providers, notifications and cloud-region examples use explicit local simulations or fixtures. AI fixtures verify integration and evaluation behavior, not the quality of an arbitrary model. Production deployment and live provider integrations require project-specific configuration and validation. No customer revenue, cost savings, uptime guarantee or compliance certification is claimed.
+
+<details>
+<summary>Developer reference: run the demos, compatibility, checks and contribution guidelines</summary>
 
 ## Portfolio launcher
-- Run: `./portfolio-launcher.sh --list`
-- Presets: `./portfolio-launcher.sh --presets`
-- Runbook: `PORTFOLIO_RUNBOOK.md`
 
-## Project Guidelines
-
-- Each project includes a `README.md` with:
-  - short description
-  - tech stack
-  - current status
-  - how to run/build/test
-- Project directories are self-contained.
-- Store project screenshots in `screenshots/` at the project root; retain `.gitkeep` when the directory has no images.
-- If a project has separate apps, subfolders are used such as:
-  - `frontend/`
-  - `backend/`
-  - `infra/`
-  - `docs/`
-
-## Current Projects
-
-- `Automated Infrastructure & Deployment Platform` - self-service platform for infra provisioning and CI/CD templates.
-- `Full Stack E-commerce Application with Angular and Spring Boot` - Angular + Spring Boot e-commerce with payments and auth.
-- `Predictive Analytics Pipeline on Kubernetes` - Kafka/Flink streaming analytics with Postgres/Elasticsearch and Grafana.
-- `Real-Time Chat & Collaboration Platform` - Spring Boot + Angular chat with Kafka, OAuth, and observability.
-- `Event-Driven E-Commerce Platform` - event-driven microservices on Spring Boot, Kafka, and AWS EKS.
-- `Secure Secrets Management & Observability Toolkit` - Vault, Elasticsearch/Kibana, Prometheus, and Grafana with Terraform automation.
-- `Secure RAG Service & Knowledge API` - secure RAG microservice with Spring Boot, JWT/RBAC, Qdrant, Kubernetes/Helm, and mock LLM generation for local demos.
-- `Prompt Quality & Safety` - prompt engineering toolkit with guardrails, injection tests, and eval metrics.
-- `Kubernetes FinOps & Cost Optimization` - multi-cloud FinOps framework using Kubecost/OpenCost, autoscaling, and New Relic dashboards.
-- `GitOps Platform - Argo CD & Helm` - GitOps delivery platform for multi-environment deployments with Argo CD, Helm, and Terraform.
-- `Observability - New Relic & Prometheus` - production-grade observability stack with OpenTelemetry, Prometheus, Grafana, and New Relic across multi-cloud Kubernetes.
-- `Cloud-Native E-Commerce Platform` - microservices on Kubernetes with Kafka/RabbitMQ, Jenkins, Terraform, Grafana, and Kibana.
-- `DevSecOps Pipeline with SBOM & SLSA` - automated CI/CD pipeline with SBOMs, scanning, signing, and policy gates for supply-chain security.
-- `CI/CD Pipeline Automation` - automated CI/CD pipeline for web apps with Jenkins, Docker, Terraform, Ansible, and Kubernetes.
-- `LLMOps Evaluation Harness` - evaluation harness for LLM quality checks with metrics, run artifacts, and CI integration.
-- `Habit Tracker & Routine Coach SaaS` - React and Express habit-tracking demonstration with persistent data, reminders, groups and simulated subscriptions.
+- List entry points: `./portfolio-launcher.sh --list`
+- Show presets: `./portfolio-launcher.sh --presets`
+- Read the [runbook](PORTFOLIO_RUNBOOK.md).
+- Keep project captures in each project's root `screenshots/` directory.
 
 ## Repository checks and maintenance
 
@@ -152,3 +188,5 @@ or provider accounts. Model evaluation fixtures prove code/transport behavior, n
 arbitrary model quality. Production availability, real cloud billing and live
 provider accounts require their own configuration and verification. Retention
 settings do not prove that the configured number of days has elapsed.
+
+</details>
