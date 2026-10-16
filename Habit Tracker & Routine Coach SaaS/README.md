@@ -20,6 +20,9 @@ with BullMQ and an OpenTelemetry collector. Only the application publishes a por
 on loopback. PostgreSQL and Redis use named volumes. `docker compose down` stops the
 demo and preserves those volumes; add `--volumes` only to deliberately reset its data.
 Local database credentials are demonstration values, not production credentials.
+Each application process limits clients to 240 requests per minute, including
+frontend requests; excess traffic returns HTTP 429 with `Retry-After`. Health
+checks and CORS preflight remain available. The local counter is per process.
 
 ## Features
 

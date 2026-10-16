@@ -1,6 +1,7 @@
 const { createHash, randomBytes } = require("node:crypto");
 const oidc = require("openid-client");
 const { EncryptJWT, jwtDecrypt } = require("jose");
+const { rateLimit } = require("express-rate-limit");
 
 const asyncRoute = handler => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 const loopback = url => ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
@@ -32,6 +33,9 @@ function installAccess(app, options = settings()) {
   const key = createHash("sha256").update(options.secret).digest();
   const prefix = publicUrl.protocol === "https:" ? "__Host-portal-" : "portal-";
   const cookieOptions = {httpOnly: true, secure: publicUrl.protocol === "https:", sameSite: "lax", path: "/"};
+  const authenticationLimit = rateLimit({windowMs: 10 * 60 * 1000, limit: 60,
+    standardHeaders: "draft-8", legacyHeaders: false,
+    message: {error: "Too many sign-in attempts; retry after the indicated delay"}});
   let discovery;
   function configuration() {
     if (!discovery) discovery = oidc.discovery(issuer, options.clientId,
@@ -53,7 +57,7 @@ function installAccess(app, options = settings()) {
       keyManagementAlgorithms: ["dir"], contentEncryptionAlgorithms: ["A256GCM"]})).payload; }
     catch { return null; }
   }
-  app.get("/auth/login", asyncRoute(async (req, res) => {
+  app.get("/auth/login", authenticationLimit, asyncRoute(async (req, res) => {
     try {
       const config = await configuration();
       const verifier = oidc.randomPKCECodeVerifier(), state = oidc.randomState(), nonce = oidc.randomNonce();
@@ -63,7 +67,7 @@ function installAccess(app, options = settings()) {
         code_challenge: await oidc.calculatePKCECodeChallenge(verifier), code_challenge_method: "S256", state, nonce}).href);
     } catch { res.status(503).json({error: "Identity provider unavailable"}); }
   }));
-  app.get("/auth/callback", asyncRoute(async (req, res) => {
+  app.get("/auth/callback", authenticationLimit, asyncRoute(async (req, res) => {
     const flow = await read(req, "flow");
     res.clearCookie(prefix + "flow", cookieOptions);
     res.set("Cache-Control", "no-store");

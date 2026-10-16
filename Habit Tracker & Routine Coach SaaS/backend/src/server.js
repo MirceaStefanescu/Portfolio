@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const { rateLimit } = require("express-rate-limit");
 const { randomUUID, randomBytes, createHash, createHmac, timingSafeEqual } = require("node:crypto");
 const domain = require("./domain");
 const { MemoryStore, SQLiteStore, PostgresStore } = require("./store");
@@ -45,6 +46,9 @@ function createApp({ corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5
   } catch { throw new TypeError("CORS_ORIGIN must be one exact HTTP(S) origin without credentials, path, query, fragment, or wildcard."); }
   const app = express(); app.disable("x-powered-by");
   app.use(cors({ origin: [allowedOrigin] }));
+  app.use(rateLimit({windowMs: 60 * 1000, limit: 240, standardHeaders: "draft-8", legacyHeaders: false,
+    skip: req => req.method === "OPTIONS" || req.path === "/api/health",
+    message: {error: "Too many requests; retry after the indicated delay"}}));
   if (tracing) app.use(tracing.middleware);
   app.post("/api/billing/webhook", express.raw({ type: "application/json", limit: "32kb" }), async (req, res, next) => {
     try {

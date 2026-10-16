@@ -101,6 +101,10 @@ make test
 ## Security
 Secrets: use `.env` (see `.env.example`). Vault handles runtime secret injection. Threat model basics live in `docs/threat-model.md`. Security policy is in `SECURITY.md`. Enable secret scanning in GitHub; Dependabot config lives in `.github/dependabot.yml`.
 
+OIDC login and callback share a per-client limit of 60 requests per ten minutes.
+Excess attempts return HTTP 429 with `Retry-After`. The counter is local to each
+portal process; deployments with multiple instances need a shared limiter store.
+
 ## Notes / limitations
 - Status: MVP prototype focused on template generation and local demos.
 - Terraform modules are illustrative and do not target a specific cloud by default.
