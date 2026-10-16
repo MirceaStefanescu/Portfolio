@@ -9,16 +9,16 @@ Automated Infrastructure & Deployment Platform is an internal developer platform
 - Live: TBD
 - Video or GIF: TBD
 - Screenshots:
-  - `docs/screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt6ecwvwzf7axpd3xy0.png`
-  - `docs/screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt7f1ztphzn9c0kwrpe.png`
-  - `docs/screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt8ej1bwxq5hnkrmjps.png`
-  - `docs/screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt9eg4rs8rzdwstz937.png`
+  - `screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt6ecwvwzf7axpd3xy0.png`
+  - `screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt7f1ztphzn9c0kwrpe.png`
+  - `screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt8ej1bwxq5hnkrmjps.png`
+  - `screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt9eg4rs8rzdwstz937.png`
 - Local: http://localhost:8080 (after `make dev`)
 
-![Portal UI 01](<docs/screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt6ecwvwzf7axpd3xy0.png>)
-![Portal UI 02](<docs/screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt7f1ztphzn9c0kwrpe.png>)
-![Portal UI 03](<docs/screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt8ej1bwxq5hnkrmjps.png>)
-![Portal UI 04](<docs/screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt9eg4rs8rzdwstz937.png>)
+![Portal UI 01](<screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt6ecwvwzf7axpd3xy0.png>)
+![Portal UI 02](<screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt7f1ztphzn9c0kwrpe.png>)
+![Portal UI 03](<screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt8ej1bwxq5hnkrmjps.png>)
+![Portal UI 04](<screenshots/20251228_1728_Automated Deployment Hub_simple_compose_01kdjs4gt9eg4rs8rzdwstz937.png>)
 
 ## Why this exists
 Teams lose days to manual infrastructure setup, one-off pipeline scripts, and inconsistent deployment patterns. This platform standardizes the workflow so new services can go from request to pipeline and infra templates in minutes, cutting onboarding time, reducing drift, and making audits easier.

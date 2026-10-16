@@ -22,15 +22,15 @@ Real-time chat and collaboration platform for product teams that need low-latenc
 - Live: TBD
 - Video or GIF: TBD
 - Screenshots:
-  - `docs/screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact1eb99x46tmvcat4wr.png`
-  - `docs/screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact2e4wv1gne7zp7nser.png`
-  - `docs/screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact3fvaa1wr0wz4zh06e.png`
-  - `docs/screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact4eh9a76psm08a3t61.png`
+  - `screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact1eb99x46tmvcat4wr.png`
+  - `screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact2e4wv1gne7zp7nser.png`
+  - `screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact3fvaa1wr0wz4zh06e.png`
+  - `screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact4eh9a76psm08a3t61.png`
 
-![Collaboration UI 01](<docs/screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact1eb99x46tmvcat4wr.png>)
-![Collaboration UI 02](<docs/screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact2e4wv1gne7zp7nser.png>)
-![Collaboration UI 03](<docs/screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact3fvaa1wr0wz4zh06e.png>)
-![Collaboration UI 04](<docs/screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact4eh9a76psm08a3t61.png>)
+![Collaboration UI 01](<screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact1eb99x46tmvcat4wr.png>)
+![Collaboration UI 02](<screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact2e4wv1gne7zp7nser.png>)
+![Collaboration UI 03](<screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact3fvaa1wr0wz4zh06e.png>)
+![Collaboration UI 04](<screenshots/20251228_1749_Collaboration Platform Overview_simple_compose_01kdjtact4eh9a76psm08a3t61.png>)
 
 ## Quickstart (local)
 Prereqs:

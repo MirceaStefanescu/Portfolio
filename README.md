@@ -20,6 +20,7 @@ root in its own folder.
   - current status
   - how to run/build/test
 - Project directories are self-contained.
+- Store project screenshots in `screenshots/` at the project root; retain `.gitkeep` when the directory has no images.
 - If a project has separate apps, subfolders are used such as:
   - `frontend/`
   - `backend/`
