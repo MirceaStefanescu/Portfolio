@@ -4,7 +4,7 @@
 
 I help teams build and maintain backend services, connect systems through APIs and events, and deliver changes with tests and operational visibility. My professional background includes enterprise Java development, release validation and production support.
 
-[Find a service](#services) · [See working examples](#selected-work) · [Explore all 16 projects](#project-directory) · [Discuss a project](#discuss-a-project)
+[Full service catalog and rates](SERVICES.md) · [Find a service](#services) · [See working examples](#selected-work) · [Explore all 16 projects](#project-directory) · [Discuss a project](#discuss-a-project)
 
 ## Services
 
