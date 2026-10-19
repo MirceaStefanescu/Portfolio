@@ -6,7 +6,7 @@ Coordinate checkout, inventory, payments and delivery across asynchronous servic
 
 **What I can deliver:** Spring Boot APIs and Kafka workflows with order history, compensation, simulated refunds and an operator-visible event trail.
 
-**Skills demonstrated:** Java, Spring Boot, Kafka, PostgreSQL, Schema Registry, Terraform.
+**Skills demonstrated:** Java, Spring Boot, Kafka, H2, Schema Registry, Terraform.
 
 [Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
 

@@ -157,7 +157,7 @@ These **16 portfolio demonstrations** show implemented capabilities and real loc
 
 **What I can deliver:** Kafka integrations, event contracts, order and inventory APIs, idempotent processing, saga compensation and tests.
 
-**Technology:** Java, Spring Boot, Kafka, Schema Registry, PostgreSQL.
+**Technology:** Java, Spring Boot, Kafka, Schema Registry, H2.
 
 [Event-Driven E-Commerce Platform](<Event-Driven E-Commerce Platform/README.md>) · [Full demonstration gallery](<Event-Driven E-Commerce Platform/screenshots/README.md>)
 
@@ -419,3 +419,4 @@ These **16 portfolio demonstrations** show implemented capabilities and real loc
 Tell me what needs to change and which example is closest to your project. I will help define a practical first scope and how its result will be checked.
 
 [Email Mircea Stefanescu](mailto:stefanescumircea1990@gmail.com).
+
