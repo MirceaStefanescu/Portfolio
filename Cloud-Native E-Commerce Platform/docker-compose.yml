@@ -69,7 +69,7 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
 
   kafka:
-    image: confluentinc/cp-kafka:7.9.10
+    image: confluentinc/cp-kafka:8.3.2
     depends_on:
       - zookeeper
     ports:
