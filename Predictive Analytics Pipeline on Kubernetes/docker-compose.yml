@@ -59,7 +59,7 @@ services:
       - ./otel-collector.yml:/etc/otelcol/config.yml:ro
 
   postgres:
-    image: postgres:15
+    image: postgres:18
     ports:
       - "127.0.0.1:5433:5432"
     environment:
