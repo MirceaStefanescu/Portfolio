@@ -1,6 +1,6 @@
 services:
   mimir:
-    image: grafana/mimir:3.2.0
+    image: grafana/mimir:3.2.2
     command: ["-config.file=/etc/mimir/mimir.yml"]
     volumes:
       - ./mimir/mimir.yml:/etc/mimir/mimir.yml:ro
@@ -34,7 +34,7 @@ services:
       - "127.0.0.1:8088:8088"
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.162.0
+    image: otel/opentelemetry-collector-contrib:0.163.1
     command: ["--config=/etc/otel-collector/${OTEL_COLLECTOR_CONFIG:-config.yaml}"]
     volumes:
       - ./otel-collector:/etc/otel-collector:ro
@@ -46,7 +46,7 @@ services:
       - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY:-}
 
   telemetrygen-traces:
-    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.162.0
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.163.0
     command:
       [
         "traces",
@@ -67,7 +67,7 @@ services:
     restart: unless-stopped
 
   telemetrygen-metrics:
-    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.162.0
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.163.0
     command:
       [
         "metrics",
@@ -109,7 +109,7 @@ services:
       - "127.0.0.1:9093:9093"
 
   grafana:
-    image: grafana/grafana:13.2.3
+    image: grafana/grafana:13.2.4
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin

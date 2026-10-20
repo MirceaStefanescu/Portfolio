@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/nginx@sha256:bbed24ea6459404aeaf23edca30844092adee4d6059808cda5ebf9456a43d874
+FROM cgr.dev/chainguard/nginx@sha256:2031a31bfd755368f6778cf6b295afe83ceb4018d176868698a9db9f811f9bc9
 WORKDIR /app
 COPY index.html /usr/share/nginx/html/index.html
 EXPOSE 8080
