@@ -21,7 +21,7 @@ services:
     image: redis:7-alpine
 
   postgres-products:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_DB: products
       POSTGRES_USER: products
@@ -35,7 +35,7 @@ services:
       retries: 30
 
   postgres-orders:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_DB: orders
       POSTGRES_USER: orders
@@ -49,7 +49,7 @@ services:
       retries: 30
 
   postgres-payments:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_DB: payments
       POSTGRES_USER: payments
