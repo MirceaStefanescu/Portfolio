@@ -234,7 +234,8 @@ def predictive(ports, command):
     empty = successful(port, "/api/predictions/search?q=sensor&limit=5")
     assert empty["hits"]["total"]["value"] == 0
     registry = ports["schema-registry"][8081]
-    assert "events-value" in successful(registry, "/subjects")
+    # The HTTP server can answer before the ApplicationRunner registers the schema.
+    wait(lambda: "events-value" in successful(registry, "/subjects"), "Predictive event schema")
     for invalid in ({"eventType": "sensor", "value": None}, {"eventType": "sensor", "value": 1000001},
                     {"eventType": "bad type", "value": 1}, {"eventType": "sensor", "value": 1, "timestamp": "1970-01-01T00:00:00Z"}):
         assert http(port, "/api/events", invalid)[0] == 400, invalid
