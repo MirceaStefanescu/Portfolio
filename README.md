@@ -87,7 +87,16 @@ Payments, subscriptions, identity providers, notifications and cloud-region exam
 Portfolio CI runs the shared checks and publishes a single Portfolio status
 result for branch protection. Dependabot is configured in the root
 .github/dependabot.yml for the monorepo; nested configurations are examples for
-standalone projects.
+standalone projects. Automatic version-update pull requests are paused with an
+open-pull-requests limit of zero. Security alerts and security-update pull
+requests remain enabled; branch protection and required checks still apply.
+Dependency changes are reconciled during maintenance before their branches are
+removed.
+
+The public [service catalog](https://mirceastefanescu.github.io/Portfolio/) is
+maintained in `docs/` on `main`. GitHub Pages publishes `main` with the `/docs`
+source folder. Changes must pass the normal protected-main review and checks;
+there is no separate deployment branch.
 
 See [Contributing](CONTRIBUTING.md) and [Security policy](SECURITY.md).
 Each project's LICENSE applies to that project.
@@ -100,7 +109,7 @@ The October 2026 compatibility checks use these stable versions in CI and contai
 
 | Components | Build and runtime |
 | --- | --- |
-| JavaScript/TypeScript applications | Node.js 26.11.1; Angular 22.2.2 uses TypeScript 6.0 |
+| JavaScript/TypeScript applications | Node.js 26.11.1 in CI, 26.12.0 in updated container images; Angular 22.2.3 uses TypeScript 6.0 |
 | Python services and evaluation tools | Python 3.15 |
 | Full Stack E-commerce backend (Spring Boot 4.1) | Java 26 |
 | Spring Boot 3.5 services | Java 25 |
@@ -111,15 +120,22 @@ and [Spring Boot 3.5 supports through Java 25](https://docs.spring.io/spring-boo
 Keep builder, compiler target and runtime compatible. Flink language upgrades require
 upgrading and testing the Flink runtime and its version-matched connectors together;
 a JDBC connector for Flink 1.20 is not an isolated update for the 1.17 runtime.
+The Flink job keeps JSON Schema Validator 2.x, which supports Java 11; validator
+3.x requires Java 17 and Jackson 3. The inventory service also retains 2.x until
+its malformed-payload exception contract is adapted and tested. The order
+service and predictive API use the tested 3.x line.
 
 ### Compose dependency compatibility
 
-The Compose demos use Confluent Kafka and ZooKeeper 7.9.10 together, Vault 2.1.2,
-Qdrant 1.19.2 and Grafana 13.2.3 where compatible. Confluent 7.9 is the last series
+The Compose demos use Confluent Kafka and ZooKeeper 7.9.10 together, Vault 2.2.0,
+Qdrant 1.19.2 and Grafana 13.2.4 where compatible. Confluent 7.9 is the last series
 that supports the existing ZooKeeper topology; upgrading to 8 requires a KRaft
 migration. Predictive Analytics retains Grafana 10.2.0 because its existing image
 renderer needs a coordinated authentication upgrade before Grafana 13 can start.
 A tag-only update of that stack is not supported.
+PostgreSQL remains on version 15 for the existing persistent-volume layout.
+Moving to version 18 requires an explicit data migration and the new
+`/var/lib/postgresql` volume layout; changing the image tag alone is insufficient.
 
 The OpenTelemetry Collector uses the `debug` exporter and explicit container
 receiver endpoints. `make test` in Observability validates the images selected by

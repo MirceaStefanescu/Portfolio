@@ -1,10 +1,12 @@
+# Version updates are reconciled during maintenance on main. Security updates
+# and alerts remain enabled; their PR branches require reconciliation before deletion.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
 
   - package-ecosystem: npm
     directories:
@@ -17,7 +19,7 @@ updates:
       - "/Secure Secrets Management & Observability Toolkit/app"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       compatible-updates:
         patterns: ['*']
@@ -37,7 +39,7 @@ updates:
       - "/Secure RAG Service & Knowledge API/api"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       compatible-updates:
         patterns: ['*']
@@ -55,7 +57,7 @@ updates:
       - "/Prompt Quality & Safety"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       compatible-updates:
         patterns: ['*']
@@ -84,7 +86,7 @@ updates:
       - "/Secure Secrets Management & Observability Toolkit/app"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       compatible-updates:
         patterns: ['*']
@@ -110,7 +112,7 @@ updates:
       - "/Secure Secrets Management & Observability Toolkit/terraform/modules/vault-policy"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       compatible-updates:
         patterns: ['*']
@@ -134,7 +136,7 @@ updates:
       - "/Secure Secrets Management & Observability Toolkit"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       compatible-updates:
         patterns: ['*']
@@ -148,7 +150,7 @@ updates:
     directory: "/GitOps Platform - Argo CD & Helm/charts/platform-service"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       compatible-updates:
         patterns: ['*']
