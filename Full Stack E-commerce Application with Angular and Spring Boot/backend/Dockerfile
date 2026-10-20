@@ -5,7 +5,7 @@ RUN mvn -B -DskipTests dependency:go-offline
 COPY src src
 RUN mvn -B -DskipTests package
 
-FROM eclipse-temurin:26-jre
+FROM eclipse-temurin:27-jre
 WORKDIR /app
 ARG JAR_FILE=target/ecommerce-0.0.1-SNAPSHOT.jar
 COPY --from=build /app/${JAR_FILE} app.jar
