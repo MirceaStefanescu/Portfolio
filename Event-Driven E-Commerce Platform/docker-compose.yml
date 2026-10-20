@@ -11,7 +11,7 @@ services:
       - "127.0.0.1:2182:2181"
 
   kafka:
-    image: confluentinc/cp-kafka:7.9.10
+    image: confluentinc/cp-kafka:8.3.2
     depends_on:
       - zookeeper
     environment:
