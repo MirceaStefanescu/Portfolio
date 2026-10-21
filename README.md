@@ -4,7 +4,50 @@
 
 I help teams build and maintain backend services, connect systems through APIs and events, and deliver changes with tests and operational visibility. My professional background includes enterprise Java development, release validation and production support.
 
-[Full service catalog and rates](SERVICES.md) · [Find a service](#services) · [See working examples](#selected-work) · [Explore all 16 projects](#project-directory) · [Discuss a project](#discuss-a-project)
+[Full service catalog and rates](SERVICES.md) · [See working examples](#selected-work) · [Run one demo](#run-one-demo) · [Explore all 16 projects](#project-directory) · [Discuss a project](#discuss-a-project)
+
+This repository helps technical reviewers inspect a working example before discussing
+a change to their own system. Choose one project, follow its feature captures, then
+reproduce its checks. Each example is independent; running the entire collection is
+unnecessary. The [public catalog](https://mirceastefanescu.github.io/Portfolio/)
+provides screenshots and links without requiring a local installation.
+
+## Run one demo
+
+For a first run, use the developer portal. It checks four local service
+integrations and template generation with synthetic local data. You need **Git,
+Python 3.11 or newer, and a running Docker engine using Linux containers with
+Docker Compose v2 or newer**. The Python verifier uses only the standard library;
+no Python package installation, cloud account or API key is needed.
+
+```sh
+git clone https://github.com/MirceaStefanescu/Portfolio.git
+cd Portfolio
+python scripts/demo-check.py portal --keep
+```
+
+Use `python3` if that is your Python command. Run the command from the repository
+root. The first run downloads container images and builds the application; its
+duration depends on the machine, connection and image cache.
+
+A successful run prints a JSON result with `"status": "PASS"`, the individual
+checks and `checks.browser_url`. Open that URL to explore the portal. The verifier
+uses a unique Compose project, fresh data and random loopback ports, so it can run
+without replacing an existing stack. Copy the **exact cleanup command printed at
+the end** when finished; it removes only that disposable demo and its data.
+
+For an automated check that cleans up on completion, omit `--keep`:
+
+```sh
+python scripts/demo-check.py portal
+```
+
+If the Docker connection fails, start the engine and check `docker info` and
+`docker compose version`. A failed check is not a successful demo: inspect the
+`startup.log` or `runtime.log` in the printed verification directory. Start with
+one stack and its own README before trying the other
+[documented scenarios](#runnable-demonstrations). These are local demonstrations;
+their [production and provider limits](#what-the-portfolio-proves) remain explicit.
 
 ## Services
 
