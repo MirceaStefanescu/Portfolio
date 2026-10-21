@@ -65,6 +65,38 @@ def run(command, *, env=None, timeout=300, input_text=None):
     return result.stdout
 
 
+def check_prerequisites():
+    """Check the selected Docker installation without creating demo resources."""
+    if not DOCKER:
+        raise RuntimeError("Docker was not found on PATH. Install Docker and open a new terminal.")
+    try:
+        version = run([DOCKER, "compose", "version", "--short"], timeout=15).strip()
+        config_help = run([DOCKER, "compose", "config", "--help"], timeout=15)
+    except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+        raise RuntimeError(
+            "Docker Compose is unavailable. Install or update the Compose plugin, "
+            "then check 'docker compose version'."
+        ) from error
+    if "--no-env-resolution" not in config_help:
+        raise RuntimeError(
+            "Docker Compose is too old for this demo. Update the Compose plugin; "
+            "'docker compose config --help' must list --no-env-resolution."
+        )
+    try:
+        engine_os = run([DOCKER, "info", "--format", "{{.OSType}}"], timeout=15).strip()
+    except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+        raise RuntimeError(
+            "The Docker engine is unavailable. Start the engine and check 'docker info' "
+            "and 'docker context show' in this terminal."
+        ) from error
+    if engine_os != "linux":
+        raise RuntimeError(
+            "This demo requires Linux containers. Select a Linux Docker engine "
+            "and confirm that 'docker info --format {{.OSType}}' prints linux."
+        )
+    return {"compose_version": version, "container_os": engine_os}
+
+
 def http(port, path="/", body=None, *, headers=None, opener=None, timeout=8, method=None):
     request = urllib.request.Request(
         f"http://127.0.0.1:{port}{path}",
@@ -573,10 +605,18 @@ def rag(ports, command, dev_key):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("project", choices=PROJECTS)
-    parser.add_argument("--keep", action="store_true", help="Keep a successful demo; print its exact cleanup command")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--keep", action="store_true", help="Keep a successful demo; print its exact cleanup command")
+    mode.add_argument("--check", action="store_true", help="Check prerequisites only; do not build or start containers")
     args = parser.parse_args()
-    if not DOCKER:
-        parser.error("Docker was not found on PATH")
+    try:
+        prerequisites = check_prerequisites()
+    except RuntimeError as error:
+        parser.error(str(error))
+    if args.check:
+        print(json.dumps({"project": args.project, "status": "READY", "checks": prerequisites,
+                          "scope": "Prerequisites only; the demo has not been executed."}, indent=2))
+        return
     workspace = Path(tempfile.mkdtemp(prefix=f"portfolio-demo-{args.project}-"))
     project = f"portfolio-demo-{args.project}-{uuid.uuid4().hex[:8]}"
     empty_env = workspace / "empty.env"

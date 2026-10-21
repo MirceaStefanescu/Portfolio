@@ -151,6 +151,7 @@ jobs:
       - name: Prepare documented Chat environment example
         run: cp "Real-Time Chat & Collaboration Platform/.env.example" "Real-Time Chat & Collaboration Platform/.env"
       - run: python tests/test-compose-ports.py
+      - run: python tests/test-demo-check.py
       - run: bash tests/test-portfolio-launcher.sh
       - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promote.sh"
       - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promotion-pr.sh"
