@@ -1,0 +1,92 @@
+name: Portfolio Sonar baseline
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portfolio-sonar-main
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: >-
+      github.repository == 'MirceaStefanescu/Portfolio' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.15'
+      - id: plan
+        shell: bash
+        run: |
+          echo "matrix=$(python scripts/sonar-baseline.py plan)" >> "$GITHUB_OUTPUT"
+
+  analyze:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    name: Sonar / ${{ matrix.id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.15'
+
+      - if: matrix.node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '26.11.1'
+
+      - if: matrix.jdk != ''
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.jdk }}
+
+      - name: Generate coverage and scope manifest
+        id: reports
+        run: python scripts/sonar-baseline.py reports "${{ matrix.id }}"
+
+      - name: Analyze Maven module
+        if: matrix.jdk != ''
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: python scripts/sonar-baseline.py sonar-java "${{ matrix.id }}"
+
+      - name: Analyze static scope
+        if: matrix.jdk == ''
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >-
+            -Dproject.settings=${{ steps.reports.outputs.properties }}
+
+      - name: Retain coverage evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sonar-${{ matrix.id }}-${{ github.sha }}
+          path: analysis-reports/${{ matrix.id }}/
+          retention-days: 7
+          if-no-files-found: error
