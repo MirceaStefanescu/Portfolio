@@ -42,6 +42,17 @@ For an automated check that cleans up on completion, omit `--keep`:
 python scripts/demo-check.py portal
 ```
 
+To check prerequisites without downloading images, building or starting containers:
+
+```sh
+python scripts/demo-check.py portal --check
+```
+
+`READY` confirms only Docker/Compose availability and a Linux container engine;
+it does not mean the demo has passed. Every normal run performs the same checks
+before creating its workspace. Compose must support `config --no-env-resolution`;
+an older plugin produces an update instruction before the demo starts.
+
 If the Docker connection fails, start the engine and check `docker info` and
 `docker compose version`. A failed check is not a successful demo: inspect the
 `startup.log` or `runtime.log` in the printed verification directory. Start with
