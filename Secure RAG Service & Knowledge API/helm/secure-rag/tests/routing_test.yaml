@@ -1,0 +1,107 @@
+{
+  "suite": "Secure RAG routing behavior",
+  "templates": [
+    "service.yaml",
+    "serviceaccount.yaml"
+  ],
+  "release": {
+    "name": "audit"
+  },
+  "tests": [
+    {
+      "it": "route the service to this release on the named HTTP port",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.selector",
+            "value": {
+              "app.kubernetes.io/name": "secure-rag",
+              "app.kubernetes.io/instance": "audit"
+            }
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.ports[0]",
+            "value": {
+              "name": "http",
+              "port": 80,
+              "targetPort": "http",
+              "protocol": "TCP"
+            }
+          }
+        }
+      ],
+      "template": "service.yaml"
+    },
+    {
+      "it": "honor service type and port overrides",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.type",
+            "value": "NodePort"
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.ports[0].port",
+            "value": 8090
+          }
+        }
+      ],
+      "set": {
+        "service.type": "NodePort",
+        "service.port": 8090
+      },
+      "template": "service.yaml"
+    },
+    {
+      "it": "create the default release account",
+      "asserts": [
+        {
+          "equal": {
+            "path": "metadata.name",
+            "value": "audit-secure-rag"
+          }
+        },
+        {
+          "isKind": {
+            "of": "ServiceAccount"
+          }
+        }
+      ],
+      "template": "serviceaccount.yaml"
+    },
+    {
+      "it": "create a named service account",
+      "asserts": [
+        {
+          "equal": {
+            "path": "metadata.name",
+            "value": "audit-account"
+          }
+        }
+      ],
+      "set": {
+        "serviceAccount.name": "audit-account"
+      },
+      "template": "serviceaccount.yaml"
+    },
+    {
+      "it": "leave an externally managed account untouched",
+      "asserts": [
+        {
+          "hasDocuments": {
+            "count": 0
+          }
+        }
+      ],
+      "set": {
+        "serviceAccount.create": false,
+        "serviceAccount.name": "external-account"
+      },
+      "template": "serviceaccount.yaml"
+    }
+  ]
+}

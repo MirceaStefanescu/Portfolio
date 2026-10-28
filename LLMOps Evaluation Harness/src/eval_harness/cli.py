@@ -49,14 +49,21 @@ def build_task(args: argparse.Namespace) -> TaskConfig:
     if args.task:
         task_path = Path(args.task).resolve()
         payload = load_task_config(task_path)
-        return TaskConfig.from_dict(payload, task_path.parent)
+        task = TaskConfig.from_dict(payload, task_path.parent)
+        if args.metrics is not None:
+            task.metrics = args.metrics
+        if args.prompt_template is not None:
+            task.prompt_template = args.prompt_template
+        return task
 
     if not args.dataset:
         raise SystemExit("Either --task or --dataset must be provided.")
 
     dataset_path = Path(args.dataset).resolve()
     metrics = args.metrics or ["accuracy"]
-    prompt_template = args.prompt_template or DEFAULT_PROMPT_TEMPLATE
+    prompt_template = (
+        args.prompt_template if args.prompt_template is not None else DEFAULT_PROMPT_TEMPLATE
+    )
     return TaskConfig(
         name=dataset_path.stem,
         dataset_path=dataset_path,

@@ -245,7 +245,10 @@ async function fetchWithTimeout(url, timeoutMs) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { signal: controller.signal });
+    const response = await fetch(url, { signal: controller.signal });
+    // Health probes only need status; release even an unfinished response body.
+    await response.body?.cancel();
+    return response;
   } finally {
     clearTimeout(timeout);
   }

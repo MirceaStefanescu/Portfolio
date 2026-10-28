@@ -8,6 +8,7 @@ import com.portfolio.securerag.model.RetrievedChunk;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -44,10 +45,12 @@ public class QdrantClient {
     public void ensureCollectionReady() {
         int attempts = 0;
         while (attempts < 10) {
+            checkInterrupted();
             try {
                 getCollection();
                 return;
             } catch (HttpClientErrorException.NotFound notFound) {
+                checkInterrupted();
                 try {
                     createCollection();
                     return;
@@ -112,8 +115,10 @@ public class QdrantClient {
     /** Read the complete bounded corpus; never silently rank a truncated subset. */
     public List<RetrievedChunk> lexicalCorpus() {
         var chunks = new ArrayList<RetrievedChunk>();
+        var seenOffsets = new HashSet<JsonNode>();
         JsonNode offset = null;
         do {
+            checkInterrupted();
             var body = new HashMap<String, Object>();
             body.put("limit", 256); body.put("with_payload", true); body.put("with_vector", false);
             if (offset != null) body.put("offset", offset);
@@ -130,7 +135,11 @@ public class QdrantClient {
             }
             if (chunks.size() > 10000) throw new IllegalStateException("Local BM25 corpus limit is 10000 chunks");
             offset = response.path("result").get("next_page_offset");
+            if (offset != null && !offset.isNull() && !seenOffsets.add(offset)) {
+                throw new IllegalStateException("Qdrant scroll returned a repeated page offset");
+            }
         } while (offset != null && !offset.isNull());
+        checkInterrupted();
         return chunks;
     }
 
@@ -148,13 +157,13 @@ public class QdrantClient {
     private List<RetrievedChunk> parseResults(String responseBody) throws Exception {
         List<RetrievedChunk> results = new ArrayList<>();
         if (responseBody == null || responseBody.isBlank()) {
-            return results;
+            throw new IllegalStateException("Empty Qdrant search response");
         }
 
         JsonNode root = objectMapper.readTree(responseBody);
         JsonNode result = root.path("result");
         if (!result.isArray()) {
-            return results;
+            throw new IllegalStateException("Invalid Qdrant search response: result must be an array");
         }
         for (JsonNode node : result) {
             double score = node.path("score").asDouble();
@@ -180,8 +189,15 @@ public class QdrantClient {
     private void sleep(Duration duration) {
         try {
             Thread.sleep(duration.toMillis());
-        } catch (InterruptedException ignored) {
+        } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
+            throw new IllegalStateException("Qdrant operation interrupted", ex);
+        }
+    }
+
+    private void checkInterrupted() {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new IllegalStateException("Qdrant operation interrupted");
         }
     }
 }

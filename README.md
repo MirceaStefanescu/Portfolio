@@ -1,64 +1,20 @@
 # Mircea Stefanescu | Java Backend & Full-Stack Development
 
+
+<!-- DEVTOOLS_CURRENT_LOCATION_BEGIN -->
+## Locație și medii locale
+
+Rădăcina Windows este `G:\Projects\Portfolio`, iar în WSL `/mnt/g/Projects/Portfolio`. Proprietarul a aprobat păstrarea mediilor `.devtools/Windows` și `.devtools/Linux` în proiecte prin `PORTFOLIO_ENVIRONMENTS_EXCEPTION_20261003`. Runtime-urile comune și cache-urile gestionabile rămân în `G:\DevTools`.
+
+Pentru Python, folosește `DevTools.ps1 -Action Test` sau `-Action Run` din proiectul corespunzător; pentru proiectele Node configurate, `G:\DevTools\Invoke-NodeProject.ps1 -Project <ID> -Action Test`. `G:\DevTools\Invoke-EcommerceLinux.sh test|build` selectează mediul Linux separat. Launcherul portofoliului își determină rădăcina din propria locație. Comenzile de pornire Docker/integrări necesită disponibilitatea și autorizarea serviciilor respective; testele locale nu certifică aceste integrări.
+
+Referința de migrare și mentenanță este [G:\DevTools\README.md](G:/DevTools/README.md). Copiile `.original` și `.before-path-repair-20261003` sunt recuperări, nu medii active și nu cache de șters automat. Un venv Python mutat se recreează la calea de utilizare; simpla redenumire a copiei de recuperare nu demonstrează funcționarea sa.
+<!-- DEVTOOLS_CURRENT_LOCATION_END -->
 **Freelance services: Java/Spring Boot APIs, system integrations, web applications and deployment automation.**
 
 I help teams build and maintain backend services, connect systems through APIs and events, and deliver changes with tests and operational visibility. My professional background includes enterprise Java development, release validation and production support.
 
-[Full service catalog and rates](SERVICES.md) · [See working examples](#selected-work) · [Run one demo](#run-one-demo) · [Explore all 16 projects](#project-directory) · [Discuss a project](#discuss-a-project)
-
-This repository helps technical reviewers inspect a working example before discussing
-a change to their own system. Choose one project, follow its feature captures, then
-reproduce its checks. Each example is independent; running the entire collection is
-unnecessary. The [public catalog](https://mirceastefanescu.github.io/Portfolio/)
-provides screenshots and links without requiring a local installation.
-
-## Run one demo
-
-For a first run, use the developer portal. It checks four local service
-integrations and template generation with synthetic local data. You need **Git,
-Python 3.11 or newer, and a running Docker engine using Linux containers with
-Docker Compose v2 or newer**. The Python verifier uses only the standard library;
-no Python package installation, cloud account or API key is needed.
-
-```sh
-git clone https://github.com/MirceaStefanescu/Portfolio.git
-cd Portfolio
-python scripts/demo-check.py portal --keep
-```
-
-Use `python3` if that is your Python command. Run the command from the repository
-root. The first run downloads container images and builds the application; its
-duration depends on the machine, connection and image cache.
-
-A successful run prints a JSON result with `"status": "PASS"`, the individual
-checks and `checks.browser_url`. Open that URL to explore the portal. The verifier
-uses a unique Compose project, fresh data and random loopback ports, so it can run
-without replacing an existing stack. Copy the **exact cleanup command printed at
-the end** when finished; it removes only that disposable demo and its data.
-
-For an automated check that cleans up on completion, omit `--keep`:
-
-```sh
-python scripts/demo-check.py portal
-```
-
-To check prerequisites without downloading images, building or starting containers:
-
-```sh
-python scripts/demo-check.py portal --check
-```
-
-`READY` confirms only Docker/Compose availability and a Linux container engine;
-it does not mean the demo has passed. Every normal run performs the same checks
-before creating its workspace. Compose must support `config --no-env-resolution`;
-an older plugin produces an update instruction before the demo starts.
-
-If the Docker connection fails, start the engine and check `docker info` and
-`docker compose version`. A failed check is not a successful demo: inspect the
-`startup.log` or `runtime.log` in the printed verification directory. Start with
-one stack and its own README before trying the other
-[documented scenarios](#runnable-demonstrations). These are local demonstrations;
-their [production and provider limits](#what-the-portfolio-proves) remain explicit.
+[Find a service](#services) · [See working examples](#selected-work) · [Explore all 16 projects](#project-directory) · [Discuss a project](#discuss-a-project)
 
 ## Services
 
@@ -141,16 +97,7 @@ Payments, subscriptions, identity providers, notifications and cloud-region exam
 Portfolio CI runs the shared checks and publishes a single Portfolio status
 result for branch protection. Dependabot is configured in the root
 .github/dependabot.yml for the monorepo; nested configurations are examples for
-standalone projects. Automatic version-update pull requests are paused with an
-open-pull-requests limit of zero. Security alerts and security-update pull
-requests remain enabled; branch protection and required checks still apply.
-Dependency changes are reconciled during maintenance before their branches are
-removed.
-
-The public [service catalog](https://mirceastefanescu.github.io/Portfolio/) is
-maintained in `docs/` on `main`. GitHub Pages publishes `main` with the `/docs`
-source folder. Changes must pass the normal protected-main review and checks;
-there is no separate deployment branch.
+standalone projects.
 
 See [Contributing](CONTRIBUTING.md) and [Security policy](SECURITY.md).
 Each project's LICENSE applies to that project.
@@ -163,7 +110,7 @@ The October 2026 compatibility checks use these stable versions in CI and contai
 
 | Components | Build and runtime |
 | --- | --- |
-| JavaScript/TypeScript applications | Node.js 26.11.1 in CI, 26.12.0 in updated container images; Angular 22.2.3 uses TypeScript 6.0 |
+| JavaScript/TypeScript applications | Node.js 26.11.1; Angular 22.2.2 uses TypeScript 6.0 |
 | Python services and evaluation tools | Python 3.15 |
 | Full Stack E-commerce backend (Spring Boot 4.1) | Java 26 |
 | Spring Boot 3.5 services | Java 25 |
@@ -174,22 +121,15 @@ and [Spring Boot 3.5 supports through Java 25](https://docs.spring.io/spring-boo
 Keep builder, compiler target and runtime compatible. Flink language upgrades require
 upgrading and testing the Flink runtime and its version-matched connectors together;
 a JDBC connector for Flink 1.20 is not an isolated update for the 1.17 runtime.
-The Flink job keeps JSON Schema Validator 2.x, which supports Java 11; validator
-3.x requires Java 17 and Jackson 3. The inventory service also retains 2.x until
-its malformed-payload exception contract is adapted and tested. The order
-service and predictive API use the tested 3.x line.
 
 ### Compose dependency compatibility
 
-The Compose demos use Confluent Kafka and ZooKeeper 7.9.10 together, Vault 2.2.0,
-Qdrant 1.19.2 and Grafana 13.2.4 where compatible. Confluent 7.9 is the last series
+The Compose demos use Confluent Kafka and ZooKeeper 7.9.10 together, Vault 2.1.2,
+Qdrant 1.19.2 and Grafana 13.2.3 where compatible. Confluent 7.9 is the last series
 that supports the existing ZooKeeper topology; upgrading to 8 requires a KRaft
 migration. Predictive Analytics retains Grafana 10.2.0 because its existing image
 renderer needs a coordinated authentication upgrade before Grafana 13 can start.
 A tag-only update of that stack is not supported.
-PostgreSQL remains on version 15 for the existing persistent-volume layout.
-Moving to version 18 requires an explicit data migration and the new
-`/var/lib/postgresql` volume layout; changing the image tag alone is insufficient.
 
 The OpenTelemetry Collector uses the `debug` exporter and explicit container
 receiver endpoints. `make test` in Observability validates the images selected by

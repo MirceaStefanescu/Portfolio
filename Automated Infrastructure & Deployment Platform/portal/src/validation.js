@@ -4,15 +4,20 @@ function normalizeInput(body = {}) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return { valid: false, error: "Request must be a JSON object." };
   }
-  if (body.appCount !== undefined && !Number.isInteger(Number(body.appCount))) {
+  for (const field of ["appName", "environment", "provider"]) {
+    if ((field !== "provider" || body[field] !== undefined) && typeof body[field] !== "string") {
+      return { valid: false, error: `${field} must be a string.` };
+    }
+  }
+  const count = body.appCount === undefined ? 1 : body.appCount;
+  if ((typeof count !== "number" && typeof count !== "string") ||
+      (typeof count === "string" && count.trim() === "") || !Number.isInteger(Number(count))) {
     return { valid: false, error: "App count must be an integer." };
   }
-  const rawAppName = String(body.appName || "").trim().toLowerCase();
-  const rawEnvironment = String(body.environment || "").trim().toLowerCase();
-  const provider = String(body.provider || "github").trim().toLowerCase();
-  const appCount = Number.isFinite(Number(body.appCount))
-    ? Math.max(0, Math.min(MAX_APP_COUNT, Number(body.appCount)))
-    : 1;
+  const rawAppName = body.appName.trim().toLowerCase();
+  const rawEnvironment = body.environment.trim().toLowerCase();
+  const provider = (body.provider === undefined ? "github" : body.provider).trim().toLowerCase();
+  const appCount = Math.max(0, Math.min(MAX_APP_COUNT, Number(count)));
 
   if (!isSafeName(rawAppName)) {
     return { valid: false, error: "App name must be lowercase letters, numbers, or hyphens." };

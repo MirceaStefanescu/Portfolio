@@ -1,0 +1,313 @@
+{
+  "schema": "kubectl-local-manifest-snapshot/1",
+  "kubectl_sha256": "5e87156aa0b20e3c1c66db22a11d898f9a5f787513a3bbd8df2633c207a5a855",
+  "manifests": {
+    "k8s/base/configmap.yaml": {
+      "sha256": "97a0904f49a050c343ae79f7c176ba3d6e0e6b07251827a83c392fd9891dd4c1",
+      "object": {
+        "apiVersion": "v1",
+        "data": {
+          "BUILD_ID": "local",
+          "DEPLOY_MODE": "blue-green",
+          "ENVIRONMENT": "dev",
+          "GIT_SHA": "dev"
+        },
+        "kind": "ConfigMap",
+        "metadata": {
+          "name": "cicd-demo-env",
+          "namespace": "cicd-demo"
+        }
+      }
+    },
+    "k8s/base/namespace.yaml": {
+      "sha256": "86fc868c61150aa60b9a57bf268bf914075df6b4a21b7f5119996cace9a6f1ca",
+      "object": {
+        "apiVersion": "v1",
+        "kind": "Namespace",
+        "metadata": {
+          "name": "cicd-demo"
+        }
+      }
+    },
+    "k8s/blue-green/deployment-blue.yaml": {
+      "sha256": "ee2b4d40e774900b074782f4aaadaba12b89453db34ebbefe0cd7b0a84976fd8",
+      "object": {
+        "apiVersion": "apps/v1",
+        "kind": "Deployment",
+        "metadata": {
+          "labels": {
+            "app": "cicd-demo",
+            "color": "blue"
+          },
+          "name": "cicd-demo-blue",
+          "namespace": "cicd-demo"
+        },
+        "spec": {
+          "replicas": 2,
+          "selector": {
+            "matchLabels": {
+              "app": "cicd-demo",
+              "color": "blue"
+            }
+          },
+          "template": {
+            "metadata": {
+              "labels": {
+                "app": "cicd-demo",
+                "color": "blue"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "env": [
+                    {
+                      "name": "RELEASE_COLOR",
+                      "value": "blue"
+                    }
+                  ],
+                  "envFrom": [
+                    {
+                      "configMapRef": {
+                        "name": "cicd-demo-env"
+                      }
+                    }
+                  ],
+                  "image": "cicd-demo:local",
+                  "imagePullPolicy": "IfNotPresent",
+                  "livenessProbe": {
+                    "httpGet": {
+                      "path": "/health",
+                      "port": 8080
+                    },
+                    "initialDelaySeconds": 10,
+                    "periodSeconds": 20
+                  },
+                  "name": "app",
+                  "ports": [
+                    {
+                      "containerPort": 8080
+                    }
+                  ],
+                  "readinessProbe": {
+                    "httpGet": {
+                      "path": "/health",
+                      "port": 8080
+                    },
+                    "initialDelaySeconds": 5,
+                    "periodSeconds": 10
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "k8s/blue-green/deployment-green.yaml": {
+      "sha256": "39582e132e3e17f24413f3c3fd015c6624673a166eeae81d4333f81581e73e32",
+      "object": {
+        "apiVersion": "apps/v1",
+        "kind": "Deployment",
+        "metadata": {
+          "labels": {
+            "app": "cicd-demo",
+            "color": "green"
+          },
+          "name": "cicd-demo-green",
+          "namespace": "cicd-demo"
+        },
+        "spec": {
+          "replicas": 2,
+          "selector": {
+            "matchLabels": {
+              "app": "cicd-demo",
+              "color": "green"
+            }
+          },
+          "template": {
+            "metadata": {
+              "labels": {
+                "app": "cicd-demo",
+                "color": "green"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "env": [
+                    {
+                      "name": "RELEASE_COLOR",
+                      "value": "green"
+                    }
+                  ],
+                  "envFrom": [
+                    {
+                      "configMapRef": {
+                        "name": "cicd-demo-env"
+                      }
+                    }
+                  ],
+                  "image": "cicd-demo:local",
+                  "imagePullPolicy": "IfNotPresent",
+                  "livenessProbe": {
+                    "httpGet": {
+                      "path": "/health",
+                      "port": 8080
+                    },
+                    "initialDelaySeconds": 10,
+                    "periodSeconds": 20
+                  },
+                  "name": "app",
+                  "ports": [
+                    {
+                      "containerPort": 8080
+                    }
+                  ],
+                  "readinessProbe": {
+                    "httpGet": {
+                      "path": "/health",
+                      "port": 8080
+                    },
+                    "initialDelaySeconds": 5,
+                    "periodSeconds": 10
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "k8s/blue-green/service.yaml": {
+      "sha256": "4bea77d17244dc8e9074b19ade1d4670079acfdace4f8e6bb0a41bd4dae6d2e0",
+      "object": {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+          "name": "cicd-demo",
+          "namespace": "cicd-demo"
+        },
+        "spec": {
+          "ports": [
+            {
+              "port": 80,
+              "targetPort": 8080
+            }
+          ],
+          "selector": {
+            "app": "cicd-demo",
+            "color": "blue"
+          },
+          "type": "ClusterIP"
+        }
+      }
+    },
+    "k8s/rolling/deployment.yaml": {
+      "sha256": "eb7a004c50108fcd38d1e2ffc2207fbee98ca0b3df197ece5a9758c3612e11ff",
+      "object": {
+        "apiVersion": "apps/v1",
+        "kind": "Deployment",
+        "metadata": {
+          "labels": {
+            "app": "cicd-demo",
+            "track": "stable"
+          },
+          "name": "cicd-demo-rolling",
+          "namespace": "cicd-demo"
+        },
+        "spec": {
+          "replicas": 2,
+          "selector": {
+            "matchLabels": {
+              "app": "cicd-demo",
+              "track": "stable"
+            }
+          },
+          "strategy": {
+            "rollingUpdate": {
+              "maxSurge": 1,
+              "maxUnavailable": 0
+            },
+            "type": "RollingUpdate"
+          },
+          "template": {
+            "metadata": {
+              "labels": {
+                "app": "cicd-demo",
+                "track": "stable"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "env": [
+                    {
+                      "name": "RELEASE_COLOR",
+                      "value": "rolling"
+                    }
+                  ],
+                  "envFrom": [
+                    {
+                      "configMapRef": {
+                        "name": "cicd-demo-env"
+                      }
+                    }
+                  ],
+                  "image": "cicd-demo:local",
+                  "imagePullPolicy": "IfNotPresent",
+                  "livenessProbe": {
+                    "httpGet": {
+                      "path": "/health",
+                      "port": 8080
+                    },
+                    "initialDelaySeconds": 10,
+                    "periodSeconds": 20
+                  },
+                  "name": "app",
+                  "ports": [
+                    {
+                      "containerPort": 8080
+                    }
+                  ],
+                  "readinessProbe": {
+                    "httpGet": {
+                      "path": "/health",
+                      "port": 8080
+                    },
+                    "initialDelaySeconds": 5,
+                    "periodSeconds": 10
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "k8s/rolling/service.yaml": {
+      "sha256": "5835f1d5cc7a88c19ebd7cb5d5d96748710f882b811869a8a69cfe30e0589f59",
+      "object": {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+          "name": "cicd-demo",
+          "namespace": "cicd-demo"
+        },
+        "spec": {
+          "ports": [
+            {
+              "port": 80,
+              "targetPort": 8080
+            }
+          ],
+          "selector": {
+            "app": "cicd-demo",
+            "track": "stable"
+          },
+          "type": "ClusterIP"
+        }
+      }
+    }
+  }
+}

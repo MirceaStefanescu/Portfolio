@@ -1,5 +1,15 @@
 # Secure RAG Service & Knowledge API
 
+
+<!-- LOCAL_WINDOWS_RUNTIME_20261004 -->
+**This workstation — Windows configuration checked 4 October 2026.**
+This project is under `G:\Projects\Portfolio`. Use the existing explicit launchers below with DevTools PowerShell; they select the managed runtimes independently of a previously opened shell.
+- [api/DevTools.ps1](api/DevTools.ps1): Java 25, Maven 3.10.0; Compile/Test.
+
+Exact local paths, recovery, dated test scope and Windows/Linux separation: [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026).
+The generic Make/Docker examples below describe their own environments; they do not prove use of the Windows runtime. No application, container, external integration or test was started for this documentation check.
+<!-- /LOCAL_WINDOWS_RUNTIME_20261004 -->
+
 ## Document search and RAG APIs
 
 Give an application controlled access to answers and source retrieval from a document collection.
@@ -93,6 +103,7 @@ Docs are ingested, chunked, embedded and stored in Qdrant. The API applies JWT/R
 
 ## Tests
 ```
+python -m unittest discover -s scripts -p "test_*.py"
 mvn -f api/pom.xml test
 ```
 
@@ -100,6 +111,9 @@ Or:
 ```
 make test
 ```
+
+**Local regression check, 25 October 2026:** the Python suite has 42 tests on Python 3.15.1: 24 evaluator tests and 18 resilience orchestration/helper tests. The evaluator uses synthetic workflow/CLI checks and real loopback HTTP/redirect fixtures. The resilience tests simulate Docker and Qdrant, including lost writes, altered vectors/payloads, stale replicas, restore errors and cleanup failures. Normal and optimized Python runs verify that integrity checks remain active with `-O`; `make test` and CI run both modes. The Java suite is not yet verified for the current LangChain4j 1.22.0 dependency: the offline cache lacks it. These tests do not start Qdrant, Docker or a real model.
+
 
 ## Security
 Secrets: use `.env` (see `.env.example`). JWT-based authentication and RBAC restrict access to endpoints; the dev token endpoint is gated by `X-Dev-Key` and should be disabled in production. Threat model basics in `docs/threat-model.md` cover prompt injection and data exfiltration risks. Use Kubernetes RBAC, network policies, and least-privilege service accounts for production.
@@ -141,7 +155,7 @@ the chosen real model on representative and adversarial documents before exposin
 
 ```sh
 python scripts/evaluate.py --url http://127.0.0.1:8090 --output evaluation.json
-python scripts/test_evaluate.py
+python -m unittest discover -s scripts -p "test_*.py"
 ```
 
 The repository's `python scripts/demo-check.py rag` runs this evaluation against its fresh Qdrant-backed stack automatically. PASS requires every case's relevant document to be retrieved and no exact adversarial target output. Quoted instructions in labeled reference output are not counted as instruction following. These narrow checks do not establish semantic answer quality or general injection resistance; the report states that limit explicitly.
@@ -197,6 +211,8 @@ It then restores a snapshot into a separate standalone store and compares all
 removed. The one-shard fixture is fully replicated to each peer; a general sharded
 deployment needs snapshots from every node. Local peers represent failure domains;
 they do not establish real cross-zone or cross-cloud availability.
+
+The verifier compares reads with the synthetic input data, including point 21 on both surviving peers. Integrity checks remain active with `python -O`. A `PASS` report is saved only after the checks and cleanup complete successfully. The regression tests validate this orchestration through simulated boundaries; live cluster validation remains separate.
 
 References: [Qdrant distributed deployment](https://qdrant.tech/documentation/scaling/distributed_deployment/),
 [Qdrant snapshots](https://qdrant.tech/documentation/snapshots/).

@@ -22,7 +22,11 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 def request(base, route, body, token):
     parsed = urllib.parse.urlsplit(base)
-    if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"} or parsed.username or parsed.password:
+    if (parsed.scheme != "http"
+        or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}
+        or parsed.username is not None or parsed.password is not None
+        or parsed.query or parsed.fragment
+        or (parsed.port is not None and not 1 <= parsed.port <= 65535)):
         raise ValueError("Use a loopback HTTP API or a local port-forward")
     req = urllib.request.Request(base.rstrip("/") + route, data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json", "Authorization": "Bearer " + token})

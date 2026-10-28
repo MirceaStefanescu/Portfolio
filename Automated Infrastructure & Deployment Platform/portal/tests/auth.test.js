@@ -104,3 +104,13 @@ test("does not silently fall back to demo or permit non-loopback HTTP", () => {
   assert.throws(() => installAccess(express(), {mode: "oidc", issuer: "http://example.com", publicUrl: base,
     clientId: "portal", clientSecret: "secret", secret: "s".repeat(32), localHttp: true}), /HTTPS/);
 });
+
+test("OIDC rejects non-string environments before coercion and retains production restrictions", async () => {
+  const session=cookie(await login({role:"portal-developer"})), profile=await identity(session);
+  for(const environment of [{toString:null}, null, 12, [], ["prod"]]) {
+    const response=await generate(session,profile.csrf,environment);
+    assert.equal(response.status,400,JSON.stringify(environment));
+  }
+  assert.equal((await generate(session,profile.csrf," PRODUCTION ")).status,403);
+  assert.equal((await generate(session,profile.csrf,"dev")).status,200);
+});

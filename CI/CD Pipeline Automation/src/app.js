@@ -1,6 +1,6 @@
 const path = require("path");
 const express = require("express");
-const promClient = require("prom-client");
+const promClient = require("@prometheus-io/client");
 const { getBuildInfo } = require("./lib/build-info");
 
 function createApp() {
@@ -24,9 +24,6 @@ function createApp() {
     registers: [register]
   });
 
-  app.use(express.json());
-  app.use(express.static(path.join(__dirname, "..", "public")));
-
   app.use((req, res, next) => {
     const endTimer = httpDuration.startTimer();
     res.on("finish", () => {
@@ -40,6 +37,9 @@ function createApp() {
     });
     next();
   });
+
+  app.use(express.json());
+  app.use(express.static(path.join(__dirname, "..", "public")));
 
   app.get("/health", (_req, res) => {
     res.json({

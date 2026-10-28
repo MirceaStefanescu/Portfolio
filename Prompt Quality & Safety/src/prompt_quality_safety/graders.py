@@ -38,7 +38,11 @@ def tool_calls(case: EvalCase, response: str) -> float | None:
 class SemanticGrader:
     def __init__(self, endpoint: str, model: str, api_key: str | None = None):
         parsed = urlsplit(endpoint)
-        if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username:
+        if (
+            parsed.scheme not in ("http", "https")
+            or not parsed.hostname
+            or parsed.username is not None
+        ):
             raise ValueError("Use an HTTP(S) embeddings endpoint without embedded credentials")
         if not model.strip():
             raise ValueError("An embeddings model is required")

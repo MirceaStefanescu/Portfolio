@@ -93,8 +93,11 @@ function installAccess(app, options = settings()) {
     if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
       if (req.get("X-CSRF-Token") !== req.actor.csrf) return res.status(403).json({error: "Invalid CSRF token"});
       if (req.path !== "/logout" && !["developer", "admin"].includes(req.actor.role)) return res.status(403).json({error: "Developer access required"});
-      if (req.path !== "/logout" && ["prod", "production"].includes(String(req.body?.environment || "").trim().toLowerCase())
-          && req.actor.role !== "admin") return res.status(403).json({error: "Administrator access required for production"});
+      if (req.path !== "/logout") {
+        if (typeof req.body?.environment !== "string") return res.status(400).json({error: "environment must be a string."});
+        if (["prod", "production"].includes(req.body.environment.trim().toLowerCase())
+            && req.actor.role !== "admin") return res.status(403).json({error: "Administrator access required for production"});
+      }
     }
     next();
   }));

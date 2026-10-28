@@ -1,12 +1,22 @@
 # Event-Driven E-Commerce Platform
 
+
+<!-- LOCAL_WINDOWS_RUNTIME_20261004 -->
+**This workstation — Windows configuration checked 4 October 2026.**
+This project is under `G:\Projects\Portfolio`. Use the existing explicit launchers below with DevTools PowerShell; they select the managed runtimes independently of a previously opened shell.
+- [services/inventory-service/DevTools.ps1](services/inventory-service/DevTools.ps1): Java 25, Maven 3.10.0; Compile/Test.
+- [services/order-service/DevTools.ps1](services/order-service/DevTools.ps1): Java 25, Maven 3.10.0; Compile/Test.
+
+Exact local paths, recovery, dated test scope and Windows/Linux separation: [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026).
+The generic Make/Docker examples below describe their own environments; they do not prove use of the Windows runtime. No application, container, external integration or test was started for this documentation check.
+<!-- /LOCAL_WINDOWS_RUNTIME_20261004 -->
 ## Java integrations and order workflows
 
 Coordinate checkout, inventory, payments and delivery across asynchronous services.
 
 **What I can deliver:** Spring Boot APIs and Kafka workflows with order history, compensation, simulated refunds and an operator-visible event trail.
 
-**Skills demonstrated:** Java, Spring Boot, Kafka, H2, Schema Registry, Terraform.
+**Skills demonstrated:** Java, Spring Boot, Kafka, PostgreSQL, Schema Registry, Terraform.
 
 [Browse the feature screenshots](screenshots/README.md) · [Services and project enquiries](../README.md#discuss-a-project)
 

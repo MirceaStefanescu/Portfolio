@@ -1,5 +1,15 @@
 # LLMOps Evaluation Harness
 
+
+<!-- LOCAL_WINDOWS_RUNTIME_20261004 -->
+**This workstation — verification25 October2026.**
+The project is under `G:\Projects\Portfolio`. [DevTools.ps1](DevTools.ps1) currently selects its Python3.15.0 environment;VSCode still has a3.14.8 selector. The Python3.15.1 replacement is prepared but awaits package security admission and full validation before either selector changes.
+
+82 regression cases pass in normal and reverse order on the current Windows environment,including actual loopback HTTP,SQLite,CLI overrides,shipped examples and failure artifacts. Lint/format pass with the installed Ruff0.17.0;this is below the declared development minimum0.17.1 and is tracked for replacement. Remote model quality,Linux CI,a clean package build and the generic quickstart are not certified by these checks.
+
+Exact local paths and recovery remain in the [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026). No old environment has been removed.
+<!-- /LOCAL_WINDOWS_RUNTIME_20261004 -->
+
 ## Repeatable LLM evaluation
 
 Compare changes to an AI feature against explicit examples and acceptance criteria.
@@ -78,6 +88,8 @@ Secrets: use `.env` (see `.env.example`). Do not log prompts containing sensitiv
 - Hallucination rate uses a simple context-overlap check and should be replaced with task-specific validators for production.
 
 ### Adding evaluation tasks
+
+`--prompt-template` and `--metrics` override the corresponding values when `--task` is used. An explicitly empty prompt template is preserved. Dataset paths in task files are relative to the task file directory.
 1. Create a JSONL file in `datasets/` with `id`, `input`, `expected`, and optional `context`.
 2. Add a task config in `tasks/` pointing to the dataset, prompt template, and metrics list.
 3. Run: `python -m eval_harness.cli --task tasks/<task>.json`

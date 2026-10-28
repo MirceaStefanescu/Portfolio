@@ -65,8 +65,15 @@ def values(args):
 
 def wait_canary(kubectl, namespace, timeout):
     deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        obj = json.loads(run(kubectl + ["-n", namespace, "get", "rollout", "app", "-o", "json"]))
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        obj = json.loads(run(kubectl + ["-n", namespace, "get", "rollout", "app", "-o", "json"],
+                             timeout=remaining))
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
         status = obj.get("status", {})
         # A status from the preceding generation cannot accept the current image.
         if status.get("observedGeneration") == str(obj["metadata"]["generation"]) or (
@@ -75,7 +82,7 @@ def wait_canary(kubectl, namespace, timeout):
                 return
             if status.get("phase") == "Degraded":
                 raise RuntimeError("Canary rejected: " + (status.get("message") or "analysis or readiness failed"))
-        time.sleep(2)
+        time.sleep(min(2, remaining))
     raise TimeoutError("Canary did not complete within the requested deadline")
 
 
@@ -101,6 +108,8 @@ def main():
     args = parser.parse_args()
     try:
         identity = checked_id(args.id)
+        if not args.context.strip():
+            raise ValueError("--context must be non-empty")
         if not 1 <= args.replicas <= 20 or not 10 <= args.timeout <= 600:
             raise ValueError("replicas must be 1..20 and timeout 10..600 seconds")
         configuration = values(args) if args.operation == "deploy" else None

@@ -1,5 +1,15 @@
 # Prompt Quality & Safety
 
+
+<!-- LOCAL_WINDOWS_RUNTIME_20261004 -->
+**This workstation — Windows configuration checked 4 October 2026.**
+This project is under `G:\Projects\Portfolio`. Use the existing explicit launchers below with DevTools PowerShell; they select the managed runtimes independently of a previously opened shell.
+- [DevTools.ps1](DevTools.ps1): Python 3.15.0; Test/Run.
+
+Exact local paths, recovery, dated test scope and Windows/Linux separation: [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026).
+The generic Make/Docker examples below describe their own environments; they do not prove use of the Windows runtime. No application, container, external integration or test was started for this documentation check.
+<!-- /LOCAL_WINDOWS_RUNTIME_20261004 -->
+
 ## Prompt regression and safety checks
 
 Catch prompt and response regressions before changing an AI-enabled workflow.
@@ -66,6 +76,26 @@ make dev
 ```
 make test
 ```
+
+The 25 October 2026 Windows regression run passed 167 cases in normal and reverse order
+(141 added cases, 43 added test methods), with lint and format checks. Tests use temporary data,
+offline models and controlled loopback HTTP. They do not establish external account access,
+model safety or Linux CI status.
+
+Text and embedding adapters reject endpoint userinfo, including empty usernames, before
+any network request. Ordinary HTTP(S) and IPv6 endpoints remain supported.
+
+Output files are prepared together before replacement. Caught write or replacement failures restore
+the previous files when rollback succeeds. An unresolved write retains `.pqs-artifacts.pending`
+with recovery copies; a later run stops before requesting model output. Preserve this directory
+and inspect the recorded files before attempting recovery. There is no automatic crash-recovery
+command. The two replacements are not an atomic pair for concurrent readers, and power-loss
+durability is not guaranteed.
+
+JSONL records enforce the declared field types and report physical line numbers for invalid records.
+The runner validates the entire suite, metric selection and every local input before requesting model output.
+Missing references remain unscored; valid empty strings, explicit false values and empty tool lists retain their meaning.
+
 
 ## Security
 Secrets: use `.env` (see `.env.example`). Threat model notes include prompt injection, unsafe content requests, and data exfiltration risks. Guardrails live in `src/prompt_quality_safety/guardrails.py` and should be updated alongside new evals.

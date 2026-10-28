@@ -36,7 +36,7 @@
       },
       "targets": [
         {
-          "expr": "process_uptime_seconds",
+          "expr": "time() - process_start_time_seconds{job=\"cicd-demo\"}",
           "refId": "A"
         }
       ],

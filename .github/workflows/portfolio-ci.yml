@@ -158,8 +158,13 @@ jobs:
       - run: bash "CI/CD Pipeline Automation/scripts/test-terraform-gate.sh"
       - run: python "GitOps Platform - Argo CD & Helm/scripts/test-dora.py"
       - run: python tests/test-release-environment.py
+      - run: python tests/test-release-functions.py
+      - run: python tests/test-release-flows.py
+      - run: python tests/test-release-deadline.py
+      - run: python tests/test-release-contract.py
       - run: python "Predictive Analytics Pipeline on Kubernetes/ml/train.py" --check
-      - run: python "Secure RAG Service & Knowledge API/scripts/test_evaluate.py"
+      - run: python -m unittest discover -s "Secure RAG Service & Knowledge API/scripts" -p "test_*.py"
+      - run: python -O -m unittest discover -s "Secure RAG Service & Knowledge API/scripts" -p "test_*.py"
       - run: node --test "Event-Driven E-Commerce Platform/scripts/test-demo-ui.cjs"
       - run: python "Observability - New Relic & Prometheus/paging-demo/test_receiver.py"
       - run: bash tests/test-ci-status.sh
@@ -292,6 +297,10 @@ jobs:
           tar -xzf conftest.tar.gz conftest
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - run: python tests/test-policy-runner.py
+      - run: python tests/test-policy-orchestration.py
+      - run: python tests/test-policy-integration.py
+      - run: python tests/test-podinfo-build.py
+      - run: python tests/test-podinfo-version-timeout.py
       - run: python scripts/check-policy.py "Automated Infrastructure & Deployment Platform"
       - run: python scripts/check-policy.py "CI/CD Pipeline Automation"
       - run: python scripts/check-policy.py "GitOps Platform - Argo CD & Helm"
@@ -372,6 +381,44 @@ jobs:
           helm lint --strict "$CHART"
           helm template validation "$CHART" > "$RUNNER_TEMP/rendered.yaml"
           test -s "$RUNNER_TEMP/rendered.yaml"
+      - name: Test Secure RAG chart regressions
+        if: matrix.chart == 'Secure RAG Service & Knowledge API/helm/secure-rag'
+        shell: bash
+        env:
+          CHART: ${{ matrix.chart }}
+        run: |
+          set -euo pipefail
+          umask 077
+          plugin_dir="$(mktemp -d "$RUNNER_TEMP/secure-rag-helm.XXXXXX")"
+          trap 'rm -rf -- "$plugin_dir"' EXIT
+          export HELM_DATA_HOME="$plugin_dir/data"
+          export HELM_PLUGINS="$HELM_DATA_HOME/plugins"
+          export HELM_CACHE_HOME="$plugin_dir/cache"
+          export HELM_CONFIG_HOME="$plugin_dir/config"
+          export GNUPGHOME="$plugin_dir/gnupg"
+          mkdir -p "$GNUPGHOME"
+          release="https://github.com/helm-unittest/helm-unittest/releases/download/v1.2.1"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+            "$release/unittest-1.2.1.tgz" -o "$plugin_dir/unittest-1.2.1.tgz"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+            "$release/unittest-1.2.1.tgz.prov" -o "$plugin_dir/unittest-1.2.1.tgz.prov"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+            'https://raw.githubusercontent.com/helm-unittest/helm-unittest/67056cc631eab9e001e6762a1f601e6c92a71ba7/public-key.asc' \
+            -o "$plugin_dir/public-key.asc"
+          printf '%s  %s\n' \
+            'bbcebd42631dff9fc595462fad839c49a1b06f9635e952e7e837d7e5fe82865f' "$plugin_dir/unittest-1.2.1.tgz" \
+            '23833d293bd575b552312e17e0c1900199857a327b44d7a1b6a25811b1514bbd' "$plugin_dir/unittest-1.2.1.tgz.prov" \
+            'ac389b1ec426189a973d080ebe870f53d35217ba665bd7dd216bb05f4c50ddcf' "$plugin_dir/public-key.asc" \
+            | sha256sum --check --strict
+          gpg --batch --no-options --dearmor --output "$plugin_dir/pubring.gpg" "$plugin_dir/public-key.asc"
+          helm plugin install "$plugin_dir/unittest-1.2.1.tgz" --verify --keyring "$plugin_dir/pubring.gpg"
+          cd "$CHART"
+          shopt -s nullglob
+          suites=(tests/*_test.yaml)
+          (( ${#suites[@]} > 0 )) || { echo 'No Secure RAG regression suites found' >&2; exit 1; }
+          helm unittest --strict --output-type JUnit --output-file "$RUNNER_TEMP/secure-rag-helm-tests.xml" .
+          test -s "$RUNNER_TEMP/secure-rag-helm-tests.xml"
+          grep -Eq '<testsuite[^>]* tests="[1-9][0-9]*"' "$RUNNER_TEMP/secure-rag-helm-tests.xml"
 
   finops:
     runs-on: ubuntu-latest
