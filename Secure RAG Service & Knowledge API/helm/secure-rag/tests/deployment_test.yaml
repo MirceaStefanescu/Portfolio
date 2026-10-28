@@ -1,0 +1,327 @@
+{
+  "suite": "Secure RAG deployment behavior",
+  "templates": [
+    "deployment.yaml"
+  ],
+  "release": {
+    "name": "audit"
+  },
+  "tests": [
+    {
+      "it": "leave replica ownership to the enabled autoscaler",
+      "asserts": [
+        {
+          "notExists": {
+            "path": "spec.replicas"
+          }
+        }
+      ],
+      "set": {
+        "replicaCount": 9
+      }
+    },
+    {
+      "it": "use an explicit replica count when autoscaling is disabled",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.replicas",
+            "value": 3
+          }
+        }
+      ],
+      "set": {
+        "autoscaling.enabled": false,
+        "replicaCount": 3
+      }
+    },
+    {
+      "it": "retain default replicas when autoscaling is disabled",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.replicas",
+            "value": 2
+          }
+        }
+      ],
+      "set": {
+        "autoscaling.enabled": false
+      }
+    },
+    {
+      "it": "reference the default credential secret without literal credential values",
+      "asserts": [
+        {
+          "contains": {
+            "path": "spec.template.spec.containers[0].env",
+            "content": {
+              "name": "JWT_SECRET",
+              "valueFrom": {
+                "secretKeyRef": {
+                  "name": "secure-rag-secrets",
+                  "key": "JWT_SECRET"
+                }
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "path": "spec.template.spec.containers[0].env",
+            "content": {
+              "name": "DEV_API_KEY",
+              "valueFrom": {
+                "secretKeyRef": {
+                  "name": "secure-rag-secrets",
+                  "key": "DEV_API_KEY"
+                }
+              }
+            }
+          }
+        },
+        {
+          "notExists": {
+            "path": "spec.template.spec.containers[0].env[3].value"
+          }
+        },
+        {
+          "notExists": {
+            "path": "spec.template.spec.containers[0].env[6].value"
+          }
+        }
+      ]
+    },
+    {
+      "it": "honor an existing credential secret selected by the operator",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.name",
+            "value": "audit-credentials"
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.template.spec.containers[0].env[6].valueFrom.secretKeyRef.name",
+            "value": "audit-credentials"
+          }
+        }
+      ],
+      "set": {
+        "existingSecret": "audit-credentials"
+      }
+    },
+    {
+      "it": "reject an empty credential secret before producing a deployment",
+      "asserts": [
+        {
+          "failedTemplate": {
+            "errorMessage": "existingSecret must name an existing Kubernetes Secret"
+          }
+        }
+      ],
+      "set": {
+        "existingSecret": ""
+      }
+    },
+    {
+      "it": "reject an unset credential secret before producing a deployment",
+      "asserts": [
+        {
+          "failedTemplate": {
+            "errorMessage": "existingSecret must name an existing Kubernetes Secret"
+          }
+        }
+      ],
+      "set": {
+        "existingSecret": null
+      }
+    },
+    {
+      "it": "keep health checks on the application health route and named port",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.template.spec.containers[0].startupProbe.httpGet",
+            "value": {
+              "path": "/api/health",
+              "port": "http"
+            }
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.template.spec.containers[0].readinessProbe.httpGet",
+            "value": {
+              "path": "/api/health",
+              "port": "http"
+            }
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.template.spec.containers[0].livenessProbe.httpGet",
+            "value": {
+              "path": "/api/health",
+              "port": "http"
+            }
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.template.spec.containers[0].startupProbe.failureThreshold",
+            "value": 60
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.template.spec.containers[0].ports[0]",
+            "value": {
+              "name": "http",
+              "containerPort": 8080
+            }
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.template.spec.containers[0].resources.requests.cpu",
+            "value": "100m"
+          }
+        }
+      ]
+    },
+    {
+      "it": "honor image and retrieval environment overrides",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.template.spec.containers[0].image",
+            "value": "registry.invalid/audit-api:test"
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.template.spec.containers[0].imagePullPolicy",
+            "value": "Never"
+          }
+        },
+        {
+          "contains": {
+            "path": "spec.template.spec.containers[0].env",
+            "content": {
+              "name": "QDRANT_URL",
+              "value": "http://audit-qdrant:6333"
+            }
+          }
+        },
+        {
+          "contains": {
+            "path": "spec.template.spec.containers[0].env",
+            "content": {
+              "name": "RAG_TOP_K",
+              "value": "7"
+            }
+          }
+        }
+      ],
+      "set": {
+        "image.repository": "registry.invalid/audit-api",
+        "image.tag": "test",
+        "image.pullPolicy": "Never",
+        "env.qdrantUrl": "http://audit-qdrant:6333",
+        "env.ragTopK": "7"
+      }
+    },
+    {
+      "it": "keep zone spreading associated with this release",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.template.spec.topologySpreadConstraints[0].topologyKey",
+            "value": "topology.kubernetes.io/zone"
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.template.spec.topologySpreadConstraints[0].labelSelector.matchLabels",
+            "value": {
+              "app.kubernetes.io/name": "secure-rag",
+              "app.kubernetes.io/instance": "audit"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "it": "allow zone spreading to be disabled",
+      "asserts": [
+        {
+          "notExists": {
+            "path": "spec.template.spec.topologySpreadConstraints"
+          }
+        }
+      ],
+      "set": {
+        "spreadAcrossZones": false
+      }
+    },
+    {
+      "it": "select the external account without changing scheduling overrides",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.template.spec.serviceAccountName",
+            "value": "external-account"
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.template.spec.nodeSelector",
+            "value": {
+              "pool": "audit"
+            }
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.template.spec.tolerations",
+            "value": [
+              {
+                "key": "audit",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+              }
+            ]
+          }
+        }
+      ],
+      "set": {
+        "serviceAccount.create": false,
+        "serviceAccount.name": "external-account",
+        "nodeSelector.pool": "audit",
+        "tolerations": [
+          {
+            "key": "audit",
+            "operator": "Exists",
+            "effect": "NoSchedule"
+          }
+        ]
+      }
+    },
+    {
+      "it": "use the default account when account creation and selection are disabled",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.template.spec.serviceAccountName",
+            "value": "default"
+          }
+        }
+      ],
+      "set": {
+        "serviceAccount.create": false
+      }
+    }
+  ]
+}

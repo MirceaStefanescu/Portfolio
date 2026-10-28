@@ -1,3 +1,4 @@
+{{- $existingSecret := required "existingSecret must name an existing Kubernetes Secret" .Values.existingSecret -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,7 +6,9 @@ metadata:
   labels:
     {{- include "secure-rag.labels" . | nindent 4 }}
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "secure-rag.name" . }}
@@ -48,7 +51,7 @@ spec:
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.existingSecret | quote }}
+                  name: {{ $existingSecret | quote }}
                   key: JWT_SECRET
             - name: JWT_ISSUER
               value: {{ .Values.env.jwtIssuer | quote }}
@@ -57,7 +60,7 @@ spec:
             - name: DEV_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.existingSecret | quote }}
+                  name: {{ $existingSecret | quote }}
                   key: DEV_API_KEY
             - name: RAG_VECTOR_SIZE
               value: {{ .Values.env.ragVectorSize | quote }}

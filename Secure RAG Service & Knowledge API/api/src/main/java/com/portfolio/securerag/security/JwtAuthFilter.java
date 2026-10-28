@@ -3,9 +3,8 @@ package com.portfolio.securerag.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -34,7 +33,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (header == null || !header.startsWith("Bearer ")) {
+        if (header == null || !header.regionMatches(true, 0, "Bearer ", 0, 7)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -43,16 +42,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         UsernamePasswordAuthenticationToken authentication;
         try {
             Claims claims = jwtService.parseToken(token);
-            List<String> roles = claims.get("roles", List.class);
-            if (roles == null) {
-                roles = Collections.emptyList();
+            String subject = claims.getSubject();
+            if (subject == null || subject.isBlank()) {
+                throw new IllegalArgumentException("JWT subject must not be blank");
             }
-            List<SimpleGrantedAuthority> authorities = roles.stream()
-                    .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
+            List<?> roles = claims.get("roles", List.class);
+            if (roles == null) {
+                roles = List.of();
+            }
+            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            for (Object value : roles) {
+                if (!(value instanceof String role) || role.isBlank()) {
+                    throw new IllegalArgumentException("JWT roles must contain non-blank strings");
+                }
+                authorities.add(new SimpleGrantedAuthority(role.startsWith("ROLE_") ? role : "ROLE_" + role));
+            }
 
-            authentication = new UsernamePasswordAuthenticationToken(claims.getSubject(), token, authorities);
+            authentication = new UsernamePasswordAuthenticationToken(subject, token, authorities);
         } catch (JwtException | IllegalArgumentException | ClassCastException ex) {
             logger.warn("JWT validation failed: {}", ex.getMessage());
             SecurityContextHolder.clearContext();

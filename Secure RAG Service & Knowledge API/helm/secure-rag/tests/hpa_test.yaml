@@ -1,0 +1,105 @@
+{
+  "suite": "Secure RAG hpa behavior",
+  "templates": [
+    "hpa.yaml"
+  ],
+  "release": {
+    "name": "audit"
+  },
+  "tests": [
+    {
+      "it": "target this release deployment with the configured CPU demand",
+      "asserts": [
+        {
+          "hasDocuments": {
+            "count": 1
+          }
+        },
+        {
+          "isKind": {
+            "of": "HorizontalPodAutoscaler"
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.scaleTargetRef",
+            "value": {
+              "apiVersion": "apps/v1",
+              "kind": "Deployment",
+              "name": "audit-secure-rag"
+            }
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.minReplicas",
+            "value": 2
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.maxReplicas",
+            "value": 6
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.metrics[0].resource.target",
+            "value": {
+              "type": "Utilization",
+              "averageUtilization": 70
+            }
+          }
+        }
+      ]
+    },
+    {
+      "it": "omit the autoscaler when disabled",
+      "asserts": [
+        {
+          "hasDocuments": {
+            "count": 0
+          }
+        }
+      ],
+      "set": {
+        "autoscaling.enabled": false
+      }
+    },
+    {
+      "it": "preserve operator scaling limits and behavior",
+      "asserts": [
+        {
+          "equal": {
+            "path": "spec.minReplicas",
+            "value": 3
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.maxReplicas",
+            "value": 10
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.behavior.scaleDown.stabilizationWindowSeconds",
+            "value": 120
+          }
+        },
+        {
+          "equal": {
+            "path": "spec.metrics[0].resource.target.averageUtilization",
+            "value": 55
+          }
+        }
+      ],
+      "set": {
+        "autoscaling.minReplicas": 3,
+        "autoscaling.maxReplicas": 10,
+        "autoscaling.targetCPUUtilizationPercentage": 55,
+        "autoscaling.behavior.scaleDown.stabilizationWindowSeconds": 120
+      }
+    }
+  ]
+}

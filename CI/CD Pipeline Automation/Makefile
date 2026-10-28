@@ -39,11 +39,10 @@ kind-down:
 terraform-init:
 	terraform -chdir=$(TF_DIR) init
 
+terraform-apply: export IMAGE := $(IMAGE)
+terraform-apply: export LOAD_KIND_IMAGE := $(LOAD_KIND_IMAGE)
 terraform-apply:
-ifeq ($(TF_ENV),local-kind)
-	kind load docker-image "$(IMAGE)" --name "$(or $(CLUSTER_NAME),cicd-demo)"
-endif
-	terraform -chdir=$(TF_DIR) apply -auto-approve -var="image=$(IMAGE)"
+	bash scripts/terraform-gate.sh plan-apply
 
 terraform-destroy:
 	terraform -chdir=$(TF_DIR) destroy -auto-approve

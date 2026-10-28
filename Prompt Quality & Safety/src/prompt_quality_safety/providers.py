@@ -12,7 +12,11 @@ from prompt_quality_safety.models import ModelClient, ModelRequest
 class HttpModel(ModelClient):
     def __init__(self, endpoint: str, model: str, provider: str, api_key: str | None = None):
         parsed = urlsplit(endpoint)
-        if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username:
+        if (
+            parsed.scheme not in ("http", "https")
+            or not parsed.hostname
+            or parsed.username is not None
+        ):
             raise ValueError("Use an HTTP(S) endpoint without embedded credentials")
         if provider not in ("openai", "anthropic", "local") or not model.strip():
             raise ValueError("An explicit supported provider and model are required")

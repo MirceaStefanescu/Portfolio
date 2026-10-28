@@ -1,5 +1,15 @@
 # CI/CD Pipeline Automation
 
+
+<!-- LOCAL_WINDOWS_RUNTIME_20261004 -->
+**This workstation — Windows configuration checked 4 October 2026.**
+This project is under `G:\Projects\Portfolio`. Use the existing explicit launchers below with DevTools PowerShell; they select the managed runtimes independently of a previously opened shell.
+- [DevTools.ps1](DevTools.ps1): Node 26.11.1; Test/Build.
+
+Exact local paths, recovery, dated test scope and Windows/Linux separation: [Portfolio runbook](../../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026).
+The generic Make/Docker examples below describe their own environments; they do not prove use of the Windows runtime. No application, container, external integration or test was started for this documentation check.
+<!-- /LOCAL_WINDOWS_RUNTIME_20261004 -->
+
 ## Build and deployment automation
 
 Make application releases repeatable and give the team a documented recovery path.
@@ -33,6 +43,80 @@ applications: Jenkins orchestrates builds and tests, Docker packages immutable
 images, Terraform provisions environments, Ansible applies configuration, and
 Kubernetes deploys with blue-green or rolling strategies. Prometheus and Grafana
 surface health and deployment signals across every environment.
+
+## Earlier local HTTP observability verification — 26 October 2026
+
+The completed-request Counter and Histogram are registered before JSON parsing
+and static serving. Static GET/HEAD/304 and rejected JSON400/413 responses are
+counted once. API routes use their registered paths; unmatched/static/parser paths
+use the bounded `unmatched` label. A scrape reports earlier completed scrapes,
+excluding itself until its response finishes. Keep-alive recovery after malformed
+JSON is verified on the same connection.
+
+Five additional native HTTP tests bring the suite to21 passing tests on Node26.11.1;
+lint also passes. Seven deployment-routing tests use a fake kubectl and do not
+certify a live cluster. The canonical Windows environment now matches all177
+locked packages, including dotenv18.0.8,supertest7.3.1 and ESLint10.13.0. A clean
+installation with scripts disabled was checked against the locked tarballs:
+2963 regular package files match exactly. The21 tests and lint pass on the clean
+candidate and active environment; the normal DevTools.ps1 Test entry also passes.
+Real deployment validation remains outstanding. This earlier batch used the now
+retired prom-client 15.1.3. The replacement and current test results follow below.
+
+## Delivery and metrics verification — 26 October 2026
+
+The active metrics client is `@prometheus-io/client` 0.16.1, admitted and verified in
+the prior dependency update. The normal Windows entry now passes **127/127 tests**
+and lint. The candidate passed the same complete suite before integration.
+
+Blue-green and rolling delivery render the requested `APP_NAME` and `NAMESPACE`
+consistently across resource identities, selectors and ConfigMap references. All
+local preparation completes successfully before any remote write or kind image load.
+Malformed names, invalid loading flags, missing required kind and nested rendering
+failures stop delivery. A command emitting output before failing cannot apply that output.
+Missing resources still use create-only semantics, existing configuration is preserved,
+and traffic changes follow rollout readiness.
+
+The 46 delivery regressions pass with both isolated command recording and native
+kubectl 1.36.5 local transformations. The original batch had 15 failing cases; a
+first candidate required one correction for nested Bash error propagation. Test
+fixtures contain hashed snapshots of the seven YAML manifests; a changed manifest
+requires refreshing its snapshot using kubectl locally. No YAML parser dependency was added.
+
+These checks simulate remote Kubernetes operations. Real cluster deployment, kind
+image ingestion, Jenkins, Terraform providers and live monitoring remain unverified.
+The counts in the dated sections below describe earlier verification batches.
+
+## Monitoring uptime regression — 26 October 2026
+
+The Grafana uptime panel now uses `time() - process_start_time_seconds{job="cicd-demo"}`,
+matching the gauge exported by the active @prometheus-io/client0.16.1 and the configured scrape job.
+The new integration test checks actual local HTTP metrics, gauge semantics and health
+uptime using monotonic samples. Protected delayed-response and wrong-value probes pass;
+the normal Windows entry passes87/87 tests and lint. These checks validate the source
+contract; Prometheus evaluation and Grafana provisioning/rendering remain unverified.
+The replacement dependency was admitted by Defender, activated, and verified through the normal project entrypoint.
+
+## Dashboard regression verification — 26 October 2026
+
+The one-shot dashboard validates both API payloads before rendering. HTTP,
+transport, JSON, or payload-shape failures mark all six metadata fields and the
+pipeline list unavailable; build metadata no longer remains stuck at Loading.
+Labels are inserted as literal text. Seven UI regression tests exercise failures,
+completion order, and a late successful peer after an error. The full suite has
+28 passing tests on the candidate and active source; lint passes. Browser checks
+confirm the original failure and corrected error/success states using local API
+fixtures. These checks do not certify deployed Jenkins or Kubernetes services.
+
+## CI orchestration verification — 26 October 2026
+
+The CI entrypoint rejects invalid deployment modes, release colors, boolean
+stage flags and Terraform environment identifiers before package installation
+or infrastructure commands. Unset/empty defaults and supported strategies remain
+compatible. Isolated tests record exact command order, arguments and metadata,
+exercise failure propagation and explicit Kubernetes context paths. The full
+candidate and active suites now pass 86 tests; lint passes. Commands use recording
+fixtures; these tests do not certify real deployments or Jenkins runs.
 
 ## Features
 - Jenkins pipeline with build, test, container, and deploy stages.
@@ -120,16 +204,27 @@ make ci
 
 Infrastructure provisioning (optional):
 ```
-make terraform-init
 make terraform-apply
 make ansible-config
 ```
 
 AWS EKS (optional, existing cluster):
 ```
-terraform -chdir=terraform/environments/aws-eks init
-terraform -chdir=terraform/environments/aws-eks apply -var="cluster_name=your-eks" -var="image=cicd-demo:local"
+TF_ENV=aws-eks TF_VAR_cluster_name=your-eks IMAGE=cicd-demo:local make terraform-apply
 ```
+
+## Terraform entrypoint regression — 26 October 2026
+
+33 new cases exercise the real Makefile, CI script and Terraform gate with recording
+fixtures for external commands. They cover full image references, context paths,
+invalid inputs, stale JSON, exact saved-plan application, policy rejection and
+failure ordering. All 86 tests pass through the Windows project entrypoint too.
+These tests perform no real deployment and do not certify live providers or policies.
+
+Tests require Bash and GNU Make. On this workstation, `./DevTools.ps1 -Action Test -Offline`
+selects the verified central tools and restores the caller's selector
+variables afterwards. Elsewhere, `BASH_EXECUTABLE` and `MAKE_EXECUTABLE` can select
+the installed binaries; POSIX defaults are `/bin/bash` and `make`.
 
 ## Tests
 ```
@@ -147,7 +242,7 @@ store. Threat model: untrusted web requests and CI/CD credentials exposure;
 mitigate with RBAC, least-privilege IAM, and network policies in production.
 
 ## Notes / limitations
-- Status: fully functional local demo; cloud provisioning requires credentials.
+- Current regression scope: 127 isolated local tests pass. Historical deployment evidence remains dated; live cloud/cluster/Jenkins revalidation is separate and requires the relevant environment.
 - Jenkins pipeline assumes Docker, Terraform, kubectl, and Ansible are available.
 - AWS EKS environment expects an existing cluster; cluster provisioning not included.
 
@@ -208,9 +303,10 @@ See the [provider's versioned resource migration guide](https://registry.terrafo
 For `TF_ENV=local-kind`, the helpers use the project-local `.kube/config`. Other
 Terraform environments preserve the agent's configured kubeconfig/current context;
 `KUBECONFIG` and `KUBECONTEXT` can select an explicit external target.
-Run `make kind-up` and `make docker-build` before `make terraform-init` /
-`make terraform-apply`. The local Terraform target loads `IMAGE` into kind before
-creating deployments. Ansible requires a supported POSIX control node; the tested
+Run `make kind-up` and `make docker-build` before `make terraform-apply`.
+That target initializes Terraform, saves and checks the plan, then loads `IMAGE`
+into kind (unless `LOAD_KIND_IMAGE=false`) and applies the exact saved plan.
+Invalid inputs and rejected policies prevent both kind-load and apply. Ansible requires a supported POSIX control node; the tested
 ansible-core 2.21.5 supports Python 3.12–3.14.
 
 Ansible renders the ConfigMap with defaults or `-e` overrides. Repeat application
@@ -220,8 +316,18 @@ changes. Blue/green and rolling scripts wait for readiness before replacing the
 Service selector. A failed rollout leaves the current traffic selector intact.
 
 `npm test` covers the HTTP API, metrics and routing failure behavior.
-`bash scripts/test-ansible.sh` checks the Ansible defaults, overrides, paths with
-spaces and explicit Kubernetes context without connecting to a real cluster.
+`bash scripts/test-ansible.sh` runs nine native Ansible scenarios with a recording
+kubectl fixture. They check all five rendered values, repeated execution with zero
+changes, quoted context/path arguments, local/external defaults, merged kubeconfig
+paths, manifest stdin, and stopping at three backend failures. The candidate and
+active suites pass with Ansible2.21.5/Python3.12.3; all86 Node tests still pass.
+The playbook and templates are unchanged; no real cluster is contacted.
+
+Use a POSIX Python with ansible-core installed. The launcher defaults to `python3`;
+`ANSIBLE_TEST_PYTHON` selects an explicit interpreter. `--output <new-directory>`
+retains native logs; otherwise reports and fixtures are temporary and cleaned up.
+The existing GitHub workflow already calls this launcher; its Python3.14 execution
+has not been revalidated by this local audit.
 The Jenkinsfile is a template requiring an agent with Docker, kind/kubectl,
 Terraform, Ansible and the intended credentials/context; the local CLI proofs do
 not imply that an arbitrary Jenkins installation is already configured.
@@ -232,7 +338,12 @@ not imply that an arbitrary Jenkins installation is already configured.
 and checks the shared OPA policies. `apply` re-extracts and rechecks that saved
 plan, then applies that exact plan without recalculating variables. These files
 may contain sensitive state; they are Git-ignored and are not Jenkins artifacts.
-The Jenkins and local CI routes both use this gate. Conftest, Helm and Python are
+The Makefile, Jenkins and local CI routes use this gate. Full `IMAGE` references
+(including registry ports and digests) take precedence for direct gate/Make use.
+Local CI explicitly passes the image it built and avoids a second kind-load.
+Direct gate calls default `LOAD_KIND_IMAGE=false`; `plan` never loads or applies.
+For existing-plan `apply`, `LOAD_KIND_IMAGE=true` is rejected because current
+image variables cannot establish which image is inside an older saved plan. Conftest, Helm and Python are
 required on the agent alongside Terraform.
 
 For canary, install Argo Rollouts in the local test cluster and select

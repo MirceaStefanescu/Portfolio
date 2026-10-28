@@ -72,21 +72,24 @@ def main():
         for address in [one, two, three]:
             wait(lambda: request(address, "/collections/demo")["status"] == "green", "replicated collection")
             shards = request(address, "/collections/demo/cluster")["local_shards"]
-            assert len(shards) == 1 and shards[0]["state"] == "Active", shards
+            if len(shards) != 1 or shards[0]["state"] != "Active":
+                raise RuntimeError("Expected one active local shard: " + repr(shards))
         points = [{"id": i, "vector": [float(i), 1.0, 0.0, 0.0],
                    "payload": {"text": "Synthetic knowledge " + str(i)}} for i in range(1, 21)]
         request(one, "/collections/demo/points?wait=true", {"points": points}, "PUT")
         def records(address):
             return request(address, "/collections/demo/points/scroll", {"limit": 100, "with_vector": True})["points"]
-        expected = records(one)
-        assert len(expected) == 20
-        for address in [two, three]:
+        expected = points
+        for address in [one, two, three]:
             wait(lambda: records(address) == expected, "replicated points and vectors")
         run(command + ["stop", "peer1"])
-        assert records(two) == expected and records(three) == expected
+        if records(two) != expected or records(three) != expected:
+            raise RuntimeError("Surviving peers did not retain the expected points and vectors")
         extra = {"id": 21, "vector": [21.0, 1.0, 0.0, 0.0], "payload": {"text": "Written during outage"}}
         request(two, "/collections/demo/points?wait=true", {"points": [extra]}, "PUT")
-        expected = records(two)
+        expected = points + [extra]
+        for address in [two, three]:
+            wait(lambda: records(address) == expected, "outage write replicated to surviving peers")
         run(command + ["start", "peer1"])
         one = url("peer1")
         wait(lambda: records(one) == expected, "restarted peer catches up")
@@ -101,15 +104,17 @@ def main():
         req = urllib.request.Request(restored + "/collections/demo/snapshots/upload?priority=snapshot", data=body,
                                      headers={"Content-Type": "multipart/form-data; boundary=" + boundary})
         with urllib.request.urlopen(req, timeout=30) as response:
-            assert response.status == 200
-        assert records(restored) == expected
+            if response.status != 200:
+                raise RuntimeError("Snapshot upload did not complete: " + str(response.status))
+        if records(restored) != expected:
+            raise RuntimeError("Restored points and vectors differ from the expected data")
         result = {"status": "PASS", "peers": 3, "replicationFactor": 3, "nodeOutageReadWrite": True,
                   "restartedPeerCatchup": True, "restoredPointsAndVectors": len(expected), "snapshotSha256": snapshot_hash,
                   "scope": "Synthetic local failure domains and isolated snapshot restore; no cloud availability claim"}
-        (directory / "result.json").write_text(json.dumps(result, indent=2))
-        print(json.dumps(result, indent=2), flush=True)
     finally:
         run(command + ["down", "--volumes", "--remove-orphans"])
+    (directory / "result.json").write_text(json.dumps(result, indent=2))
+    print(json.dumps(result, indent=2), flush=True)
 
 
 if __name__ == "__main__":

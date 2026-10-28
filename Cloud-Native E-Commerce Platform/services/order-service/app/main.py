@@ -106,7 +106,29 @@ def _fetch_product(product_id: str) -> dict:
         raise HTTPException(status_code=400, detail=f"Product {product_id} not found")
     if response.status_code >= 400:
         raise HTTPException(status_code=502, detail="Product service unavailable")
-    return response.json()
+    try:
+        product = response.json()
+    except (ValueError, requests.RequestException) as exc:
+        raise HTTPException(
+            status_code=502, detail="Product service unavailable"
+        ) from exc
+
+    if not isinstance(product, dict):
+        raise HTTPException(status_code=502, detail="Product service unavailable")
+
+    name = product.get("name")
+    if not isinstance(name, str) or not name:
+        raise HTTPException(status_code=502, detail="Product service unavailable")
+
+    price_cents = product.get("price_cents")
+    if type(price_cents) is not int or price_cents <= 0:
+        raise HTTPException(status_code=502, detail="Product service unavailable")
+
+    currency = product.get("currency")
+    if not isinstance(currency, str) or len(currency) != 3:
+        raise HTTPException(status_code=502, detail="Product service unavailable")
+
+    return product
 
 
 def _load_items(order_id: str) -> list[OrderItem]:

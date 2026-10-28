@@ -37,7 +37,7 @@ def main():
     if args.prepare_only and args.build_only:
         parser.error("Choose one phase")
     env = dict(os.environ, GOTOOLCHAIN="local", CGO_ENABLED="0")
-    version = subprocess.check_output([args.go, "version"], text=True, env=env)
+    version = subprocess.check_output([args.go, "version"], text=True, env=env, timeout=30)
     if " go1.27.2 " not in version:
         parser.error("This reproducible build is verified with Go 1.27.2")
     args.work_dir = args.work_dir.resolve()

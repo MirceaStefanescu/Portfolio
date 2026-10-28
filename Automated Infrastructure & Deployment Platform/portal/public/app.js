@@ -65,8 +65,12 @@ async function requestTemplate(endpoint) {
     data = {};
   }
   if (!response.ok) {
-    const requestId = data.requestId ? ` (requestId: ${data.requestId})` : "";
-    throw new Error(`${data.error || "Request failed"}${requestId}`);
+    const requestId = data?.requestId ? ` (requestId: ${data.requestId})` : "";
+    throw new Error(`${data?.error || "Request failed"}${requestId}`);
+  }
+
+  if (!data || typeof data.filename !== "string" || !data.filename.trim() || typeof data.content !== "string") {
+    throw new Error("Invalid artifact response");
   }
 
   return data;
@@ -95,82 +99,90 @@ function downloadFile(entry) {
   URL.revokeObjectURL(url);
 }
 
+let serviceStatusVersion = 0;
+const serviceStates = new Set(["healthy", "unhealthy", "unconfigured", "unreachable"]);
 async function loadServiceStatus() {
+  const version = ++serviceStatusVersion;
   try {
     const response = await fetch("/api/services");
+    if (!response.ok) throw new Error("Service status unavailable");
     const data = await response.json();
-    renderServiceStatus(data.services || []);
+    if (!data || !Array.isArray(data.services) || data.services.some(service =>
+      !service || typeof service.name !== "string" || !service.name.trim() || !serviceStates.has(service.status))) {
+      throw new Error("Invalid service status response");
+    }
+    if (version !== serviceStatusVersion) return;
+    renderServiceStatus([{name: "Portal", status: "healthy"}, ...data.services]);
   } catch (error) {
-    renderServiceStatus([
-      { id: "portal", name: "Portal", status: "unreachable" }
-    ]);
+    if (version !== serviceStatusVersion) return;
+    renderServiceStatus([{name: "Portal", status: "unreachable"}]);
   }
 }
 
 function renderServiceStatus(services) {
   serviceStatus.innerHTML = "";
-  const portalStatus = document.createElement("li");
-  portalStatus.className = "status";
-  portalStatus.innerHTML =
-    "<span>Portal</span><span class=\"badge healthy\">healthy</span>";
-  serviceStatus.appendChild(portalStatus);
-
   services.forEach((service) => {
     const item = document.createElement("li");
     item.className = "status";
-    const badgeClass = service.status || "unconfigured";
-    item.innerHTML = `
-      <span>${service.name}</span>
-      <span class="badge ${badgeClass}">${badgeClass}</span>
-    `;
+    const name = document.createElement("span");
+    name.textContent = service.name;
+    const badge = document.createElement("span");
+    badge.className = `badge ${service.status}`;
+    badge.textContent = service.status;
+    item.appendChild(name);
+    item.appendChild(badge);
     serviceStatus.appendChild(item);
   });
 }
 
-generatePipelineButton.addEventListener("click", async () => {
-  setPipelineStatus("Generating...");
-  try {
-    const data = await requestTemplate("/api/pipeline");
-    latest.pipeline = data;
-    updateOutput(pipelineOutput, data.content);
-    setPipelineStatus(`Generated ${data.filename}`);
-  } catch (error) {
-    updateOutput(pipelineOutput, error.message);
-    setPipelineStatus("Error");
+const artifacts = {
+  pipeline: {output: pipelineOutput, generate: generatePipelineButton, download: downloadPipelineButton, version: 0},
+  terraform: {output: terraformOutput, generate: generateTerraformButton, download: downloadTerraformButton, version: 0},
+  helm: {output: helmOutput, generate: generateHelmButton, download: downloadHelmButton, version: 0}
+};
+
+for (const [kind, artifact] of Object.entries(artifacts)) {
+  artifact.generate.addEventListener("click", async () => {
+    if (!profile || profile.role === "viewer") return;
+    const version = ++artifact.version;
+    latest[kind] = null;
+    artifact.download.disabled = true;
+    artifact.generate.disabled = true;
+    updateOutput(artifact.output, "Generating...");
+    if (kind === "pipeline") setPipelineStatus("Generating...");
+    try {
+      const data = await requestTemplate(`/api/${kind}`);
+      if (version !== artifact.version) return;
+      latest[kind] = data;
+      updateOutput(artifact.output, data.content);
+      artifact.download.disabled = false;
+      if (kind === "pipeline") setPipelineStatus(`Generated ${data.filename}`);
+    } catch (error) {
+      if (version !== artifact.version) return;
+      updateOutput(artifact.output, error.message);
+      if (kind === "pipeline") setPipelineStatus("Error");
+    } finally {
+      if (version === artifact.version) artifact.generate.disabled = !profile || profile.role === "viewer";
+    }
+  });
+  artifact.download.addEventListener("click", () => downloadFile(latest[kind]));
+}
+
+function invalidateArtifacts() {
+  for (const [kind, artifact] of Object.entries(artifacts)) {
+    // An older in-flight response must not restore a download for previous inputs.
+    artifact.version++;
+    latest[kind] = null;
+    artifact.download.disabled = true;
+    artifact.generate.disabled = !profile || profile.role === "viewer";
+    updateOutput(artifact.output, "Inputs changed. Generate a new artifact.");
   }
-});
-
-downloadPipelineButton.addEventListener("click", () => {
-  downloadFile(latest.pipeline);
-});
-
-generateTerraformButton.addEventListener("click", async () => {
-  try {
-    const data = await requestTemplate("/api/terraform");
-    latest.terraform = data;
-    updateOutput(terraformOutput, data.content);
-  } catch (error) {
-    updateOutput(terraformOutput, error.message);
-  }
-});
-
-downloadTerraformButton.addEventListener("click", () => {
-  downloadFile(latest.terraform);
-});
-
-generateHelmButton.addEventListener("click", async () => {
-  try {
-    const data = await requestTemplate("/api/helm");
-    latest.helm = data;
-    updateOutput(helmOutput, data.content);
-  } catch (error) {
-    updateOutput(helmOutput, error.message);
-  }
-});
-
-downloadHelmButton.addEventListener("click", () => {
-  downloadFile(latest.helm);
-});
+  setPipelineStatus("Ready");
+}
+for (const input of [appNameInput, environmentInput, providerSelect, appCountInput]) {
+  input.addEventListener("input", invalidateArtifacts);
+  input.addEventListener("change", invalidateArtifacts);
+}
 
 loadIdentity().catch(() => { document.getElementById("identity").textContent = "Portal unavailable. Please reload."; });
 setInterval(() => { if (profile) loadServiceStatus(); }, 10000);

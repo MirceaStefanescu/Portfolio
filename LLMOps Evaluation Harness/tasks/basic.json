@@ -1,6 +1,6 @@
 {
   "name": "basic-qa",
-  "dataset": "datasets/qa_basic.jsonl",
+  "dataset": "../datasets/qa_basic.jsonl",
   "metrics": ["accuracy", "f1"],
   "prompt_template": "Answer the question as concisely as possible.\n\nQuestion: {input}\nAnswer:"
 }

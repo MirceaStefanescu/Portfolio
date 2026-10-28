@@ -1,5 +1,16 @@
 # Predictive Analytics Pipeline on Kubernetes
 
+
+<!-- LOCAL_WINDOWS_RUNTIME_20261004 -->
+**This workstation — Windows configuration checked 4 October 2026.**
+This project is under `G:\Projects\Portfolio`. Use the existing explicit launchers below with DevTools PowerShell; they select the managed runtimes independently of a previously opened shell.
+- [api/DevTools.ps1](api/DevTools.ps1): Java 25, Maven 3.10.0; Compile/Test.
+- [flink/DevTools.ps1](flink/DevTools.ps1): Java 11, Maven 3.10.0; Compile/Test.
+
+Exact local paths, recovery, dated test scope and Windows/Linux separation: [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026).
+The generic Make/Docker examples below describe their own environments; they do not prove use of the Windows runtime. No application, container, external integration or test was started for this documentation check.
+<!-- /LOCAL_WINDOWS_RUNTIME_20261004 -->
+
 ## Streaming data and analytics APIs
 
 Process incoming events continuously and expose searchable results to an application or operations team.

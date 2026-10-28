@@ -12,6 +12,16 @@ async function loadStatus() {
     fetchJson("/api/status")
   ]);
 
+  const values = [
+    status?.environment, status?.releaseColor, status?.buildId,
+    info?.build?.service, info?.build?.gitSha, info?.build?.startedAt
+  ];
+  if (!values.every((value) => typeof value === "string") ||
+      !Array.isArray(info?.pipeline?.stages) ||
+      !info.pipeline.stages.every((stage) => typeof stage === "string")) {
+    throw new Error("Invalid deployment metadata");
+  }
+
   document.getElementById("env").textContent = status.environment;
   document.getElementById("color").textContent = status.releaseColor;
   document.getElementById("build").textContent = status.buildId;
@@ -31,7 +41,12 @@ async function loadStatus() {
 
 loadStatus().catch((error) => {
   console.error(error);
-  document.getElementById("env").textContent = "unavailable";
-  document.getElementById("color").textContent = "unavailable";
-  document.getElementById("build").textContent = "unavailable";
+  for (const id of ["env", "color", "build", "service", "sha", "started"]) {
+    document.getElementById(id).textContent = "unavailable";
+  }
+  const stages = document.getElementById("stages");
+  stages.innerHTML = "";
+  const item = document.createElement("li");
+  item.textContent = "unavailable";
+  stages.appendChild(item);
 });

@@ -1,5 +1,16 @@
 # Full Stack E-commerce Application with Angular and Spring Boot
 
+
+<!-- LOCAL_WINDOWS_RUNTIME_20261004 -->
+**This workstation — Windows configuration checked 4 October 2026.**
+This project is under `G:\Projects\Portfolio`. Use the existing explicit launchers below with DevTools PowerShell; they select the managed runtimes independently of a previously opened shell.
+- [frontend/DevTools.ps1](frontend/DevTools.ps1): Node 26.11.1; Test/Build.
+- [backend/DevTools.ps1](backend/DevTools.ps1): Java 26, Maven 3.10.0; Compile/Test.
+
+Exact local paths, recovery, dated test scope and Windows/Linux separation: [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026).
+The generic Make/Docker examples below describe their own environments; they do not prove use of the Windows runtime. No application, container, external integration or test was started for this documentation check.
+<!-- /LOCAL_WINDOWS_RUNTIME_20261004 -->
+
 ## Web applications with a Java backend
 
 Give users a complete path from registration and product browsing to checkout and order history.

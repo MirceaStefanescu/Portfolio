@@ -28,6 +28,64 @@ curl -X POST http://localhost:8080/api/pipeline \
   -d '{"appName":"orders-api","environment":"dev","provider":"github","appCount":3}'
 ```
 
+## JSON input validation
+
+`appName` and `environment` must be strings; `provider` is an optional string
+(`github` by default, or `jenkins`). Names are trimmed, lowercased and validated
+as DNS-style labels. `appCount` defaults to 1; integer numbers and nonblank numeric
+strings are accepted and clamped to 0..50. Null, booleans, arrays, objects, blank
+counts and fractional/non-finite counts return 400. Invalid input does not generate
+an artifact or increment its success counter. Authorization and CSRF checks still
+apply before generation; production requires an administrator.
+
+The 26 October 2026 scoped regression run passed 27 tests on Node 26.11.1 / Express 4.22.3,
+including 11 new cases and local signed OIDC exchanges. This does not certify
+external identity providers, browser UI or deployment integrations. See the
+Portfolio runbook for the exact-source evidence.
+
+## Service health probes
+
+`GET /api/services` checks configured services concurrently using GET. Each probe
+has a 2000 ms timeout. HTTP 2xx is `healthy`, other HTTP responses are `unhealthy`,
+missing URLs are `unconfigured`, and transport errors/timeouts are `unreachable`.
+These are HTTP availability labels, not full service diagnostics or Vault HA roles.
+The response body is not inspected and is explicitly cancelled to release resources,
+including when an upstream sends headers but never finishes its body. A fresh check
+runs on every request. The services metric counts aggregate requests, not individual probes.
+
+Six additional native loopback tests cover response cleanup, timeout aborts, mixed
+outcomes, concurrency before response release, bodyless responses and changed status
+on repeated requests. The service-health audit passed 33 tests on Node 26.11.1 before the UI additions.
+Live Jenkins/Vault/Prometheus/Grafana deployment behavior remains a separate check.
+
+## Artifact download state
+
+Each generator has its own downloadable result. Starting a request clears that
+result and disables its download until a valid filename/content response arrives.
+Failures and malformed successful responses leave it disabled. Editing any shared
+input invalidates all three results, including requests still in flight. A superseded
+response cannot restore an old result or replace a newer one. Generation starts
+disabled until identity loads and remains disabled for viewers.
+
+Twelve additional tests use manually resolved promises with the actual browser script;
+they cover pending/failure state, payload validation, response ordering, independent
+downloads, shared input edits and viewer controls. The artifact-download audit passed 45 tests on
+Node 26.11.1 before the service-display additions. Native IAB checks also verify successful generation and invalidation.
+Browser OIDC and real deployment/service integrations require separate validation.
+
+## Service health display
+
+The browser accepts only successful HTTP responses with an array of named services
+and supported status values. Failed requests, malformed responses and transport
+errors replace previous rows with one Portal `unreachable` row. Older polls cannot
+overwrite a newer result. Labels are rendered as text, with allowlisted badge classes.
+This display describes the status API observation, not a full portal diagnosis.
+
+Five additional deterministic tests execute the actual browser script with DOM/fetch
+fixtures, covering failure/recovery, malformed payloads, response ordering and literal
+labels. The full suite passes 50 tests on Node 26.11.1. Visual verification of this
+display change remains outstanding; external deployment behavior is not certified.
+
 ## Configuration and logging
 - Configure service URLs, access mode and log level through environment variables (Compose reads the project-root `.env`; see `../.env.example`).
 - Logs are JSON with `requestId` for traceability (see `docs/logging.md`).

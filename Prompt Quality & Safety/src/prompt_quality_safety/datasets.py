@@ -22,6 +22,31 @@ class EvalCase:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EvalCase:
+        if not isinstance(data, dict):
+            raise ValueError("Each dataset record must be a JSON object")
+        for name in ("id", "input"):
+            if not isinstance(data.get(name, ""), str):
+                raise ValueError(f"{name} must be a string")
+        for name in ("expected", "context", "category", "source"):
+            if data.get(name) is not None and not isinstance(data[name], str):
+                raise ValueError(f"{name} must be a string or null")
+        if data.get("should_refuse") is not None and not isinstance(data["should_refuse"], bool):
+            raise ValueError("should_refuse must be a boolean or null")
+        for name, item_type in (
+            ("expected_keywords", str),
+            ("must_not_include", str),
+            ("tools", dict),
+            ("expected_tool_calls", dict),
+        ):
+            value = data.get(name)
+            if value is None and name != "tools":
+                continue
+            if name == "tools" and name not in data:
+                continue
+            if not isinstance(value, list) or not all(
+                isinstance(item, item_type) for item in value
+            ):
+                raise ValueError(f"{name} must be a list of {item_type.__name__} values")
         return cls(
             id=data.get("id", ""),
             input=data.get("input", ""),
@@ -40,10 +65,13 @@ class EvalCase:
 def load_jsonl(path: Path) -> list[EvalCase]:
     cases: list[EvalCase] = []
     with path.open("r", encoding="utf-8") as handle:
-        for line in handle:
+        for line_number, line in enumerate(handle, 1):
             line = line.strip()
             if not line:
                 continue
-            data = json.loads(line)
-            cases.append(EvalCase.from_dict(data))
+            try:
+                data = json.loads(line)
+                cases.append(EvalCase.from_dict(data))
+            except ValueError as error:
+                raise ValueError(f"{path}: line {line_number}: {error}") from error
     return cases
