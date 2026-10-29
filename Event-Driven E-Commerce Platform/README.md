@@ -3,7 +3,7 @@
 
 <!-- LOCAL_WINDOWS_RUNTIME_20261004 -->
 **This workstation — Windows configuration checked 4 October 2026.**
-This project is under `G:\Projects\Portfolio`. Use the existing explicit launchers below with DevTools PowerShell; they select the managed runtimes independently of a previously opened shell.
+This project is under `H:\Projects\Portfolio`. Use the existing explicit launchers below with DevTools PowerShell; they select the managed runtimes independently of a previously opened shell.
 - [services/inventory-service/DevTools.ps1](services/inventory-service/DevTools.ps1): Java 25, Maven 3.10.0; Compile/Test.
 - [services/order-service/DevTools.ps1](services/order-service/DevTools.ps1): Java 25, Maven 3.10.0; Compile/Test.
 

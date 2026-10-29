@@ -4,11 +4,11 @@
 <!-- DEVTOOLS_CURRENT_LOCATION_BEGIN -->
 ## Locație și medii locale
 
-Rădăcina Windows este `G:\Projects\Portfolio`, iar în WSL `/mnt/g/Projects/Portfolio`. Proprietarul a aprobat păstrarea mediilor `.devtools/Windows` și `.devtools/Linux` în proiecte prin `PORTFOLIO_ENVIRONMENTS_EXCEPTION_20261003`. Runtime-urile comune și cache-urile gestionabile rămân în `G:\DevTools`.
+Rădăcina Windows este `H:\Projects\Portfolio`, iar în WSL `/mnt/h/Projects/Portfolio`. Proprietarul a aprobat păstrarea mediilor `.devtools/Windows` și `.devtools/Linux` în proiecte prin `PORTFOLIO_ENVIRONMENTS_EXCEPTION_20261003`. Runtime-urile comune și cache-urile gestionabile rămân în `H:\DevTools`.
 
-Pentru Python, folosește `DevTools.ps1 -Action Test` sau `-Action Run` din proiectul corespunzător; pentru proiectele Node configurate, `G:\DevTools\Invoke-NodeProject.ps1 -Project <ID> -Action Test`. `G:\DevTools\Invoke-EcommerceLinux.sh test|build` selectează mediul Linux separat. Launcherul portofoliului își determină rădăcina din propria locație. Comenzile de pornire Docker/integrări necesită disponibilitatea și autorizarea serviciilor respective; testele locale nu certifică aceste integrări.
+Pentru Python, folosește `DevTools.ps1 -Action Test` sau `-Action Run` din proiectul corespunzător; pentru proiectele Node configurate, `H:\DevTools\Invoke-NodeProject.ps1 -Project <ID> -Action Test`. `H:\DevTools\Invoke-EcommerceLinux.sh test|build` selectează mediul Linux separat. Launcherul portofoliului își determină rădăcina din propria locație. Comenzile de pornire Docker/integrări necesită disponibilitatea și autorizarea serviciilor respective; testele locale nu certifică aceste integrări.
 
-Referința de migrare și mentenanță este [G:\DevTools\README.md](G:/DevTools/README.md). Copiile `.original` și `.before-path-repair-20261003` sunt recuperări, nu medii active și nu cache de șters automat. Un venv Python mutat se recreează la calea de utilizare; simpla redenumire a copiei de recuperare nu demonstrează funcționarea sa.
+Referința de migrare și mentenanță este [H:\DevTools\README.md](H:/DevTools/README.md). Copiile `.original` și `.before-path-repair-20261003` sunt recuperări, nu medii active și nu cache de șters automat. Un venv Python mutat se recreează la calea de utilizare; simpla redenumire a copiei de recuperare nu demonstrează funcționarea sa.
 <!-- DEVTOOLS_CURRENT_LOCATION_END -->
 **Freelance services: Java/Spring Boot APIs, system integrations, web applications and deployment automation.**
 

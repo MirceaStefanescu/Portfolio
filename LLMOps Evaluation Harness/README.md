@@ -3,7 +3,7 @@
 
 <!-- LOCAL_WINDOWS_RUNTIME_20261004 -->
 **This workstation — verification25 October2026.**
-The project is under `G:\Projects\Portfolio`. [DevTools.ps1](DevTools.ps1) currently selects its Python3.15.0 environment;VSCode still has a3.14.8 selector. The Python3.15.1 replacement is prepared but awaits package security admission and full validation before either selector changes.
+The project is under `H:\Projects\Portfolio`. [DevTools.ps1](DevTools.ps1) currently selects its Python3.15.0 environment;VSCode still has a3.14.8 selector. The Python3.15.1 replacement is prepared but awaits package security admission and full validation before either selector changes.
 
 82 regression cases pass in normal and reverse order on the current Windows environment,including actual loopback HTTP,SQLite,CLI overrides,shipped examples and failure artifacts. Lint/format pass with the installed Ruff0.17.0;this is below the declared development minimum0.17.1 and is tracked for replacement. Remote model quality,Linux CI,a clean package build and the generic quickstart are not certified by these checks.
 

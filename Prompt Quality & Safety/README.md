@@ -3,7 +3,7 @@
 
 <!-- LOCAL_WINDOWS_RUNTIME_20261004 -->
 **This workstation — Windows configuration checked 4 October 2026.**
-This project is under `G:\Projects\Portfolio`. Use the existing explicit launchers below with DevTools PowerShell; they select the managed runtimes independently of a previously opened shell.
+This project is under `H:\Projects\Portfolio`. Use the existing explicit launchers below with DevTools PowerShell; they select the managed runtimes independently of a previously opened shell.
 - [DevTools.ps1](DevTools.ps1): Python 3.15.0; Test/Run.
 
 Exact local paths, recovery, dated test scope and Windows/Linux separation: [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026).
