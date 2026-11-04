@@ -4,7 +4,7 @@
   "cli": {
     "packageManager": "npm",
     "cache": {
-      "path": "H:/DevTools/_Cache/angular/EcommerceFrontend"
+      "path": "F:/DevTools/_Cache/angular/EcommerceFrontend"
     },
     "analytics": false
   },
