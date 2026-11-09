@@ -25,11 +25,13 @@ EXTERNAL_HOSTS = {"github.com", "mirceastefanescu.github.io", "img.shields.io",
 
 class Markup(HTMLParser):
     def __init__(self):
+        """Collect destinations and explicit HTML anchors without fetching content."""
         super().__init__(convert_charrefs=True)
         self.links = []
         self.anchors = set()
 
     def handle_starttag(self, tag, attrs):
+        """Record links, media sources and social-preview images from HTML tags."""
         attrs = dict(attrs)
         for name in ("href", "src", "poster"):
             if attrs.get(name):
@@ -42,15 +44,31 @@ class Markup(HTMLParser):
                 self.links.append(attrs["content"])
 
 
+def strip_fences(text):
+    """Discard fenced examples, including longer closing fences and an open tail."""
+    kept, fence = [], None
+    for line in text.splitlines():
+        match = re.match(r" {0,3}(`{3,}|~{3,})(.*)$", line)
+        if fence is None:
+            if match and not (match[1][0] == "`" and "`" in match[2]):
+                fence = match[1]
+                continue
+            kept.append(line)
+        elif match and match[1][0] == fence[0] and len(match[1]) >= len(fence) and not match[2].strip():
+            fence = None
+    return "\n".join(kept)
+
+
 def parse_document(path):
+    """Extract presentation Markdown/HTML/CSS links and supported local anchors."""
     text = path.read_text(encoding="utf-8")
     if path.suffix == ".md":
-        text = re.sub(r"(?ms)^\s*(`{3,}|~{3,}).*?^\s*\1\s*$", "", text)
+        text = strip_fences(text)
     markup = Markup()
     markup.feed(text)
     if path.suffix == ".md":
         # Inline destinations (including <paths with spaces>) and reference definitions.
-        patterns = (r"!?\[[^\]\n]*\]\(\s*(?:<([^>]+)>|([^\s)]+))(?:\s+['\"][^\n]*?['\"])?\s*\)",
+        patterns = (r"\]\(\s*(?:<([^>]+)>|([^\s)]+))(?:\s+['\"][^\n]*?['\"])?\s*\)",
                     r"(?m)^\s*\[[^\]\n]+\]:\s*(?:<([^>]+)>|(\S+))")
         for pattern in patterns:
             markup.links.extend(a or b for a, b in re.findall(pattern, text))
@@ -84,6 +102,7 @@ def local_target(root, source, link):
 
 
 def check_local(root, source, link):
+    """Reject missing targets/anchors and links escaping the repository checkout."""
     target, fragment = local_target(root, source, link)
     if target is None:
         return
@@ -101,18 +120,21 @@ def check_local(root, source, link):
 
 
 def permitted_external(url):
+    """Allow only credential-free HTTPS requests to the reviewed public hosts."""
     parts = urlsplit(url)
     return parts.scheme == "https" and parts.hostname in EXTERNAL_HOSTS and not parts.username and not parts.password and parts.port in (None, 443)
 
 
 class PublicRedirects(HTTPRedirectHandler):
     def redirect_request(self, request, response, code, message, headers, newurl):
+        """Apply the same destination restrictions before following a redirect."""
         if not permitted_external(newurl):
             raise ValueError("Redirect host requires review")
         return super().redirect_request(request, response, code, message, headers, newurl)
 
 
 def external_status(url):
+    """Confirm persistent 404/410 responses; keep uncertain HTTP outcomes advisory."""
     if not permitted_external(url):
         return "warning", "Host or URL requires review; no network request made"
     if url == REPO + "security/advisories/new":
@@ -141,6 +163,7 @@ def external_status(url):
 
 
 def check(root, external=False):
+    """Return reference counts, blocking errors and advisory network warnings."""
     errors, warnings, urls = [], [], set()
     sources = [root / name for name in ROOT_DOCS] + sorted((root / "docs").glob("*.html")) + sorted((root / "docs").glob("*.css"))
     if not (root / "docs/index.html").is_file():
@@ -182,6 +205,7 @@ def check(root, external=False):
 
 
 def main():
+    """Run offline by default and expose the same results in the CI summary."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--external", action="store_true", help="Also check approved public HTTPS hosts")
     args = parser.parse_args()

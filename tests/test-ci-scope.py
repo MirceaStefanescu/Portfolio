@@ -14,6 +14,7 @@ spec.loader.exec_module(scope)
 
 class ScopeTests(unittest.TestCase):
     def test_conservative_allowlist(self):
+        """Keep code, unknown paths, nested assets and traversal outside the shortcut."""
         self.assertTrue(scope.presentation_only(["README.md", "docs/index.html", "docs/assets/web-app.png"]))
         for paths in ([], ["README.md", "app.py"], [".coderabbit.yaml"],
                       [".github/workflows/portfolio-ci.yml"], ["scripts/check-ci-scope.py"],
@@ -24,17 +25,20 @@ class ScopeTests(unittest.TestCase):
                 self.assertFalse(scope.presentation_only(paths))
 
     def test_unknown_event_or_identity_runs_everything(self):
+        """Uncertain event or commit identity must retain all application suites."""
         for event in ("push", "workflow_dispatch", "", "pull_request_target"):
             self.assertEqual(scope.determine_scope(ROOT, event, "a" * 40, "b" * 40)[0], "full")
         for base in ("", "main", "--help", "x" * 40):
             self.assertEqual(scope.determine_scope(ROOT, "pull_request", base, "b" * 40)[0], "full")
 
     def test_real_merge_and_rename_diffs(self):
+        """Validate real Git test merges, code changes, renames and unusual file modes."""
         for change, expected in (("docs", "docs"), ("code", "full"), ("mixed", "full"),
                                  ("rename", "full"), ("executable", "full"), ("symlink", "full")):
             with self.subTest(change=change), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 def git(*args):
+                    """Run Git only inside the disposable test-owned repository."""
                     return subprocess.check_output(["git", *args], cwd=root, stderr=subprocess.DEVNULL).decode().strip()
                 git("init", "-b", "main")
                 git("config", "user.name", "CI fixture")
