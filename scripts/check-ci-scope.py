@@ -13,6 +13,7 @@ IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".i
 
 
 def presentation_only(paths):
+    """Require a nonempty set of explicitly allowlisted presentation paths."""
     if not paths:
         return False
     for name in paths:
@@ -28,12 +29,14 @@ def presentation_only(paths):
 
 
 def determine_scope(root, event, base, head):
+    """Use a verified PR test-merge diff, falling back to full coverage on doubt."""
     if event != "pull_request":
         return "full", "Push and manual runs always execute the complete suite."
     if not all(re.fullmatch(r"[0-9a-f]{40}", value or "") for value in (base, head)):
         return "full", "Missing or invalid commit identity."
 
     def git(*args):
+        """Read bounded Git metadata without interpreting commit values as shell code."""
         return subprocess.check_output(["git", *args], cwd=root, stderr=subprocess.DEVNULL, timeout=15)
 
     try:
@@ -56,6 +59,7 @@ def determine_scope(root, event, base, head):
 
 
 def main():
+    """Publish the conservative scope decision to GitHub outputs and the summary."""
     scope, reason = determine_scope(Path.cwd(), os.environ.get("CI_EVENT_NAME", ""),
                                     os.environ.get("CI_BASE_SHA", ""), os.environ.get("CI_HEAD_SHA", ""))
     print(f"Portfolio CI scope: {scope}. {reason}")
