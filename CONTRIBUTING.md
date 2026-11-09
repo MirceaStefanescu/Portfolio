@@ -28,3 +28,29 @@ Report vulnerabilities through SECURITY.md. Never include credentials, local
 environments, private paths, or unrelated files in a pull request.
 Licensing is defined by each project's existing LICENSE; contributing does not
 replace those terms.
+
+## Running the lightweight checks
+
+From the repository root, with Python and Git available:
+
+```bash
+bash tests/test-ci-status.sh
+python tests/test-ci-scope.py
+python tests/test-presentation.py
+python scripts/check-presentation.py
+```
+
+Use `python scripts/check-presentation.py --external` to also check the approved
+public HTTPS hosts. Network warnings appear separately from broken local links.
+Dependency Review uses the repository's short-lived GitHub Actions token in CI;
+no local token or AI API key is needed for the commands above.
+
+The fast PR path covers `README.md`, `PROFILE_README.md`, `SERVICES.md`,
+`CONTRIBUTING.md`, `SECURITY.md`, the existing Pages entry files and direct image
+files under `docs/assets/`. Subproject READMEs and newly introduced file types
+take the full path until explicitly reviewed. The scope decision and any
+external-link warnings are visible in the workflow's job summary.
+
+For an unexpected status failure, inspect the quality job and the final
+Portfolio status job together. Fix the underlying result or classification;
+do not remove the required check or accept arbitrary skipped jobs.
