@@ -31,7 +31,10 @@ replace those terms.
 
 ## Running the lightweight checks
 
-From the repository root, with Python and Git available:
+Use a POSIX environment with Bash, Python 3.9 or later available as `python`,
+and Git 2.28 or later. The regression fixtures use executable file modes and
+symbolic links. GitHub Actions already supplies this environment; local execution
+is optional. Run the commands from the repository root:
 
 ```bash
 bash tests/test-ci-status.sh
