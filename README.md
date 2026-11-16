@@ -41,7 +41,9 @@ Start with these three examples. Each project opens with a real capture and link
 
 For an initial discussion, describe the problem, the current stack, the workflow you want to improve and any deadline or integration constraints. I can then help define a practical first deliverable and how it will be verified.
 
-[Email me at stefanescumircea1990@gmail.com](mailto:stefanescumircea1990@gmail.com) to discuss a freelance project.
+[Open the project enquiry form](https://stefanescumircea1990.wordpress.com/software-services/?utm_source=github&utm_medium=portfolio&utm_campaign=it_services_202611#project-enquiry) to discuss a freelance project. Include reference **GITHUB-PORTFOLIO** if useful; omit passwords and production secrets. [Email](mailto:stefanescumircea1990@gmail.com) remains an alternative.
+
+**Starting terms:** EUR 40/hour gross, or an optional EUR 200 gross diagnostic for one agreed issue, up to five work hours, with a report within seven calendar days after receipt of the agreed inputs. Implementation is scoped separately; availability and commercial terms are agreed before work starts. [Full service details](SERVICES.md#diagnostics).
 
 ## Project directory
 
@@ -190,3 +192,4 @@ provider accounts require their own configuration and verification. Retention
 settings do not prove that the configured number of days has elapsed.
 
 </details>
+

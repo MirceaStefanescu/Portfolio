@@ -2,9 +2,9 @@
 
 Remote development for APIs, web products, integrations and reliable delivery.
 
-**€40/hour · Availability agreed per project · Optional €200 diagnostic**
+**€40/hour gross · Availability agreed per project · Optional €200 gross diagnostic**
 
-[Discuss your project](mailto:stefanescumircea1990@gmail.com) · [Portfolio overview](README.md) · [Service options](#services) · [Start with a diagnostic](#diagnostics) · [All 16 project examples](#project-examples)
+[Discuss your project](https://stefanescumircea1990.wordpress.com/software-services/?utm_source=github&utm_medium=portfolio&utm_campaign=it_services_202611#project-enquiry) · [Portfolio overview](README.md) · [Service options](#services) · [Start with a diagnostic](#diagnostics) · [All 16 project examples](#project-examples)
 
 ## Services
 
@@ -56,7 +56,7 @@ A diagnostic is a small, separately scoped engagement before implementation: **�
 3. I implement the agreed work with relevant tests and a reviewable demonstration.
 4. You receive the source changes, setup/handoff notes and known limits appropriate to the scope.
 
-If you contact me through a freelance marketplace, keep communication and payment within that platform's rules. Direct enquiries: [stefanescumircea1990@gmail.com](mailto:stefanescumircea1990@gmail.com).
+If you contact me through a freelance marketplace, keep communication and payment within that platform's rules. Direct enquiries: [use the project enquiry form](https://stefanescumircea1990.wordpress.com/software-services/?utm_source=github&utm_medium=portfolio&utm_campaign=it_services_202611#project-enquiry); reference **GITHUB-PORTFOLIO** if useful. Email remains available as an alternative: [stefanescumircea1990@gmail.com](mailto:stefanescumircea1990@gmail.com).
 
 ## Project examples
 
@@ -418,5 +418,6 @@ These **16 portfolio demonstrations** show implemented capabilities and real loc
 
 Tell me what needs to change and which example is closest to your project. I will help define a practical first scope and how its result will be checked.
 
-[Email Mircea Stefanescu](mailto:stefanescumircea1990@gmail.com).
+[Open the project enquiry form](https://stefanescumircea1990.wordpress.com/software-services/?utm_source=github&utm_medium=portfolio&utm_campaign=it_services_202611#project-enquiry). Include your problem, stack and, if useful, reference **GITHUB-PORTFOLIO**. Do not send passwords or production secrets.
+
 
