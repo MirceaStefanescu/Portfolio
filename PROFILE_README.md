@@ -1,39 +1,28 @@
-# Hi, I'm Mircea
+# Mircea Stefanescu | Remote Software Development
 
-Full-stack developer with a DevOps mindset, focused on cloud-native architectures, security-first delivery, and data/observability platforms.
+I build and improve Java/Spring Boot APIs, web applications, integrations and delivery workflows. Explore inspectable personal demonstrations, then agree a first project scope with relevant acceptance checks.
 
-## Focus
-- Cloud-native microservices, Kubernetes, and infrastructure as code
-- CI/CD automation, GitOps, and supply-chain security
-- Streaming data pipelines and real-time analytics
-- Full-stack systems with production-ready practices
+[Visual portfolio](https://mirceastefanescu.github.io/Portfolio/) · [All 16 projects](https://github.com/MirceaStefanescu/Portfolio) · [Service catalog](https://github.com/MirceaStefanescu/Portfolio/blob/main/SERVICES.md)
 
-## Core stack
-- Languages: ![Java](https://img.shields.io/badge/Java-ED8B00?logo=openjdk&logoColor=white) ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
-- Backend: ![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?logo=springboot&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
-- Frontend: ![Angular](https://img.shields.io/badge/Angular-DD0031?logo=angular&logoColor=white)
-- Cloud/DevOps: ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?logo=kubernetes&logoColor=white) ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?logo=terraform&logoColor=white) ![AWS](https://img.shields.io/badge/AWS-232F3E?logo=amazonaws&logoColor=white)
-- Data/Obs: ![Kafka](https://img.shields.io/badge/Kafka-231F20?logo=apachekafka&logoColor=white) ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white) ![Grafana](https://img.shields.io/badge/Grafana-F46800?logo=grafana&logoColor=white)
+## Start with one problem
 
-## Highlights
-- 15+ portfolio projects spanning cloud, data, security, and full-stack engineering.
-- Emphasis on CI/CD, observability, and production-ready architecture patterns.
+- [API and integration diagnosis](https://mirceastefanescu.github.io/Portfolio/api-integration-diagnostic.html): reproduce a failure and define a correction with acceptance checks.
+- [CI/CD pipeline diagnosis](https://mirceastefanescu.github.io/Portfolio/cicd-pipeline-diagnostic.html): inspect one build or deployment path and its recovery gaps.
+- [AI regression review](https://mirceastefanescu.github.io/Portfolio/ai-regression-diagnostic.html): define representative cases and make prompt or output changes reviewable.
 
-## Flagship projects
-- Cloud-Native E-Commerce Platform: Microservice retail APIs on Kubernetes with Kafka/RabbitMQ and Terraform. https://github.com/<username>/cloud-native-e-commerce-platform
-- Predictive Analytics Pipeline on Kubernetes: Streaming analytics with Kafka/Flink, Postgres/Elasticsearch, and Grafana. https://github.com/<username>/predictive-analytics-pipeline
-- Real-Time Chat & Collaboration Platform: Spring Boot + Angular chat with Kafka, OAuth, and observability. https://github.com/<username>/realtime-chat-collaboration
-- Automated Infrastructure & Deployment Platform: Self-service infra provisioning with CI/CD templates and policy checks. https://github.com/<username>/automated-infrastructure-platform
-- Secure Secrets Management & Observability Toolkit: Vault, Prometheus/Grafana, and Terraform automation. https://github.com/<username>/secure-secrets-observability-toolkit
-- Observability - New Relic & Prometheus: Multi-cloud Kubernetes observability with OpenTelemetry and NR integration. https://github.com/<username>/observability-newrelic-prometheus
-- Prompt Quality & Safety: Prompt engineering toolkit with guardrails, injection tests, and eval metrics. https://github.com/<username>/prompt-quality-safety
+**Rate:** EUR 40/hour gross. An optional **EUR 200 gross diagnostic** covers one agreed issue, up to five work hours, with a report and recommendations within seven calendar days after receipt of the agreed inputs. Implementation and ongoing support are scoped separately; availability and commercial terms are agreed before work starts.
 
-## Currently working on
-- Polishing this portfolio for quick reviewer scan: READMEs, demos, and CI signals.
-- Deepening Kubernetes operations: cost controls, reliability patterns, and GitOps promotion flows.
+## Inspect the evidence
 
-## Contact
-Open to opportunities and collaborations.
-- Email: stefanescumircea1990@gmail.com
-- LinkedIn: https://www.linkedin.com/in/stefanescumircea/
-<!-- Replace <username> in project links to match your GitHub handle. -->
+- [Java and Kafka order workflows](https://github.com/MirceaStefanescu/Portfolio/blob/main/Event-Driven%20E-Commerce%20Platform/README.md)
+- [Angular and Spring Boot application](https://github.com/MirceaStefanescu/Portfolio/blob/main/Full%20Stack%20E-commerce%20Application%20with%20Angular%20and%20Spring%20Boot/README.md)
+- [CI/CD automation](https://github.com/MirceaStefanescu/Portfolio/blob/main/CI/CD%20Pipeline%20Automation/README.md)
+- [Prompt regression checks](https://github.com/MirceaStefanescu/Portfolio/blob/main/Prompt%20Quality%20%26%20Safety/README.md)
+
+These are personal demonstrations, not customer case studies. Payment and provider examples include simulations; AI adapter tests use controlled fixtures. Production deployment, live provider access and model quality need project-specific validation. Each project documents its evidence and limits.
+
+## Discuss a project
+
+[Open the project enquiry form](https://stefanescumircea1990.wordpress.com/software-services/?utm_source=github&utm_medium=portfolio&utm_campaign=it_services_202611#project-enquiry) with your problem, stack and desired outcome. Include reference **GITHUB-PORTFOLIO** if useful. Do not send credentials or production secrets. Remote freelance/B2B work from Romania; scope and availability agreed per engagement.
+
+This file is a reusable profile summary. The published profile lives in the separate [MirceaStefanescu profile repository](https://github.com/MirceaStefanescu/MirceaStefanescu).

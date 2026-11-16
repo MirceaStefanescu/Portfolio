@@ -1,1 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://mirceastefanescu.github.io/Portfolio/</loc></url></urlset>
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://mirceastefanescu.github.io/Portfolio/</loc></url>
+  <url><loc>https://mirceastefanescu.github.io/Portfolio/api-integration-diagnostic.html</loc></url>
+  <url><loc>https://mirceastefanescu.github.io/Portfolio/cicd-pipeline-diagnostic.html</loc></url>
+  <url><loc>https://mirceastefanescu.github.io/Portfolio/ai-regression-diagnostic.html</loc></url>
+</urlset>
