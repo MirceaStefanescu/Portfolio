@@ -34,7 +34,7 @@ fi
 [[ "$(git -C "$private_root" remote get-url origin)" == "$private_origin" ]] || { echo 'Unexpected private checkout origin.' >&2; exit 1; }
 [[ -z "$(git -C "$private_root" status --porcelain)" ]] || { echo 'Preserve private checkout edits before refreshing.' >&2; exit 1; }
 git -C "$private_root" fetch --quiet --depth=1 origin "$revision"
-git -C "$private_root" checkout --quiet --detach "$revision"
+git -C "$private_root" checkout --quiet --detach --no-overwrite-ignore "$revision"
 python3 "$private_root/scripts/prepare-public-workspace.py" \
   --public-root "$public_root" --private-root "$private_root" \
   --revision "$revision" --source-sha "$(git -C "$public_root" rev-parse HEAD)"

@@ -19,15 +19,12 @@ runs:
         AUTOMATION_KEY_PRESENT: ${{ inputs.ssh-key != '' }}
       run: python3 "${{ github.action_path }}/validate-access.py"
     - name: Read the pinned private implementation
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        repository: MirceaStefanescu/Portfolio-Automation
-        ref: ${{ steps.access.outputs.revision }}
-        path: .private-automation
-        ssh-key: ${{ inputs.ssh-key }}
-        ssh-strict: true
-        persist-credentials: false
-        fetch-depth: 1
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        AUTOMATION_REVISION: ${{ steps.access.outputs.revision }}
+        PORTFOLIO_AUTOMATION_SSH_KEY: ${{ inputs.ssh-key }}
+      run: bash --noprofile --norc "${{ github.action_path }}/checkout-private.sh"
     - name: Prepare verified private tools without changing public GitHub metadata
       shell: bash
       working-directory: ${{ github.workspace }}
