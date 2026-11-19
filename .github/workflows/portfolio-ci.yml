@@ -207,6 +207,8 @@ jobs:
         with:
           python-version: '3.15'
       - run: ./portfolio-launcher.sh --list
+      - name: Test campaign attribution through portfolio navigation
+        run: node --test tests/test-campaign-attribution.cjs
       - name: Prepare documented Chat environment example
         run: cp "Real-Time Chat & Collaboration Platform/.env.example" "Real-Time Chat & Collaboration Platform/.env"
       - run: python tests/test-compose-ports.py

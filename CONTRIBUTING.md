@@ -57,3 +57,28 @@ external-link warnings are visible in the workflow's job summary.
 For an unexpected status failure, inspect the quality job and the final
 Portfolio status job together. Fix the underlying result or classification;
 do not remove the required check or accept arbitrary skipped jobs.
+
+## Campaign labels in portfolio links
+
+`docs/campaign-attribution.js` preserves reviewed UTM labels from the homepage
+through the three diagnostic pages and the existing WordPress enquiry link.
+It uses no cookies, browser storage, analytics service or network requests.
+Plain visits and invalid/ambiguous campaigns keep the links authored in HTML.
+
+Campaign links require `utm_source` from the source vocabulary in that script.
+Optional `utm_medium`, `utm_content` and `utm_term` also use explicit vocabulary.
+`utm_campaign` supports `it_services`, `api_diagnostic`, `cicd_diagnostic` or
+`ai_diagnostic` followed by `_YYYYMM` (years 2000–2099, months 01–12).
+Content can also be `post-01` through `post-31`. Labels are lowercase, at most
+64 characters, and must never contain personal information or free search text.
+Any duplicate or unsupported UTM value rejects the whole incoming bundle.
+Unknown parameters are not copied. Add reviewed campaign labels to the vocabulary
+and its tests before using them; do not loosen validation to accept arbitrary data.
+
+Example: `?utm_source=linkedin&utm_medium=social&utm_campaign=it_services_202611&utm_content=api`.
+The existing Facebook/Threads campaigns also accept `utm_medium=organic_social`
+with `utm_content=order_retry_checklist` or `utm_content=order_retry`.
+Run `node --test tests/test-campaign-attribution.cjs` with Node.js 20 or later.
+The existing launcher CI job runs these navigation and input-validation tests.
+This forwards link labels only: verify WordPress form capture and the common
+opportunity register separately before claiming conversion measurement.
