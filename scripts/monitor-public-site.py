@@ -21,6 +21,7 @@ from pathlib import Path
 BASE_URL = "https://mirceastefanescu.github.io/Portfolio/"
 CONTACT_HOST = "stefanescumircea1990.wordpress.com"
 MAX_BODY_BYTES = 262_144
+# urllib applies this to blocking socket operations, not total attempt duration.
 REQUEST_TIMEOUT_SECONDS = 8
 TOTAL_TIMEOUT_SECONDS = 150
 MAX_ATTEMPTS = 2
@@ -201,8 +202,22 @@ def fetch_once(opener, url, timeout):
     with response:
         if not allowed_url(response.geturl()):
             raise BlockedRedirect("Response left fixed public portfolio scope")
+        if response.code in {401, 403, 407, 429} or 300 <= response.code <= 399:
+            # Headers already establish access/rate-limit or redirect outcomes.
+            # A broken body must not turn them into retryable transport errors.
+            return response.code, b"", False
         body = response.read(MAX_BODY_BYTES + 1)
-        return response.code, body[:MAX_BODY_BYTES], len(body) > MAX_BODY_BYTES
+        truncated = len(body) > MAX_BODY_BYTES
+        content_length = response.headers.get("Content-Length")
+        if not truncated and content_length is not None and not response.headers.get("Transfer-Encoding"):
+            expected_length = int(content_length)
+            if expected_length < 0:
+                raise ValueError("Invalid Content-Length")
+            if len(body) != expected_length:
+                # HTTPResponse.read(amt) may return an early EOF without raising
+                # IncompleteRead, even if the prefix contains valid page markup.
+                raise http.client.HTTPException("Body length does not match Content-Length")
+        return response.code, body[:MAX_BODY_BYTES], truncated
 
 
 def check_target(target, opener, deadline, now=time.monotonic, sleep=time.sleep):
@@ -220,6 +235,10 @@ def check_target(target, opener, deadline, now=time.monotonic, sleep=time.sleep)
             retryable = 500 <= status <= 599 and state == OBSERVED_FAILURE
         except BlockedRedirect:
             return Result(target.name, target.url, INCONCLUSIVE, "OUT_OF_SCOPE_REDIRECT", None, attempt)
+        except ValueError:
+            # urllib parses Location before redirect_request; malformed values
+            # such as an unclosed IPv6 literal must not abort the other pages.
+            return Result(target.name, target.url, INCONCLUSIVE, "MALFORMED_HTTP_RESPONSE", None, attempt)
         except (urllib.error.URLError, TimeoutError, socket.timeout, OSError, http.client.HTTPException):
             last = Result(target.name, target.url, INCONCLUSIVE, "TRANSPORT_NOT_CONCLUSIVE", None, attempt)
             retryable = True

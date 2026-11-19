@@ -3,6 +3,7 @@
 
 import http.client
 import importlib.util
+import io
 import sys
 import unittest
 import urllib.error
@@ -28,11 +29,12 @@ def healthy_html(target=monitor.TARGETS[0]):
 
 
 class Response:
-    def __init__(self, status=200, body=None, url=None):
+    def __init__(self, status=200, body=None, url=None, headers=None):
         self.code = status
         self.body = healthy_html() if body is None else body
         self.url = monitor.TARGETS[0].url if url is None else url
         self.read_sizes = []
+        self.headers = {} if headers is None else headers
 
     def geturl(self):
         return self.url
@@ -59,6 +61,24 @@ class Opener:
         if isinstance(response, Exception):
             raise response
         return response
+
+
+def length_framed_response(body, declared_length):
+    """Use the real HTTP parser without a socket or local server."""
+    raw = (
+        b"HTTP/1.1 200 OK\r\nContent-Length: "
+        + str(declared_length).encode("ascii") + b"\r\n\r\n" + body
+    )
+
+    class MemorySocket:
+        def makefile(self, *_args, **_kwargs):
+            return io.BytesIO(raw)
+
+    response = http.client.HTTPResponse(MemorySocket())
+    response.begin()
+    response.url = monitor.TARGETS[0].url
+    response.code = response.status
+    return response
 
 
 class MonitorTests(unittest.TestCase):
@@ -118,6 +138,42 @@ class MonitorTests(unittest.TestCase):
                 self.assertEqual((result.state, result.reason, result.attempts),
                                  (monitor.INCONCLUSIVE, "CLIENT_ACCESS_OR_RATE_LIMIT", 1))
                 self.assertEqual(sleeps, [])
+
+    def test_client_block_body_is_not_read_or_retried(self):
+        class BrokenBody(Response):
+            def read(self, limit):
+                self.read_sizes.append(limit)
+                raise TimeoutError("An error body can stall after its headers")
+
+        for status in (302, 401, 403, 407, 429):
+            with self.subTest(status=status):
+                response = BrokenBody(status)
+                opener = Opener(response)
+                result, sleeps = self.check(opener)
+                expected_reason = "UNEXPECTED_HTTP_STATUS" if status == 302 else "CLIENT_ACCESS_OR_RATE_LIMIT"
+                self.assertEqual((result.state, result.reason, result.attempts),
+                                 (monitor.INCONCLUSIVE, expected_reason, 1))
+                self.assertEqual(response.read_sizes, [])
+                self.assertEqual(len(opener.requests), 1)
+                self.assertEqual(sleeps, [])
+
+    def test_incomplete_framed_body_with_valid_contract_cannot_pass(self):
+        body = healthy_html()
+        opener = Opener(
+            length_framed_response(body, len(body) + 42),
+            length_framed_response(body, len(body) + 42),
+        )
+        result, sleeps = self.check(opener)
+        self.assertEqual((result.state, result.reason, result.attempts),
+                         (monitor.INCONCLUSIVE, "TRANSPORT_NOT_CONCLUSIVE", 2))
+        self.assertEqual(len(opener.requests), 2)
+        self.assertEqual(sleeps, [2])
+
+    def test_complete_length_framed_body_can_pass(self):
+        body = healthy_html()
+        result, sleeps = self.check(Opener(length_framed_response(body, len(body))))
+        self.assertEqual((result.state, result.attempts), (monitor.HEALTHY, 1))
+        self.assertEqual(sleeps, [])
 
     def test_challenge_with_ok_or_server_error_is_inconclusive(self):
         challenge = b'<html><title>Just a moment...</title><form id="challenge-form"></form></html>'
@@ -179,13 +235,41 @@ class MonitorTests(unittest.TestCase):
         checked, sleeps = self.check(Opener(response))
         self.assertEqual((checked.state, checked.http_status, checked.attempts),
                          (monitor.INCONCLUSIVE, 302, 1))
-        self.assertEqual(response.read_sizes, [monitor.MAX_BODY_BYTES + 1])
+        self.assertEqual(response.read_sizes, [])
         self.assertEqual(sleeps, [])
 
     def test_out_of_scope_final_response_is_inconclusive(self):
         result, sleeps = self.check(Opener(Response(url="https://example.com/")))
         self.assertEqual((result.state, result.reason), (monitor.INCONCLUSIVE, "OUT_OF_SCOPE_REDIRECT"))
         self.assertEqual(sleeps, [])
+
+    def test_malformed_redirect_is_inconclusive_and_next_page_can_run(self):
+        class MalformedRedirectOpener:
+            def __init__(self):
+                self.requests = []
+                self.response = Response(302)
+
+            def open(self, request, timeout):
+                self.requests.append(request)
+                if len(self.requests) == 1:
+                    # Exercise urllib's inherited Location parser, which runs
+                    # before the monitor's redirect_request allowlist.
+                    return monitor.PublicRedirects().http_error_302(
+                        request, self.response, 302, "Found", {"location": "https://["}
+                    )
+                return Response(body=healthy_html(monitor.TARGETS[1]), url=request.full_url)
+
+        opener = MalformedRedirectOpener()
+        result, sleeps = self.check(opener)
+        self.assertEqual((result.state, result.reason, result.attempts),
+                         (monitor.INCONCLUSIVE, "MALFORMED_HTTP_RESPONSE", 1))
+        self.assertEqual(opener.response.read_sizes, [])
+        self.assertEqual(len(opener.requests), 1)
+        self.assertEqual(sleeps, [])
+        next_result = monitor.check_target(
+            monitor.TARGETS[1], opener, 150, now=lambda: 0, sleep=sleeps.append
+        )
+        self.assertEqual(next_result.state, monitor.HEALTHY)
 
     def test_expired_deadline_does_not_send_a_request(self):
         opener = Opener()

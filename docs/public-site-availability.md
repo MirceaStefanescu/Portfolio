@@ -20,9 +20,9 @@ Actions history; configuration alone does not establish that a scheduled run occ
 - Default-branch, exact-repository and public-visibility guards, `contents: read`, pinned existing checkout version, no persisted credentials. A private repository skips this job.
 - Standard `ubuntu-24.04`; no paid/larger runner, dependency installs, caches, or uploaded artifacts.
 - Single concurrency group; no simultaneous monitor runs. The job has a three-minute timeout and the script a 150-second wall-clock alarm.
-- At most two GET attempts per page; eight seconds per request; two-second backoff only for transient transport failures or observed 5xx responses.
-- No retry for 401/403/407/429, challenge pages, an out-of-scope redirect, or a hard content failure. No quota polling.
-- Body reads are limited to 256 KiB plus one byte to detect truncation.
+- At most two GET attempts per page; blocking socket operations have an eight-second timeout. This is not a wall-clock limit for one attempt: the 150-second global alarm also bounds a slowly trickling response. Two-second backoff applies only to transient transport failures or observed 5xx responses.
+- No retry for 401/403/407/429, challenge pages, redirects, or a hard content failure. Access/rate-limit and redirect responses are classified from their headers without reading their bodies. No quota polling.
+- Body reads are limited to 256 KiB plus one byte to detect truncation. An incomplete length-framed response cannot pass using only its valid-looking prefix; malformed HTTP/redirect data remains inconclusive without aborting the remaining pages.
 - Results are retained as normal workflow logs and a job summary. No public heartbeat from private work is exported.
 
 ## Result contract
