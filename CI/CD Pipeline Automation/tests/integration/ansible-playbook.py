@@ -148,18 +148,19 @@ try:
 except BaseException as exc:
     result={'status':'FAILED','utc':started,'seconds':time.monotonic()-clock,'cases':rows,'error':repr(exc),
             'source_hashes':before,'verifier_sha256':sha(Path(__file__))}
+    raise
 finally:
     if scratch.parent==temporary_root and scratch.name.startswith('cicd-ansible-cases-') and marker.is_file() and not scratch.is_symlink():
         shutil.rmtree(scratch)
     result['cleanup_verified']=not scratch.exists()
     (out/'result.json').write_text(json.dumps(result,indent=2)+'\n')
-print(json.dumps({key:result[key] for key in ('status','seconds','cleanup_verified')}),flush=True)
-success=result['status']=='PASS_SCOPED' and result['cleanup_verified']
-if not success:
-    print(result.get('error','Cleanup failed'),file=sys.stderr)
-    for log in sorted(out.glob('*.log')):
-        print(log.name+':\n'+log.read_text(errors='replace')[-6000:],file=sys.stderr)
-if temporary_report:
-    shutil.rmtree(out)
-    success=success and not out.exists()
+    print(json.dumps({key:result[key] for key in ('status','seconds','cleanup_verified')}),flush=True)
+    success=result['status']=='PASS_SCOPED' and result['cleanup_verified']
+    if not success:
+        print(result.get('error','Cleanup failed'),file=sys.stderr)
+        for log in sorted(out.glob('*.log')):
+            print(log.name+':\n'+log.read_text(errors='replace')[-6000:],file=sys.stderr)
+    if temporary_report:
+        shutil.rmtree(out)
+        success=success and not out.exists()
 raise SystemExit(0 if success else 1)
