@@ -1,27 +1,27 @@
+# Native public triggers, job graph and approval contexts; implementations are private and pinned.
 name: GitOps Platform Promote
-
-on:
+'on':
   workflow_dispatch:
     inputs:
       environment:
         description: Target environment (dev, staging, prod)
         required: true
         type: choice
-        options: [dev, staging, prod]
+        options:
+          - dev
+          - staging
+          - prod
       image_tag:
         description: Image tag to propose
         required: true
       strategy:
         description: Rollout strategy override (optional)
         required: false
-
 permissions:
   contents: read
-
 concurrency:
   group: gitops-promote-${{ inputs.environment }}
   cancel-in-progress: false
-
 jobs:
   promote:
     if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
@@ -38,12 +38,18 @@ jobs:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       PROMOTION_BRANCH: automation/promote-${{ inputs.environment }}-${{ github.run_id }}-${{ github.run_attempt }}
       GH_REPO: ${{ github.repository }}
-      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Checkout default branch
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
-      - name: Propose promotion
-        run: bash "GitOps Platform - Argo CD & Helm/scripts/open-promotion-pr.sh" "$TARGET_ENVIRONMENT" "$IMAGE_TAG" "$ROLLOUT_STRATEGY"
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/gitops-promote
+        with:
+          github-token: ${{ github.token }}

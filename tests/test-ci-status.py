@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +17,22 @@ def payload(scope="full"):
     jobs = {name: {"result": "success" if scope == "full" else "skipped"} for name in SUITES}
     jobs["quality"] = {"result": "success", "outputs": {"scope": scope}}
     return jobs
+
+
+def executes_status_check(recipe):
+    """Run the quality recipe with harmless stand-ins and observe the status call."""
+    with tempfile.TemporaryDirectory(prefix="portfolio-status-wiring-") as directory:
+        root = Path(directory)
+        tests = root / "tests"
+        tests.mkdir()
+        (tests / "test-ci-status.sh").write_text("printf 'invoked\\n' > .status-invoked\n")
+        for filename in ("test-ci-scope.py", "test-presentation.py"):
+            (tests / filename).write_text("")
+        recipe_path = root / "quality-recipe.sh"
+        recipe_path.write_text(recipe)
+        result = subprocess.run(["bash", "--noprofile", "--norc", "-e", str(recipe_path)],
+                                cwd=root, capture_output=True, text=True, timeout=10)
+        return result.returncode == 0 and (root / ".status-invoked").is_file()
 
 
 class StatusTests(unittest.TestCase):
@@ -81,11 +98,32 @@ class StatusTests(unittest.TestCase):
                 self.assertIn("    if: ${{ needs.quality.outputs.scope == 'full' }}\n", jobs[name])
         self.assertIn("if: ${{ always() }}", jobs["status"])
         self.assertIn("name: Portfolio status", jobs["status"])
-        needs = re.search(r"needs: \[([^\]]+)\]", jobs["status"]).group(1)
-        self.assertEqual({name.strip() for name in needs.split(",")}, set(SUITES) | {"quality"})
-        self.assertIn("bash tests/test-ci-status.sh", jobs["quality"])
+        inline = re.search(r"needs: \[([^\]]+)\]", jobs["status"])
+        if inline:
+            needed = {name.strip() for name in inline.group(1).split(",")}
+        else:
+            block = re.search(r"(?m)^    needs:\n((?:      - [\w-]+\n)+)", jobs["status"])
+            self.assertIsNotNone(block, "The required status must enumerate its dependencies")
+            needed = set(re.findall(r"- ([\w-]+)", block.group(1)))
+        self.assertEqual(needed, set(SUITES) | {"quality"})
+        self.assertIn("uses: ./.private-automation/.github/actions/ci-quality", jobs["quality"])
+        action = ROOT / ".private-automation/.github/actions/ci-quality"
+        recipe = "test-ci-and-presentation-guardrails.sh"
+        self.assertRegex((action / "action.yml").read_text(),
+                         r"(?m)^\s+run: bash[^\n]*" + re.escape(recipe))
+        self.assertTrue(executes_status_check((action / recipe).read_text()),
+                        "Private quality must execute the required-status regression test")
         self.assertNotIn("paths-ignore:", workflow)
+
+    def test_status_wiring_rejects_commented_or_printed_commands(self):
+        """Command text in a comment or output must not count as an executed check."""
+        for recipe in ("# bash tests/test-ci-status.sh\n",
+                       "printf '%s\\n' 'bash tests/test-ci-status.sh'\n"):
+            with self.subTest(recipe=recipe):
+                self.assertFalse(executes_status_check(recipe))
 
 
 if __name__ == "__main__":
     unittest.main()
+
+

@@ -19,6 +19,12 @@ pipeline {
     IMAGE_TAG = "${BUILD_NUMBER}"
   }
   stages {
+    stage('Prepare private automation') {
+      when { expression { params.AUTO_APPLY || (params.AUTO_DEPLOY && params.DEPLOY_MODE == 'canary') } }
+      steps {
+        sh 'bash .github/prepare-private-tools.sh'
+      }
+    }
     stage('Build, test and deliver') {
       steps {
         dir('CI/CD Pipeline Automation') {

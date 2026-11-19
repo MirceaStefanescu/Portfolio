@@ -1,29 +1,30 @@
+# Native public triggers, job graph and approval contexts; implementations are private and pinned.
 name: Prompt Quality & Safety CI
-
-on:
+'on':
   workflow_call:
-  workflow_dispatch:
-
+    secrets:
+      PORTFOLIO_AUTOMATION_SSH_KEY:
+        required: true
+  workflow_dispatch: null
 permissions:
   contents: read
-
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: "Prompt Quality & Safety"
+        working-directory: Prompt Quality & Safety
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          python-version: "3.15"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-      - name: Lint
-        run: make lint
-      - name: Tests
-        run: make test
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/prompt-quality-ci

@@ -26,3 +26,8 @@
 
 # Habit demonstration's persistent local data (may contain personal input).
 Habit Tracker & Routine Coach SaaS/backend/data/
+
+# Private automation is fetched at runtime, never published with this repository.
+/scripts/
+/.private-automation/
+

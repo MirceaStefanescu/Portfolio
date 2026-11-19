@@ -8,8 +8,9 @@ Read that project's CONTRIBUTING.md and SECURITY.md before changing it.
 3. Update its documentation when behavior changes.
 4. Open a pull request and wait for Portfolio status to pass.
 
-The root Portfolio CI calls the shared GitOps, prompt-quality, and LLM evaluation
-workflows and runs the Node, Java, Python, and shell suites. Workflow definitions
+The public Portfolio CI keeps its job graph, required status and approval settings
+in this repository. Its pinned private helpers run the shared GitOps,
+prompt-quality, LLM evaluation, Node, Java, Python and shell checks. Workflow definitions
 inside subprojects are standalone project examples, not active monorepo workflows.
 
 Every PR first checks the public presentation, active workflow definitions and
@@ -29,12 +30,51 @@ environments, private paths, or unrelated files in a pull request.
 Licensing is defined by each project's existing LICENSE; contributing does not
 replace those terms.
 
+## Private maintenance tools
+
+The public `.github` directory contains GitHub configuration and execution
+adapters. Shared implementations live in the private
+`MirceaStefanescu/Portfolio-Automation` repository. Authorized maintainers use
+existing GitHub SSH authentication to prepare the exact revision recorded in
+`.github/private-automation.json`:
+
+```bash
+bash .github/prepare-private-tools.sh
+```
+
+Preparation creates ignored `scripts/` and `.private-automation/` runtime
+directories. It preserves public application files and `.github` adapters,
+verifies source identities, and refuses to replace modified private helper files.
+Run it again after the pinned automation revision changes. Never force-add these
+runtime directories to a public commit. Public project source remains available;
+shared root helper commands require access to the private companion.
+
+The Event-Driven E-Commerce Jenkins template runs preparation from the repository
+root after its normal SCM checkout. The CI/CD Pipeline Automation template does
+the same when `AUTO_APPLY` is enabled, or when `AUTO_DEPLOY` is enabled with
+`DEPLOY_MODE=canary`. Its default application build and tests need no private tools.
+For these preparation stages, the agent needs Git, Bash, Python 3, existing
+read-only SSH access to `MirceaStefanescu/Portfolio-Automation`, and GitHub's
+verified host key in its SSH `known_hosts`. Configure `StrictHostKeyChecking yes`
+for `github.com`; do not disable host verification. Preparation uses the agent's
+existing SSH configuration. These templates do not create Jenkins credentials
+or configure a live Jenkins installation.
+
+Changes to public execution adapters must update their reviewed private contract
+and the pinned revision together. Ordinary application commits keep the same
+automation pin and are tested at their own exact Git commit.
+
+GitHub Actions prepares the same pinned helpers automatically. Fork pull requests
+do not receive private access; an owner must review their changes and place any
+approved changes on an owner-controlled branch before these checks can pass.
+
 ## Running the lightweight checks
 
 Use a POSIX environment with Bash, Python 3.9 or later available as `python`,
 and Git 2.28 or later. The regression fixtures use executable file modes and
 symbolic links. GitHub Actions already supplies this environment; local execution
-is optional. Run the commands from the repository root:
+is optional. Prepare the private maintenance tools above, then run the commands
+from the repository root:
 
 ```bash
 bash tests/test-ci-status.sh
@@ -102,3 +142,4 @@ The pages are linked from the homepage and included in `docs/sitemap.xml`.
 When adding a language, review its final copy independently, update the explicit
 internal-path allowlist and navigation tests, and run the full existing CI.
 Do not add automatic country redirects or widen accepted query parameters.
+
