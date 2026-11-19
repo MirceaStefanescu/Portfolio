@@ -1,28 +1,30 @@
+# Native public triggers, job graph and approval contexts; implementations are private and pinned.
 name: GitOps Platform CI
-
-on:
+'on':
   workflow_call:
-  workflow_dispatch:
-
+    secrets:
+      PORTFOLIO_AUTOMATION_SSH_KEY:
+        required: true
+  workflow_dispatch: null
 permissions:
   contents: read
-
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: "GitOps Platform - Argo CD & Helm"
+        working-directory: GitOps Platform - Argo CD & Helm
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Helm
-        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
-
-      - name: Run checks
-        run: make test
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/gitops-ci

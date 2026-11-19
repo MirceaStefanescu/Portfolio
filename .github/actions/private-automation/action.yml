@@ -1,0 +1,41 @@
+name: Pinned private Portfolio automation
+description: Validate trusted public source access and prepare the pinned private implementation.
+inputs:
+  ssh-key:
+    description: Read-only deploy key for MirceaStefanescu/Portfolio-Automation.
+    required: true
+outputs:
+  revision:
+    description: Verified private implementation commit.
+    value: ${{ steps.access.outputs.revision }}
+runs:
+  using: composite
+  steps:
+    - name: Validate source trust and the private revision pin
+      id: access
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        AUTOMATION_KEY_PRESENT: ${{ inputs.ssh-key != '' }}
+      run: python3 "${{ github.action_path }}/validate-access.py"
+    - name: Read the pinned private implementation
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        repository: MirceaStefanescu/Portfolio-Automation
+        ref: ${{ steps.access.outputs.revision }}
+        path: .private-automation
+        ssh-key: ${{ inputs.ssh-key }}
+        ssh-strict: true
+        persist-credentials: false
+        fetch-depth: 1
+    - name: Prepare verified private tools without changing public GitHub metadata
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        AUTOMATION_REVISION: ${{ steps.access.outputs.revision }}
+      run: >-
+        python3 .private-automation/scripts/prepare-public-workspace.py
+        --public-root "$GITHUB_WORKSPACE"
+        --private-root "$GITHUB_WORKSPACE/.private-automation"
+        --revision "$AUTOMATION_REVISION"
+        --source-sha "$GITHUB_SHA"

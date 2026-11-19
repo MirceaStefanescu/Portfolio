@@ -1,18 +1,16 @@
+# Native public triggers, job graph and approval contexts; implementations are private and pinned.
 name: Portfolio CI
-
-on:
+'on':
   push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
-
+    branches:
+      - main
+  pull_request: null
+  workflow_dispatch: null
 permissions:
   contents: read
-
 concurrency:
   group: portfolio-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   quality:
     name: Presentation and CI checks
@@ -21,48 +19,19 @@ jobs:
     outputs:
       scope: ${{ steps.scope.outputs.scope }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          fetch-depth: 2
+          ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
         with:
-          python-version: '3.15'
-      - name: Determine the required suites
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-quality
         id: scope
-        env:
-          CI_EVENT_NAME: ${{ github.event_name }}
-          CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          CI_HEAD_SHA: ${{ github.sha }}
-        run: python scripts/check-ci-scope.py
-      - name: Test CI and presentation guardrails
-        run: |
-          bash tests/test-ci-status.sh
-          python tests/test-ci-scope.py
-          python tests/test-presentation.py
-      - name: Check presentation links, assets and anchors
-        run: python scripts/check-presentation.py --external
-      - name: Install verified actionlint release
-        working-directory: ${{ runner.temp }}
-        run: |
-          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --retry 2 \
-            --output portfolio-actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
-          echo '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  portfolio-actionlint.tar.gz' | sha256sum --check --strict
-          tar -xzf portfolio-actionlint.tar.gz actionlint
-          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
-      - name: Validate active GitHub Actions workflows
-        run: actionlint -color .github/workflows/*.yml
-      - name: Review introduced dependencies
-        if: github.event_name == 'pull_request'
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
-        with:
-          fail-on-severity: high
-          license-check: false
-          comment-summary-in-pr: never
-          show-openssf-scorecard: false
-          retry-on-snapshot-warnings: true
-          retry-on-snapshot-warnings-timeout: 120
-
   node:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
@@ -97,30 +66,22 @@ jobs:
       run:
         working-directory: ${{ matrix.directory }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          node-version: '26.11.1'
-          cache: npm
-          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
-      - run: npm ci
-      - if: ${{ matrix.angular }}
-        run: npm test -- --watch=false
-      - if: ${{ !matrix.angular }}
-        run: npm test
-      - if: ${{ matrix.build }}
-        run: npm run build
-      - if: ${{ matrix.directory == 'CI/CD Pipeline Automation' }}
-        run: npm run lint
-      - if: ${{ matrix.directory == 'CI/CD Pipeline Automation' }}
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
         with:
-          python-version: '3.14' # ansible-core 2.21 supports control nodes through Python 3.14
-      - if: ${{ matrix.directory == 'CI/CD Pipeline Automation' }}
-        run: python -m pip install ansible-core==2.21.5
-      - if: ${{ matrix.directory == 'CI/CD Pipeline Automation' }}
-        run: bash scripts/test-ansible.sh
-
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-node
+        with:
+          angular: ${{ matrix.angular }}
+          build: ${{ matrix.build }}
+          directory: ${{ matrix.directory }}
   java:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
@@ -148,14 +109,21 @@ jobs:
       run:
         working-directory: ${{ matrix.directory }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          distribution: temurin
-          java-version: ${{ matrix.java }}
-          cache: maven
-      - run: mvn --batch-mode --no-transfer-progress --strict-checksums verify
-
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-java
+        with:
+          directory: ${{ matrix.directory }}
+          java: ${{ matrix.java }}
   cloud-native-python:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
@@ -164,73 +132,65 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [product-service, order-service, payment-service, gateway]
+        service:
+          - product-service
+          - order-service
+          - payment-service
+          - gateway
     defaults:
       run:
         working-directory: Cloud-Native E-Commerce Platform/services/${{ matrix.service }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          python-version: '3.15'
-          cache: pip
-          cache-dependency-path: Cloud-Native E-Commerce Platform/services/*/requirements*.txt
-      - run: python -m pip install -r requirements.txt -r requirements-dev.txt
-      - run: python -m ruff check app tests
-      - run: python -m ruff format --check app tests
-      - run: python -m pytest -q
-
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-cloud-native-python
+        with:
+          service: ${{ matrix.service }}
   broker-integration:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          python-version: '3.15'
-      - run: make integration-test
-        working-directory: Cloud-Native E-Commerce Platform
-
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-broker-integration
   launcher:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          node-version: '26.11.1'
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
         with:
-          python-version: '3.15'
-      - run: ./portfolio-launcher.sh --list
-      - name: Test campaign attribution through portfolio navigation
-        run: node --test tests/test-campaign-attribution.cjs
-      - name: Prepare documented Chat environment example
-        run: cp "Real-Time Chat & Collaboration Platform/.env.example" "Real-Time Chat & Collaboration Platform/.env"
-      - run: python tests/test-compose-ports.py
-      - run: python tests/test-demo-check.py
-      - run: bash tests/test-portfolio-launcher.sh
-      - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promote.sh"
-      - run: bash "GitOps Platform - Argo CD & Helm/scripts/test-promotion-pr.sh"
-      - run: bash "CI/CD Pipeline Automation/scripts/test-terraform-gate.sh"
-      - run: python "GitOps Platform - Argo CD & Helm/scripts/test-dora.py"
-      - run: python tests/test-release-environment.py
-      - run: python tests/test-release-functions.py
-      - run: python tests/test-release-flows.py
-      - run: python tests/test-release-deadline.py
-      - run: python tests/test-release-contract.py
-      - run: python "Predictive Analytics Pipeline on Kubernetes/ml/train.py" --check
-      - run: python -m unittest discover -s "Secure RAG Service & Knowledge API/scripts" -p "test_*.py"
-      - run: python -O -m unittest discover -s "Secure RAG Service & Knowledge API/scripts" -p "test_*.py"
-      - run: node --test "Event-Driven E-Commerce Platform/scripts/test-demo-ui.cjs"
-      - run: python "Observability - New Relic & Prometheus/paging-demo/test_receiver.py"
-      - run: bash "DevSecOps Pipeline with SBOM & SLSA/scripts/test-pipeline.sh"
-      - run: python "DevSecOps Pipeline with SBOM & SLSA/scripts/test-release-policy.py"
-
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-launcher
   docker-build:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
@@ -258,11 +218,20 @@ jobs:
           - Secure RAG Service & Knowledge API/api
           - Secure Secrets Management & Observability Toolkit/app
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Build deployable image
-        working-directory: ${{ matrix.directory }}
-        run: docker build --progress=plain --tag portfolio-validation:ci .
-
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-docker-build
+        with:
+          directory: ${{ matrix.directory }}
   chat-postgres:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
@@ -275,10 +244,10 @@ jobs:
           POSTGRES_DB: chat_test
           POSTGRES_USER: chat_test
           POSTGRES_PASSWORD: integration-only
-        ports: [5432:5432]
-        options: >-
-          --health-cmd "pg_isready -U chat_test -d chat_test"
-          --health-interval 5s --health-timeout 3s --health-retries 10
+        ports:
+          - 5432:5432
+        options: --health-cmd "pg_isready -U chat_test -d chat_test" --health-interval 5s --health-timeout 3s --health-retries
+          10
     defaults:
       run:
         working-directory: Real-Time Chat & Collaboration Platform/backend
@@ -287,14 +256,18 @@ jobs:
       CHAT_TEST_DB_USER: chat_test
       CHAT_TEST_DB_PASSWORD: integration-only
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          distribution: temurin
-          java-version: '25'
-          cache: maven
-      - run: mvn --batch-mode --no-transfer-progress --strict-checksums -Dtest=ChatPostgresIntegrationTest test
-
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-chat-postgres
   container-validation:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
@@ -310,9 +283,20 @@ jobs:
       run:
         working-directory: ${{ matrix.directory }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: make test
-
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-container-validation
+        with:
+          directory: ${{ matrix.directory }}
   demo-integration:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
@@ -321,62 +305,49 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [portal, chat, ecommerce, predictive, observability, secrets, event-driven, rag, habit]
+        project:
+          - portal
+          - chat
+          - ecommerce
+          - predictive
+          - observability
+          - secrets
+          - event-driven
+          - rag
+          - habit
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          python-version: '3.15'
-      - if: ${{ matrix.project == 'chat' }}
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
         with:
-          node-version: '26.11.1'
-      - if: ${{ matrix.project == 'chat' }}
-        run: npm ci
-        working-directory: Real-Time Chat & Collaboration Platform/frontend
-      - name: Verify an isolated runnable demo and clean up its data
-        run: python scripts/demo-check.py "${{ matrix.project }}"
-      - if: ${{ matrix.project == 'rag' }}
-        name: Verify vector replication and snapshot recovery
-        run: python "Secure RAG Service & Knowledge API/scripts/resilience-demo.py"
-      - if: ${{ matrix.project == 'portal' }}
-        name: Verify the local DORA exporter and Grafana dashboard
-        run: python "GitOps Platform - Argo CD & Helm/scripts/demo-dora.py"
-      - name: Verify KMS auto-unseal, replication and outage recovery
-        if: ${{ matrix.project == 'secrets' }}
-        run: python "Secure Secrets Management & Observability Toolkit/scripts/kms-region-demo.py"
-
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-demo-integration
+        with:
+          project: ${{ matrix.project }}
   infrastructure-policy:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          python-version: '3.15'
-      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
         with:
-          version: v4.3.0
-      - name: Install verified Conftest release
-        working-directory: ${{ runner.temp }}
-        run: |
-          curl --fail --silent --show-error --location --output conftest.tar.gz https://github.com/open-policy-agent/conftest/releases/download/v0.71.1/conftest_0.71.1_Linux_x86_64.tar.gz
-          echo 'c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985  conftest.tar.gz' | sha256sum --check --strict
-          tar -xzf conftest.tar.gz conftest
-          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
-      - run: python tests/test-policy-runner.py
-      - run: python tests/test-policy-orchestration.py
-      - run: python tests/test-policy-integration.py
-      - run: python tests/test-podinfo-build.py
-      - run: python tests/test-podinfo-version-timeout.py
-      - run: python scripts/check-policy.py "Automated Infrastructure & Deployment Platform"
-      - run: python scripts/check-policy.py "CI/CD Pipeline Automation"
-      - run: python scripts/check-policy.py "GitOps Platform - Argo CD & Helm"
-      - run: python scripts/check-policy.py "Secure Secrets Management & Observability Toolkit"
-      - run: conftest verify --policy "DevSecOps Pipeline with SBOM & SLSA/policy/release" --data "DevSecOps Pipeline with SBOM & SLSA/policy/release/data.json"
-
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-infrastructure-policy
   terraform:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
@@ -387,29 +358,29 @@ jobs:
       matrix:
         include:
           - directory: Automated Infrastructure & Deployment Platform/terraform/environments/dev
-            lock-args: '-lockfile=readonly'
+            lock-args: -lockfile=readonly
           - directory: Automated Infrastructure & Deployment Platform/terraform/modules/platform
             lock-args: ''
           - directory: CI/CD Pipeline Automation/terraform/environments/aws-eks
-            lock-args: '-lockfile=readonly'
+            lock-args: -lockfile=readonly
           - directory: CI/CD Pipeline Automation/terraform/environments/local-kind
-            lock-args: '-lockfile=readonly'
+            lock-args: -lockfile=readonly
           - directory: CI/CD Pipeline Automation/terraform/modules/cicd-app
             lock-args: ''
           - directory: Cloud-Native E-Commerce Platform/infra/terraform
-            lock-args: '-lockfile=readonly'
+            lock-args: -lockfile=readonly
           - directory: Event-Driven E-Commerce Platform/infra/terraform
-            lock-args: '-lockfile=readonly'
+            lock-args: -lockfile=readonly
           - directory: GitOps Platform - Argo CD & Helm/terraform/aws
-            lock-args: '-lockfile=readonly'
+            lock-args: -lockfile=readonly
           - directory: GitOps Platform - Argo CD & Helm/terraform/azure
-            lock-args: '-lockfile=readonly'
+            lock-args: -lockfile=readonly
           - directory: GitOps Platform - Argo CD & Helm/terraform/gcp
-            lock-args: '-lockfile=readonly'
+            lock-args: -lockfile=readonly
           - directory: Real-Time Chat & Collaboration Platform/infra/terraform
-            lock-args: '-lockfile=readonly'
+            lock-args: -lockfile=readonly
           - directory: Secure Secrets Management & Observability Toolkit/terraform/examples/local-vault
-            lock-args: '-lockfile=readonly'
+            lock-args: -lockfile=readonly
           - directory: Secure Secrets Management & Observability Toolkit/terraform/modules/observability-stack
             lock-args: ''
           - directory: Secure Secrets Management & Observability Toolkit/terraform/modules/vault-policy
@@ -421,21 +392,20 @@ jobs:
       TF_IN_AUTOMATION: 'true'
       TF_LOCK_ARGS: ${{ matrix.lock-args }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          terraform_version: 1.16.5
-          terraform_wrapper: false
-      - run: terraform fmt -check -diff
-      - name: Initialize Terraform without a backend
-        run: |
-          args=(-backend=false -input=false)
-          if [[ -n "$TF_LOCK_ARGS" ]]; then
-            args+=("$TF_LOCK_ARGS")
-          fi
-          terraform init "${args[@]}"
-      - run: terraform validate -no-color
-
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-terraform
+        with:
+          directory: ${{ matrix.directory }}
   helm:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
@@ -450,89 +420,77 @@ jobs:
           - Observability - New Relic & Prometheus/helm/reliability-pack
           - Secure RAG Service & Knowledge API/helm/secure-rag
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          version: v4.3.0
-      - name: Lint and render chart
-        env:
-          CHART: ${{ matrix.chart }}
-        run: |
-          helm lint --strict "$CHART"
-          helm template validation "$CHART" > "$RUNNER_TEMP/rendered.yaml"
-          test -s "$RUNNER_TEMP/rendered.yaml"
-      - name: Test Secure RAG chart regressions
-        if: matrix.chart == 'Secure RAG Service & Knowledge API/helm/secure-rag'
-        shell: bash
-        env:
-          CHART: ${{ matrix.chart }}
-        run: |
-          set -euo pipefail
-          umask 077
-          plugin_dir="$(mktemp -d "$RUNNER_TEMP/secure-rag-helm.XXXXXX")"
-          trap 'rm -rf -- "$plugin_dir"' EXIT
-          export HELM_DATA_HOME="$plugin_dir/data"
-          export HELM_PLUGINS="$HELM_DATA_HOME/plugins"
-          export HELM_CACHE_HOME="$plugin_dir/cache"
-          export HELM_CONFIG_HOME="$plugin_dir/config"
-          export GNUPGHOME="$plugin_dir/gnupg"
-          mkdir -p "$GNUPGHOME"
-          release="https://github.com/helm-unittest/helm-unittest/releases/download/v1.2.1"
-          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
-            "$release/unittest-1.2.1.tgz" -o "$plugin_dir/unittest-1.2.1.tgz"
-          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
-            "$release/unittest-1.2.1.tgz.prov" -o "$plugin_dir/unittest-1.2.1.tgz.prov"
-          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
-            'https://raw.githubusercontent.com/helm-unittest/helm-unittest/67056cc631eab9e001e6762a1f601e6c92a71ba7/public-key.asc' \
-            -o "$plugin_dir/public-key.asc"
-          printf '%s  %s\n' \
-            'bbcebd42631dff9fc595462fad839c49a1b06f9635e952e7e837d7e5fe82865f' "$plugin_dir/unittest-1.2.1.tgz" \
-            '23833d293bd575b552312e17e0c1900199857a327b44d7a1b6a25811b1514bbd' "$plugin_dir/unittest-1.2.1.tgz.prov" \
-            'ac389b1ec426189a973d080ebe870f53d35217ba665bd7dd216bb05f4c50ddcf' "$plugin_dir/public-key.asc" \
-            | sha256sum --check --strict
-          gpg --batch --no-options --dearmor --output "$plugin_dir/pubring.gpg" "$plugin_dir/public-key.asc"
-          helm plugin install "$plugin_dir/unittest-1.2.1.tgz" --verify --keyring "$plugin_dir/pubring.gpg"
-          cd "$CHART"
-          shopt -s nullglob
-          suites=(tests/*_test.yaml)
-          (( ${#suites[@]} > 0 )) || { echo 'No Secure RAG regression suites found' >&2; exit 1; }
-          helm unittest --strict --output-type JUnit --output-file "$RUNNER_TEMP/secure-rag-helm-tests.xml" .
-          test -s "$RUNNER_TEMP/secure-rag-helm-tests.xml"
-          grep -Eq '<testsuite[^>]* tests="[1-9][0-9]*"' "$RUNNER_TEMP/secure-rag-helm-tests.xml"
-
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-helm
+        with:
+          chart: ${{ matrix.chart }}
   finops:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install verified kubeconform release
-        working-directory: ${{ runner.temp }}
-        run: |
-          curl --fail --silent --show-error --location --output kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
-          echo '9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883  kubeconform.tar.gz' | sha256sum --check --strict
-          tar -xzf kubeconform.tar.gz kubeconform
-          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
-      - run: make test
-        working-directory: Kubernetes FinOps & Cost Optimization
-
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-finops
   gitops:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
     uses: ./.github/workflows/gitops-platform-ci.yml
+    secrets:
+      PORTFOLIO_AUTOMATION_SSH_KEY: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
   prompt-quality:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
     uses: ./.github/workflows/prompt-quality-safety-ci.yml
+    secrets:
+      PORTFOLIO_AUTOMATION_SSH_KEY: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
   llmops:
     needs: quality
     if: ${{ needs.quality.outputs.scope == 'full' }}
     uses: ./.github/workflows/llmops-eval-harness-ci.yml
+    secrets:
+      PORTFOLIO_AUTOMATION_SSH_KEY: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
   status:
     name: Portfolio status
     if: ${{ always() }}
-    needs: [quality, node, java, cloud-native-python, broker-integration, launcher, chat-postgres, container-validation, demo-integration, docker-build, infrastructure-policy, terraform, helm, finops, gitops, prompt-quality, llmops]
+    needs:
+      - quality
+      - node
+      - java
+      - cloud-native-python
+      - broker-integration
+      - launcher
+      - chat-postgres
+      - container-validation
+      - demo-integration
+      - docker-build
+      - infrastructure-policy
+      - terraform
+      - helm
+      - finops
+      - gitops
+      - prompt-quality
+      - llmops
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -541,8 +499,15 @@ jobs:
       NEEDS_JSON: ${{ toJSON(needs) }}
       CI_EVENT_NAME: ${{ github.event_name }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          python-version: '3.15'
-      - run: bash scripts/check-ci-status.sh
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/ci-status

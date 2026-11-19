@@ -1,12 +1,13 @@
+# Native public triggers, job graph and approval contexts; implementations are private and pinned.
 name: llmops-eval-harness-ci
-
-on:
+'on':
   workflow_call:
-  workflow_dispatch:
-
+    secrets:
+      PORTFOLIO_AUTOMATION_SSH_KEY:
+        required: true
+  workflow_dispatch: null
 permissions:
   contents: read
-
 jobs:
   eval-harness:
     runs-on: ubuntu-latest
@@ -15,29 +16,15 @@ jobs:
       run:
         working-directory: LLMOps Evaluation Harness
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          python-version: "3.15"
-          cache: "pip"
-          cache-dependency-path: |
-            LLMOps Evaluation Harness/requirements-dev.txt
-            LLMOps Evaluation Harness/requirements.txt
-
-      - name: Install dependencies
-        run: python -m pip install --upgrade pip && pip install -r requirements-dev.txt
-
-      - name: Lint
-        run: ruff check .
-
-      - name: Format check
-        run: ruff format --check .
-
-      - name: Tests
-        run: pytest -q
-
-      - name: Build
-        run: python -m build
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/llmops-ci

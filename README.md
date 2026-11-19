@@ -86,6 +86,14 @@ Payments, subscriptions, identity providers, notifications and cloud-region exam
 
 ## Repository checks and maintenance
 
+Shared automation implementations are maintained in the private
+`MirceaStefanescu/Portfolio-Automation` companion repository. Authorized maintainers
+prepare its pinned helpers with `bash .github/prepare-private-tools.sh` before
+running root `scripts/...` commands or the shared infrastructure checks below.
+This uses existing GitHub SSH access and places runtime files in ignored
+`scripts/` and `.private-automation/` directories. A public clone does not include
+these private helpers. [Preparation details](CONTRIBUTING.md#private-maintenance-tools).
+
 Portfolio CI runs the shared checks and publishes a single Portfolio status
 result for branch protection. Dependabot is configured in the root
 .github/dependabot.yml for the monorepo; nested configurations are examples for
@@ -192,4 +200,5 @@ provider accounts require their own configuration and verification. Retention
 settings do not prove that the configured number of days has elapsed.
 
 </details>
+
 

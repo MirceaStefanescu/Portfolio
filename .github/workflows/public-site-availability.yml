@@ -1,43 +1,40 @@
+# Native public triggers, job graph and approval contexts; implementations are private and pinned.
 name: Public portfolio availability
-
-on:
+'on':
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - .github/workflows/public-site-availability.yml
-      - scripts/monitor-public-site.py
       - tests/test-public-site-monitor.py
       - docs/public-site-availability.md
+      - .github/private-automation.json
+      - .github/actions/private-automation/**
   schedule:
-    - cron: '17 * * * *'
-  workflow_dispatch:
-
+    - cron: 17 * * * *
+  workflow_dispatch: null
 permissions:
   contents: read
-
 concurrency:
   group: public-site-availability-main
   cancel-in-progress: false
-
 jobs:
   public-pages:
     name: Public HTTP check
-    if: >-
-      github.repository == 'MirceaStefanescu/Portfolio' &&
-      github.event.repository.visibility == 'public' &&
-      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: github.repository == 'MirceaStefanescu/Portfolio' && github.event.repository.visibility == 'public' && github.ref
+      == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
-      - name: Read the approved monitor
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Read the exact public source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
-          sparse-checkout: |
-            scripts/monitor-public-site.py
-            tests/test-public-site-monitor.py
-          sparse-checkout-cone-mode: false
-      - name: Verify bounded requests and result classification
-        run: python3 tests/test-public-site-monitor.py
-      - name: Observe public pages and contact links
-        run: python3 scripts/monitor-public-site.py
+      - name: Prepare the pinned private automation
+        uses: ./.github/actions/private-automation
+        with:
+          ssh-key: ${{ secrets.PORTFOLIO_AUTOMATION_SSH_KEY }}
+      - name: Run the private implementation
+        uses: ./.private-automation/.github/actions/public-site-availability

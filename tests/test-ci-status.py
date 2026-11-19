@@ -81,11 +81,24 @@ class StatusTests(unittest.TestCase):
                 self.assertIn("    if: ${{ needs.quality.outputs.scope == 'full' }}\n", jobs[name])
         self.assertIn("if: ${{ always() }}", jobs["status"])
         self.assertIn("name: Portfolio status", jobs["status"])
-        needs = re.search(r"needs: \[([^\]]+)\]", jobs["status"]).group(1)
-        self.assertEqual({name.strip() for name in needs.split(",")}, set(SUITES) | {"quality"})
-        self.assertIn("bash tests/test-ci-status.sh", jobs["quality"])
+        inline = re.search(r"needs: \[([^\]]+)\]", jobs["status"])
+        if inline:
+            needed = {name.strip() for name in inline.group(1).split(",")}
+        else:
+            block = re.search(r"(?m)^    needs:\n((?:      - [\w-]+\n)+)", jobs["status"])
+            self.assertIsNotNone(block, "The required status must enumerate its dependencies")
+            needed = set(re.findall(r"- ([\w-]+)", block.group(1)))
+        self.assertEqual(needed, set(SUITES) | {"quality"})
+        self.assertIn("uses: ./.private-automation/.github/actions/ci-quality", jobs["quality"])
+        action = ROOT / ".private-automation/.github/actions/ci-quality"
+        recipe = "test-ci-and-presentation-guardrails.sh"
+        self.assertRegex((action / "action.yml").read_text(),
+                         r"(?m)^\s+run: bash[^\n]*" + re.escape(recipe))
+        self.assertIn("bash tests/test-ci-status.sh", (action / recipe).read_text())
         self.assertNotIn("paths-ignore:", workflow)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
