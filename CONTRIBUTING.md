@@ -61,7 +61,8 @@ do not remove the required check or accept arbitrary skipped jobs.
 ## Campaign labels in portfolio links
 
 `docs/campaign-attribution.js` preserves reviewed UTM labels from the homepage
-through the three diagnostic pages and the existing WordPress enquiry link.
+through the three diagnostic pages, the six localized service offers and the
+existing WordPress enquiry link.
 It uses no cookies, browser storage, analytics service or network requests.
 Plain visits and invalid/ambiguous campaigns keep the links authored in HTML.
 
@@ -82,3 +83,22 @@ Run `node --test tests/test-campaign-attribution.cjs` with Node.js 20 or later.
 The existing launcher CI job runs these navigation and input-validation tests.
 This forwards link labels only: verify WordPress form capture and the common
 opportunity register separately before claiming conversion measurement.
+
+## Localized service offers
+
+The six `docs/services-*.html` pages present the same API diagnostic in English,
+Romanian, Spanish, Portuguese, French and Simplified Chinese. Each is complete
+static HTML with a visible language switcher, reciprocal `hreflang` links and a
+self-canonical URL. JavaScript is optional for reading and contacting; it only
+preserves the existing reviewed campaign labels.
+
+Keep the commercial scope, gross prices, receipt-of-inputs condition, Romania
+remote/B2B context, demonstration limits and marketplace rules consistent across
+all six pages. The enquiry form and technical evidence remain in English and are
+labelled accordingly. A translated page does not imply spoken-language proficiency,
+country eligibility, local-platform publication or a guaranteed repair.
+
+The pages are linked from the homepage and included in `docs/sitemap.xml`.
+When adding a language, review its final copy independently, update the explicit
+internal-path allowlist and navigation tests, and run the full existing CI.
+Do not add automatic country redirects or widen accepted query parameters.

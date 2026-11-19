@@ -59,7 +59,8 @@
 
   const pages = new Set([
     '', 'index.html', 'api-integration-diagnostic.html',
-    'cicd-pipeline-diagnostic.html', 'ai-regression-diagnostic.html'
+    'cicd-pipeline-diagnostic.html', 'ai-regression-diagnostic.html',
+    'services-en.html', 'services-ro.html', 'services-es.html', 'services-pt.html', 'services-fr.html', 'services-zh-hans.html'
   ].map(path => new URL(path, new URL('.', current)).pathname));
 
   for (const anchor of document.querySelectorAll('a[href]')) {

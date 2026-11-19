@@ -161,3 +161,40 @@ test('repeated execution is idempotent and does not accumulate query duplicates'
     assert.equal(new URL(twice).searchParams.getAll(key).length, 1);
   }
 });
+
+test('preserves campaign labels through every localized offer and a language switch', () => {
+  const pages = ["services-en.html","services-ro.html","services-es.html","services-pt.html","services-fr.html","services-zh-hans.html"];
+  const query = '?utm_source=zhihu&utm_medium=profile&utm_campaign=it_services_202611&utm_content=api';
+  for (const [index, page] of pages.entries()) {
+    const first = visit(site + query, [page])[0].attributes.href;
+    assert.equal(new URL(first).pathname, '/Portfolio/' + page);
+    assert.equal(new URL(first).search, query);
+    const second = visit(first, [pages[(index + 1) % pages.length]])[0].attributes.href;
+    assert.equal(new URL(second).search, query);
+    const [cta, home] = visit(second, [enquiry, 'index.html#services']);
+    assert.equal(new URL(cta.attributes.href).search, query);
+    assert.equal(new URL(cta.attributes.href).hash, '#project-enquiry');
+    assert.equal(new URL(home.attributes.href).search, query);
+    assert.equal(new URL(home.attributes.href).hash, '#services');
+    assert.equal(cta.attributes.referrerpolicy, 'origin');
+  }
+});
+
+test('actual localized offer links keep fallback URLs for invalid input and work without campaign input', () => {
+  for (const page of ["services-en.html","services-ro.html","services-es.html","services-pt.html","services-fr.html","services-zh-hans.html"]) {
+    const html = readFileSync(resolve(root, 'docs', page), 'utf8');
+    const hrefs = [...html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)].map(m => m[1].replaceAll('&amp;', '&'));
+    assert.ok(hrefs.includes(enquiry), page);
+    assert.ok(hrefs.includes('services-en.html'), page);
+    assert.equal((html.match(/<script src="campaign-attribution\.js" defer><\/script>/g) || []).length, 1);
+    for (const query of ['', '?utm_source=zhihu&utm_campaign=it_services_202613', '?utm_source=zhihu&utm_source=github']) {
+      assert.deepEqual(visit(site + page + query, hrefs).map(a => a.attributes.href), hrefs, page);
+    }
+    const output = visit(site + page + '?utm_source=zhihu&utm_medium=profile', hrefs);
+    hrefs.forEach((href, i) => {
+      if (href === enquiry || /^services-(en|ro|es|pt|fr|zh-hans)\.html$/.test(href)) {
+        assert.equal(new URL(output[i].attributes.href).searchParams.get('utm_source'), 'zhihu', page);
+      }
+    });
+  }
+});
