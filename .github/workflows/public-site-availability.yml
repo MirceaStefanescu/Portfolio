@@ -1,0 +1,43 @@
+name: Public portfolio availability
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/public-site-availability.yml
+      - scripts/monitor-public-site.py
+      - tests/test-public-site-monitor.py
+      - docs/public-site-availability.md
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-site-availability-main
+  cancel-in-progress: false
+
+jobs:
+  public-pages:
+    name: Public HTTP check
+    if: >-
+      github.repository == 'MirceaStefanescu/Portfolio' &&
+      github.event.repository.visibility == 'public' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Read the approved monitor
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/monitor-public-site.py
+            tests/test-public-site-monitor.py
+          sparse-checkout-cone-mode: false
+      - name: Verify bounded requests and result classification
+        run: python3 tests/test-public-site-monitor.py
+      - name: Observe public pages and contact links
+        run: python3 scripts/monitor-public-site.py
