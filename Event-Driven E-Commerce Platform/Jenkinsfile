@@ -5,6 +5,11 @@ pipeline {
     booleanParam(name: 'KEEP_DEMO', defaultValue: false, description: 'Retain the isolated successful demo; cleanup command is printed in the log')
   }
   stages {
+    stage('Prepare private automation') {
+      steps {
+        sh 'bash .github/prepare-private-tools.sh'
+      }
+    }
     stage('Unit and contract tests') {
       steps {
         dir('Event-Driven E-Commerce Platform') { sh 'make test' }

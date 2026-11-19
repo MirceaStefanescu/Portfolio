@@ -93,6 +93,9 @@ running root `scripts/...` commands or the shared infrastructure checks below.
 This uses existing GitHub SSH access and places runtime files in ignored
 `scripts/` and `.private-automation/` directories. A public clone does not include
 these private helpers. [Preparation details](CONTRIBUTING.md#private-maintenance-tools).
+The Jenkins templates prepare these helpers before their dependent stages;
+their agents require existing read-only access to the private repository and
+strict verification of GitHub's trusted SSH host key, as described in those details.
 
 Portfolio CI runs the shared checks and publishes a single Portfolio status
 result for branch protection. Dependabot is configured in the root

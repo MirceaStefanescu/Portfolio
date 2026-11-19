@@ -49,6 +49,17 @@ Run it again after the pinned automation revision changes. Never force-add these
 runtime directories to a public commit. Public project source remains available;
 shared root helper commands require access to the private companion.
 
+The Event-Driven E-Commerce Jenkins template runs preparation from the repository
+root after its normal SCM checkout. The CI/CD Pipeline Automation template does
+the same when `AUTO_APPLY` is enabled, or when `AUTO_DEPLOY` is enabled with
+`DEPLOY_MODE=canary`. Its default application build and tests need no private tools.
+For these preparation stages, the agent needs Git, Bash, Python 3, existing
+read-only SSH access to `MirceaStefanescu/Portfolio-Automation`, and GitHub's
+verified host key in its SSH `known_hosts`. Configure `StrictHostKeyChecking yes`
+for `github.com`; do not disable host verification. Preparation uses the agent's
+existing SSH configuration. These templates do not create Jenkins credentials
+or configure a live Jenkins installation.
+
 Changes to public execution adapters must update their reviewed private contract
 and the pinned revision together. Ordinary application commits keep the same
 automation pin and are tested at their own exact Git commit.
