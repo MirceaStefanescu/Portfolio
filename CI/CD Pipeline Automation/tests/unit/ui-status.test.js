@@ -23,7 +23,7 @@ async function page(infoReply,statusReply){
   const response=url==='/api/info'?infoReply:statusReply;
   if(response instanceof Error)throw response;
   return await response;
- }});
+ }},{filename:path.join(__dirname,'../../public/app.js')});
  await flush();
  return {elements,calls,errors};
 }
