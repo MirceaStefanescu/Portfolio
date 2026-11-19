@@ -29,7 +29,7 @@ async function page(role='admin'){
     if(url==='/api/me')return response({name:'Fixture',role,mode:'demo',csrf:'fixture'});
     if(url==='/api/services')return response({services:[]});
     const request=deferred();pending.push({url,options,...request});return request.promise;
-  }});
+  }},{filename:path.join(__dirname,'../public/app.js')});
   await flush();
   return {elements,downloads,revoked,pending,click:id=>elements.get(id).click(),edit:async(id,value)=>{elements.get(id).value=value;await elements.get(id).emit('input');}};
 }

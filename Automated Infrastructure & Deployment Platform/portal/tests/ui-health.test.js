@@ -21,7 +21,7 @@ async function page(){
   vm.runInNewContext(source,{document:{getElementById:id=>{assert.ok(elements.has(id));return elements.get(id);},createElement:()=>new Element()},setInterval(fn){timers.push(fn);},fetch:async(url)=>{
     if(url==='/api/me')return {ok:true,json:async()=>({name:'Fixture',role:'admin',mode:'demo'})};
     assert.equal(url,'/api/services');const pending=deferred();requests.push(pending);return pending.promise;
-  }});
+  }},{filename:path.join(__dirname,'../public/app.js')});
   await flush();
   const text=e=>e.textContent+e.html+e.children.map(text).join(' ');
   return {requests,poll:()=>timers[0](),rows:()=>elements.get('serviceStatus').children.map(text),nodes:()=>elements.get('serviceStatus').children};
