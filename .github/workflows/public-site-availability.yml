@@ -6,7 +6,6 @@ name: Public portfolio availability
       - main
     paths:
       - .github/workflows/public-site-availability.yml
-      - tests/test-public-site-monitor.py
       - docs/public-site-availability.md
       - .github/private-automation.json
       - .github/actions/private-automation/**

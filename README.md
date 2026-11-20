@@ -86,26 +86,16 @@ Payments, subscriptions, identity providers, notifications and cloud-region exam
 
 ## Repository checks and maintenance
 
-Shared automation implementations are maintained in the private
-`MirceaStefanescu/Portfolio-Automation` companion repository. Authorized maintainers
-prepare its pinned helpers with `bash .github/prepare-private-tools.sh` before
-running root `scripts/...` commands or the shared infrastructure checks below.
-This uses existing GitHub SSH access and places runtime files in ignored
-`scripts/` and `.private-automation/` directories. A public clone does not include
-these private helpers. [Preparation details](CONTRIBUTING.md#private-maintenance-tools).
-The Jenkins templates prepare these helpers before their dependent stages;
-their agents require existing read-only access to the private repository and
-strict verification of GitHub's trusted SSH host key, as described in those details.
-
-Portfolio CI runs the shared checks and publishes a single Portfolio status
-result for branch protection. Dependabot is configured in the root
-.github/dependabot.yml for the monorepo; nested configurations are examples for
-standalone projects.
+Portfolio CI validates changes and publishes the required Portfolio status check.
+Shared maintenance tooling is prepared automatically for authorized CI runs.
+Some shared verification and Jenkins/infrastructure commands require maintainer
+access; public project source and project quickstarts remain available.
 
 See [Contributing](CONTRIBUTING.md) and [Security policy](SECURITY.md).
 Each project's LICENSE applies to that project.
 
-Local Docker Compose demos publish ports on `127.0.0.1` only. Keep this default for demo credentials; remote access requires an explicit, authenticated deployment configuration.
+Local Docker Compose demos publish ports on `127.0.0.1` only. Keep this default for
+demo credentials; remote access requires an explicit, authenticated deployment configuration.
 
 ## Verified language versions
 
@@ -119,7 +109,7 @@ The October 2026 compatibility checks use these stable versions in CI and contai
 | Spring Boot 3.5 services | Java 25 |
 | Flink 1.17 job | Java 11, matching its runtime image and connector line |
 
-The latest upstream Java is 27. [Spring Boot 4.1 supports through Java 26](https://docs.spring.io/spring-boot/system-requirements.html)
+[Spring Boot 4.1 supports through Java 26](https://docs.spring.io/spring-boot/system-requirements.html)
 and [Spring Boot 3.5 supports through Java 25](https://docs.spring.io/spring-boot/3.5/system-requirements.html).
 Keep builder, compiler target and runtime compatible. Flink language upgrades require
 upgrading and testing the Flink runtime and its version-matched connectors together;
@@ -152,39 +142,30 @@ Start with `./portfolio-launcher.sh --list` and `--show "Project name"` to inspe
 an existing entry point. Run one large stack at a time; several projects use the
 same default ports. Docker must be running with Linux containers. The Make/Bash
 commands below require a POSIX shell; Docker Desktop with Git Bash can also run
-the isolated Compose checks.
+the project's documented Compose commands.
 
-Nine complete Compose scenarios have an isolated verifier:
-
-```bash
-python scripts/demo-check.py portal
-# Also: chat, ecommerce, predictive, observability, secrets, event-driven, rag, habit
-python scripts/demo-check.py chat --keep
-```
-
-Requires Python 3.11+ and Docker Compose v2. Each run uses fresh demo data, a unique
-Compose project and random loopback ports. It verifies the feature before reporting
-success and removes its containers/volumes afterward. `--keep` retains a successful
-stack for a browser walkthrough and prints its URLs and exact cleanup command.
-No provider account is used; E-commerce payments and Chat authentication are
-explicitly local demo modes. The nine scenarios also run in Portfolio CI.
+Nine complete Compose scenarios are also checked by the repository's automated
+CI. Their isolated verifiers are maintainer tooling. Use the public project
+quickstarts and walkthroughs below to inspect the local examples and their
+prerequisites. No provider account is used by the recorded isolated demo modes;
+E-commerce payments and Chat authentication are explicitly local simulations.
 
 | Project | Demonstrated local behavior | Reproduce from the project unless specified |
 | --- | --- | --- |
-| Automated Infrastructure & Deployment Platform | Local signed OIDC login/logout, roles, four live integrations, template generation, preview/canary and policy gates | Root `scripts/demo-check.py portal`; portal `npm run demo:sso` |
+| Automated Infrastructure & Deployment Platform | Local signed OIDC login/logout, roles, four live integrations, template generation, preview/canary and policy gates | Portal `npm run demo:sso`; [project setup](<Automated Infrastructure & Deployment Platform/README.md>) |
 | Cloud-Native E-Commerce Platform | JWT ownership, PostgreSQL persistence, transactional outbox, payment/refund, duplicate handling and broker recovery; two replicas per service in Kubernetes | `make integration-test`; [Kubernetes demo](<Cloud-Native E-Commerce Platform/k8s/README.md>) |
 | DevSecOps Pipeline with SBOM & SLSA | Isolated build, SBOM, Trivy/Grype, license policies, image/SBOM/provenance signatures, tamper rejection, four matching artifact copies and signed-image HTTP | Documented local pipeline; Jenkins pipeline also executed successfully |
-| Event-Driven E-Commerce Platform | Catalog/cart UI, durable checkout saga, payment/delivery failures, refund, local inbox, Schema Registry, persistence and Terraform resource replacement | Root `scripts/demo-check.py event-driven --keep`; Jenkins and Terraform quickstarts |
-| Full Stack E-commerce Application with Angular and Spring Boot | Registration, catalog/cart, simulated payment, receipt and persistent order history, desktop/mobile UI | Root `scripts/demo-check.py ecommerce --keep`; [recording](<Full Stack E-commerce Application with Angular and Spring Boot/screenshots/demo-checkout.webm>) |
-| Habit Tracker & Routine Coach SaaS | Identities, timezone schedules, streaks, persistent reminders/inbox, groups, CSV/ICS, simulated subscriptions, Redis outage recovery and OTLP | Root `scripts/demo-check.py habit --keep` |
+| Event-Driven E-Commerce Platform | Catalog/cart UI, durable checkout saga, payment/delivery failures, refund, local inbox, Schema Registry, persistence and Terraform resource replacement | [Project setup](<Event-Driven E-Commerce Platform/README.md>); Jenkins and Terraform quickstarts |
+| Full Stack E-commerce Application with Angular and Spring Boot | Registration, catalog/cart, simulated payment, receipt and persistent order history, desktop/mobile UI | [Compose quickstart](<Full Stack E-commerce Application with Angular and Spring Boot/README.md>); [recording](<Full Stack E-commerce Application with Angular and Spring Boot/screenshots/demo-checkout.webm>) |
+| Habit Tracker & Routine Coach SaaS | Identities, timezone schedules, streaks, persistent reminders/inbox, groups, CSV/ICS, simulated subscriptions, Redis outage recovery and OTLP | [Project quickstart](<Habit Tracker & Routine Coach SaaS/README.md>) |
 | GitOps Platform - Argo CD & Helm | Native reconciliation/self-heal/promotion, canary rejection/recovery, Velero data restore and actual Prometheus/Grafana DORA panels | `make dev`; `python scripts/demo-dora.py --keep` |
 | Kubernetes FinOps & Cost Optimization | Cost/usage telemetry, HPA, preview idle detection, scale-to-zero and restoration, persistent backup | `make dev`; documented idle-controller demonstration; costs are local estimates |
-| Observability - New Relic & Prometheus | Two Prometheus sources, persistent Mimir, logs, synthetic checks, dashboard and local Slack/PagerDuty delivery with retry/deduplication | Root `scripts/demo-check.py observability` |
-| Predictive Analytics Pipeline on Kubernetes | Fitted model, Schema Registry, real stream windows in both sinks, OTLP, KEDA scaling and Flink checkpoint recovery | Root `scripts/demo-check.py predictive`; `scripts/kind-demo.py` |
-| Real-Time Chat & Collaboration Platform | Two-session messaging, Redis presence/typing/rate limits, room search, durable Kafka recovery and PostgreSQL history | Root `scripts/demo-check.py chat --keep`; Terraform Kubernetes demo |
-| Secure RAG Service & Knowledge API | Hybrid retrieval, caching, RBAC, evaluation, API HPA, three-peer vector replication and snapshot recovery | Root `scripts/demo-check.py rag`; `python scripts/resilience-demo.py` |
+| Observability - New Relic & Prometheus | Two Prometheus sources, persistent Mimir, logs, synthetic checks, dashboard and local Slack/PagerDuty delivery with retry/deduplication | [Project quickstart](<Observability - New Relic & Prometheus/README.md>) |
+| Predictive Analytics Pipeline on Kubernetes | Fitted model, Schema Registry, real stream windows in both sinks, OTLP, KEDA scaling and Flink checkpoint recovery | [Project quickstart](<Predictive Analytics Pipeline on Kubernetes/README.md>); project `scripts/kind-demo.py` |
+| Real-Time Chat & Collaboration Platform | Two-session messaging, Redis presence/typing/rate limits, room search, durable Kafka recovery and PostgreSQL history | [Project quickstart](<Real-Time Chat & Collaboration Platform/README.md>); Terraform Kubernetes demo |
+| Secure RAG Service & Knowledge API | Hybrid retrieval, caching, RBAC, evaluation, API HPA, three-peer vector replication and snapshot recovery | [Project quickstart](<Secure RAG Service & Knowledge API/README.md>); project `python scripts/resilience-demo.py` |
 | Prompt Quality & Safety | Mock/HTTP adapter contracts, structured tool and semantic graders, reference validation and SQLite cache | `make dev` and `make test`; controlled local responses for provider contracts |
-| Secure Secrets Management & Observability Toolkit | AppRole, rotation/audit, local alert inbox, Transit KMS auto-unseal and two-region failover/recovery | Root `scripts/demo-check.py secrets`; `python scripts/kms-region-demo.py` |
+| Secure Secrets Management & Observability Toolkit | AppRole, rotation/audit, local alert inbox, Transit KMS auto-unseal and two-region failover/recovery | [Project quickstart](<Secure Secrets Management & Observability Toolkit/README.md>); project `python scripts/kms-region-demo.py` |
 | CI/CD Pipeline Automation | Jenkins execution, saved-plan policy gate, Terraform/Ansible and blue/green, rolling and canary routing | Project Kubernetes quickstart and Jenkinsfile |
 | LLMOps Evaluation Harness | Dataset/regex/tool/semantic graders, persisted artifacts and SQLite response cache | `make dev` and `make test`; controlled local HTTP provider fixtures |
 
