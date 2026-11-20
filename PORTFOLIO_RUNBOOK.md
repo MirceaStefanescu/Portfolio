@@ -32,7 +32,7 @@ README. These entry points can start local services or create generated files.
 | [DevSecOps Pipeline with SBOM & SLSA](<DevSecOps Pipeline with SBOM & SLSA/README.md>) | `make dev`; use the documented `.env.example` when configuration is needed |
 | [Event-Driven E-Commerce Platform](<Event-Driven E-Commerce Platform/README.md>) | `make dev` |
 | [Full Stack E-commerce Application with Angular and Spring Boot](<Full Stack E-commerce Application with Angular and Spring Boot/README.md>) | `docker compose up --build` — frontend at http://localhost:4200 |
-| [Habit Tracker & Routine Coach SaaS](<Habit Tracker & Routine Coach SaaS/README.md>) | `make dev` — frontend at http://localhost:5173, API at http://localhost:8085 |
+| [Habit Tracker & Routine Coach SaaS](<Habit Tracker & Routine Coach SaaS/README.md>) | `docker compose up -d --build` — app at http://localhost:8085 |
 | [GitOps Platform - Argo CD & Helm](<GitOps Platform - Argo CD & Helm/README.md>) | `make dev`; requires kind, kubectl and Helm |
 | [Kubernetes FinOps & Cost Optimization](<Kubernetes FinOps & Cost Optimization/README.md>) | `make dev`; follow the project's optional environment configuration |
 | [Observability - New Relic & Prometheus](<Observability - New Relic & Prometheus/README.md>) | `make dev`; follow the project's optional environment configuration |
