@@ -31,6 +31,8 @@ A diagnostic is a small, separately scoped engagement before implementation: **â
 - **Inputs:** Current and expected behavior, a sanitized reproducer, relevant code and logs.
 - **Delivery:** Reproduction notes, likely causes, prioritized recommendations and a proposed implementation scope.
 
+[See a sample diagnostic report](https://mirceastefanescu.github.io/Portfolio/api-integration-diagnostic.html#sample-report): a review of checkout retries in a personal Java/Spring Boot demonstration, with findings, existing test evidence, limitations and proposed next checks.
+
 ### CI/CD and GitOps diagnostic
 
 - **Scope:** One build/deployment pipeline or one environment promotion workflow.
