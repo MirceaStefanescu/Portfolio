@@ -7,7 +7,7 @@ This project is under `H:\Projects\Portfolio`. Use the existing explicit launche
 - [frontend/DevTools.ps1](frontend/DevTools.ps1): Node 26.11.1; Test/Build.
 - [backend/DevTools.ps1](backend/DevTools.ps1): Java 26, Maven 3.10.0; Compile/Test.
 
-Exact local paths, recovery, dated test scope and Windows/Linux separation: [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026).
+Portable demo entry points and the limits of historical verification: [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026).
 The generic Make/Docker examples below describe their own environments; they do not prove use of the Windows runtime. No application, container, external integration or test was started for this documentation check.
 <!-- /LOCAL_WINDOWS_RUNTIME_20261004 -->
 

@@ -7,7 +7,7 @@ The project is under `H:\Projects\Portfolio`. [DevTools.ps1](DevTools.ps1) curre
 
 82 regression cases pass in normal and reverse order on the current Windows environment,including actual loopback HTTP,SQLite,CLI overrides,shipped examples and failure artifacts. Lint/format pass with the installed Ruff0.17.0;this is below the declared development minimum0.17.1 and is tracked for replacement. Remote model quality,Linux CI,a clean package build and the generic quickstart are not certified by these checks.
 
-Exact local paths and recovery remain in the [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026). No old environment has been removed.
+Portable demo entry points and the limits of historical verification: [Portfolio runbook](../PORTFOLIO_RUNBOOK.md#workstation-verification--4-october-2026).
 <!-- /LOCAL_WINDOWS_RUNTIME_20261004 -->
 
 ## Repeatable LLM evaluation
